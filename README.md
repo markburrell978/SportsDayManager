@@ -1,21 +1,72 @@
 # Sports Day Manager
 
-A web application for managing an annual Sports Day.
+A reusable web application for managing an annual Sports Day.
 
-## Technology
+---
 
-- Google Sheets (Database)
-- Google Apps Script (Backend API)
-- HTML / CSS / JavaScript (Frontend)
+## Features
 
-## Documentation
+- Team management
+- Competitor management
+- Multiple event types
+- Live leaderboard
+- Google Sheets database
+- Mobile-friendly interface
 
-Project documentation is stored in the `docs` folder.
+---
 
-- DESIGN.md
-- DATA_MODEL.md
-- TODO.md
+## Technology Stack
+
+| Component | Technology |
+|----------|------------|
+| Frontend | HTML, CSS, JavaScript |
+| Backend | Google Apps Script |
+| Database | Google Sheets |
+| Development | VS Code + clasp |
+| Version Control | Git |
+
+---
+
+## Project Structure
+
+```
+sports-day-manager/
+│
+├── apps-script/
+│   ├── Api.js
+│   ├── Config.js
+│   ├── Database.js
+│   ├── TeamService.js
+│   ├── CompetitorService.js
+│   ├── EventService.js
+│   ├── LeaderboardService.js
+│   ├── Utils.js
+│   └── appsscript.json
+│
+├── docs/
+│   ├── DESIGN.md
+│   ├── DATA_MODEL.md
+│   └── TODO.md
+│
+├── web/
+│
+└── README.md
+```
+
+---
+
+## Development Workflow
+
+1. Edit code in VS Code.
+2. Commit changes to Git.
+3. Deploy using:
+
+```bash
+clasp push
+```
+
+---
 
 ## Current Version
 
-v0.1.0
+v0.2.0
