@@ -1,45 +1,178 @@
 /**
- * Returns a sheet object.
+ * ==========================================================
+ * Sports Day Manager
  *
- * @param {string} tableName
- * @returns {GoogleAppsScript.Spreadsheet.Sheet}
- */
-function getSheet(tableName) {
-  const sheet = getSpreadsheet().getSheetByName(tableName);
-
-  if (!sheet) {
-    throw new Error(`Table "${tableName}" does not exist.`);
-  }
-
-  return sheet;
-}
-
-/**
- * Returns every row from a sheet as an array of objects.
+ * Database Layer
  *
- * @param {string} tableName
- * @returns {Object[]}
+ * Handles all interaction with Google Sheets.
+ * ==========================================================
  */
-function getTable(tableName) {
 
-  const values = getSheet(tableName).getDataRange().getValues();
+const Database = {
 
-  if (values.length === 0) {
-    return [];
-  }
+    /**
+     * Returns a sheet by name.
+     *
+     * @param {string} tableName
+     * @returns {GoogleAppsScript.Spreadsheet.Sheet}
+     * @private
+     */
+    getSheet(tableName) {
 
-  const headers = values.shift();
+        const sheet = getSpreadsheet().getSheetByName(tableName);
 
-  return values.map(row => {
+        if (!sheet) {
+            throw new Error(`Sheet "${tableName}" does not exist.`);
+        }
 
-    const object = {};
+        return sheet;
 
-    headers.forEach((header, index) => {
-      object[header] = row[index];
-    });
+    },
 
-    return object;
+    /**
+     * Returns all rows as objects.
+     *
+     * @param {string} tableName
+     * @returns {Object[]}
+     */
+    get(tableName) {
 
-  });
+        const sheet = this.getSheet(tableName);
 
-}
+        const values = sheet.getDataRange().getValues();
+
+        if (values.length < 2) {
+            return [];
+        }
+
+        const headers = values[0];
+
+        return values.slice(1).map(row => {
+
+            const record = {};
+
+            headers.forEach((header, index) => {
+                record[header] = row[index];
+            });
+
+            return record;
+
+        });
+
+    },
+
+    /**
+     * Finds a record by ID.
+     *
+     * @param {string} tableName
+     * @param {string} id
+     * @returns {Object|null}
+     */
+    findById(tableName, id) {
+
+        return this.get(tableName).find(r => r.ID === id) || null;
+
+    },
+
+    /**
+     * Inserts a record.
+     *
+     * @param {string} tableName
+     * @param {Object} record
+     */
+    insert(tableName, record) {
+
+        const sheet = this.getSheet(tableName);
+
+        const headers = sheet
+            .getRange(1, 1, 1, sheet.getLastColumn())
+            .getValues()[0];
+
+        const row = headers.map(header => {
+
+            if (record.hasOwnProperty(header)) {
+                return record[header];
+            }
+
+            return "";
+
+        });
+
+        sheet.appendRow(row);
+
+    },
+
+    /**
+     * Updates a record.
+     *
+     * @param {string} tableName
+     * @param {string} id
+     * @param {Object} updates
+     *
+     * @returns {boolean}
+     */
+    update(tableName, id, updates) {
+
+        const sheet = this.getSheet(tableName);
+
+        const values = sheet.getDataRange().getValues();
+
+        const headers = values[0];
+
+        for (let row = 1; row < values.length; row++) {
+
+            if (values[row][0] === id) {
+
+                headers.forEach((header, column) => {
+
+                    if (updates.hasOwnProperty(header)) {
+                        values[row][column] = updates[header];
+                    }
+
+                });
+
+                sheet
+                    .getRange(row + 1, 1, 1, headers.length)
+                    .setValues([values[row]]);
+
+                return true;
+
+            }
+
+        }
+
+        return false;
+
+    },
+
+    /**
+     * Deletes a record.
+     *
+     * @param {string} tableName
+     * @param {string} id
+     *
+     * @returns {boolean}
+     */
+    remove(tableName, id) {
+
+        const sheet = this.getSheet(tableName);
+
+        const values = sheet.getDataRange().getValues();
+
+        for (let row = 1; row < values.length; row++) {
+
+            if (values[row][0] === id) {
+
+                sheet.deleteRow(row + 1);
+
+                return true;
+
+            }
+
+        }
+
+        return false;
+
+    }
+
+};

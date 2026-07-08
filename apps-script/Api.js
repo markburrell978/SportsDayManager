@@ -1,32 +1,59 @@
-function api(action, payload = {}) {
+/**
+ * ==========================================================
+ * Sports Day Manager
+ *
+ * API Router
+ *
+ * Single entry point for all frontend requests.
+ * ==========================================================
+ */
 
-    const routes = {
-
-        getTeams: TeamService.getAll,
-
-        getCompetitors: CompetitorService.getAll,
-
-        getEvents: EventService.getAll,
-
-        getLeaderboard: LeaderboardService.getLeaderboard
-
-    };
-
-    if (!(action in routes)) {
-
-        return failure(`Unknown action '${action}'`);
-
-    }
+/**
+ * Main API.
+ *
+ * @param {Object} request
+ * @returns {Object}
+ */
+function api(request) {
 
     try {
 
-        return success(routes[action](payload));
+        switch (request.action) {
+
+            case API_ACTIONS.GET_TEAMS:
+                return Utils.success(
+                    TeamService.getAll()
+                );
+
+            case API_ACTIONS.GET_COMPETITORS:
+                return Utils.success(
+                    CompetitorService.getAll()
+                );
+
+            case API_ACTIONS.GET_EVENTS:
+                return Utils.success(
+                    EventService.getAll()
+                );
+
+            case API_ACTIONS.GET_LEADERBOARD:
+                return Utils.success(
+                    LeaderboardService.get()
+                );
+
+            default:
+
+                return Utils.failure(
+                    "Unknown API action."
+                );
+
+        }
 
     }
+    catch (error) {
 
-    catch (e) {
-
-        return failure(e.message);
+        return Utils.failure(
+            error.message
+        );
 
     }
 
