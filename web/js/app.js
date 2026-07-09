@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: app.js
- * Version: 0.4.1
+ * Version: 0.4.2
  *
  * Main application controller.
  * ==========================================================
@@ -322,9 +322,9 @@ function renderCompetitors() {
 
 <td>
 
-<span class="badge ${person.Active ? "badge-active" : "badge-inactive"}">
+<span class="badge ${isCompetitorActive(person) ? "badge-active" : "badge-inactive"}">
 
-${person.Active ? "Active" : "Inactive"}
+${isCompetitorActive(person) ? "Active" : "Inactive"}
 
 </span>
 
@@ -388,6 +388,14 @@ function registerCompetitorEvents() {
 
 
     document
+        .getElementById("btn-save-competitor")
+        .addEventListener(
+            "click",
+            saveCompetitor
+        );
+
+
+    document
         .getElementById("search-competitors")
         .addEventListener(
             "input",
@@ -399,6 +407,9 @@ function registerCompetitorEvents() {
 
 
 function openCompetitorModal(person = null) {
+
+    clearCompetitorMessage();
+
 
     document
         .getElementById("competitor-modal")
@@ -448,7 +459,7 @@ function openCompetitorModal(person = null) {
 
         document
             .getElementById("competitor-active")
-            .checked = person.Active;
+            .checked = isCompetitorActive(person);
 
 
     }
@@ -457,6 +468,43 @@ function openCompetitorModal(person = null) {
         document
             .getElementById("modal-title")
             .innerText = "Add Competitor";
+
+
+        document
+            .getElementById("competitor-id")
+            .value = "";
+
+
+        document
+            .getElementById("competitor-name")
+            .value = "";
+
+
+        document
+            .getElementById("competitor-age")
+            .value = "";
+
+
+        document
+            .getElementById("competitor-gender")
+            .value = "Male";
+
+
+        document
+            .getElementById("competition-gender")
+            .value = "Male";
+
+
+        document
+            .getElementById("competitor-team")
+            .value = App.teams.length
+                ? App.teams[0].ID
+                : "";
+
+
+        document
+            .getElementById("competitor-active")
+            .checked = true;
 
     }
 
@@ -497,6 +545,148 @@ function populateTeamDropdown() {
         select.appendChild(option);
 
     });
+
+}
+
+
+
+async function saveCompetitor() {
+
+    const saveButton =
+        document.getElementById("btn-save-competitor");
+
+    const competitor =
+        getCompetitorFormData();
+
+
+    try {
+
+        saveButton.disabled = true;
+
+
+        if (competitor.ID) {
+
+            await Api.updateCompetitor(
+                competitor
+            );
+
+            showCompetitorMessage(
+                "Competitor updated."
+            );
+
+        }
+        else {
+
+            await Api.createCompetitor(
+                competitor
+            );
+
+            showCompetitorMessage(
+                "Competitor created."
+            );
+
+        }
+
+
+        closeCompetitorModal();
+
+        await loadCompetitors();
+
+    }
+    catch (error) {
+
+        showCompetitorMessage(
+            error.message,
+            true
+        );
+
+    }
+    finally {
+
+        saveButton.disabled = false;
+
+    }
+
+}
+
+
+
+function getCompetitorFormData() {
+
+    return {
+
+        ID:
+            document
+                .getElementById("competitor-id")
+                .value,
+
+        Name:
+            document
+                .getElementById("competitor-name")
+                .value
+                .trim(),
+
+        Age:
+            document
+                .getElementById("competitor-age")
+                .value,
+
+        Gender:
+            document
+                .getElementById("competitor-gender")
+                .value,
+
+        CompetitionGender:
+            document
+                .getElementById("competition-gender")
+                .value,
+
+        TeamID:
+            document
+                .getElementById("competitor-team")
+                .value,
+
+        Active:
+            document
+                .getElementById("competitor-active")
+                .checked
+
+    };
+
+}
+
+
+
+function showCompetitorMessage(message, isError = false) {
+
+    const container =
+        document.getElementById("competitor-message");
+
+
+    container.textContent = message;
+
+    container.classList.remove("hidden");
+
+    container.classList.toggle(
+        "error",
+        isError
+    );
+
+}
+
+
+
+function clearCompetitorMessage() {
+
+    const container =
+        document.getElementById("competitor-message");
+
+
+    container.textContent = "";
+
+    container.classList.add("hidden");
+
+    container.classList.remove("error");
 
 }
 
@@ -543,6 +733,15 @@ function filterCompetitors(event) {
 
 
     renderCompetitors();
+
+}
+
+
+
+function isCompetitorActive(person) {
+
+    return person.Active === true ||
+        person.Active === "TRUE";
 
 }
 

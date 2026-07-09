@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: api.js
- * Version: 0.4.0
+ * Version: 0.4.2
  *
  * REST API client.
  * ==========================================================
@@ -59,51 +59,51 @@ const Api = {
      */
     async post(action, payload) {
 
-    const body = new URLSearchParams({
+        const body = new URLSearchParams({
 
-        action: action,
+            action: action,
 
-        payload: JSON.stringify(payload)
-
-    });
-
-
-    const response =
-        await fetch(CONFIG.API_URL, {
-
-            method: "POST",
-
-            body: body
+            payload: JSON.stringify(payload)
 
         });
 
 
-    if (!response.ok) {
+        const response =
+            await fetch(CONFIG.API_URL, {
 
-        throw new Error(
-            `HTTP ${response.status}`
-        );
+                method: "POST",
 
-    }
+                body: body
 
-
-    const json =
-        await response.json();
+            });
 
 
-    if (!json.success) {
+        if (!response.ok) {
 
-        throw new Error(
-            json.message
-        );
+            throw new Error(
+                `HTTP ${response.status}`
+            );
 
-    }
+        }
 
 
-    return json.data;
+        const json =
+            await response.json();
 
-}
-,
+
+        if (!json.success) {
+
+            throw new Error(
+                json.message
+            );
+
+        }
+
+
+        return json.data;
+
+    },
+
     /**
      * Teams
      */
@@ -119,6 +119,26 @@ const Api = {
     async getCompetitors() {
 
         return await this.get("getCompetitors");
+
+    },
+
+
+    async createCompetitor(competitor) {
+
+        return await this.post(
+            "createCompetitor",
+            competitor
+        );
+
+    },
+
+
+    async updateCompetitor(competitor) {
+
+        return await this.post(
+            "updateCompetitor",
+            competitor
+        );
 
     },
 

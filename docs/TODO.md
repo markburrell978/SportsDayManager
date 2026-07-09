@@ -16,8 +16,8 @@
 
 ## Phase 2 - Competitors
 
-- [ ] Add competitor
-- [ ] Edit competitor
+- [x] Add competitor
+- [x] Edit competitor
 - [ ] Delete competitor
 - [ ] Mark competitor present
 - [ ] Change competitor team

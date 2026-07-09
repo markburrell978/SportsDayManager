@@ -69,27 +69,14 @@ const CompetitorService = {
     create(competitor) {
 
 
-        const newCompetitor = {
+        const newCompetitor =
+            this.buildCompetitorRecord(
+                competitor
+            );
 
-            ID: Utilities.uuid(),
 
-            Name: competitor.Name || "",
-
-            Age: competitor.Age || "",
-
-            Gender: competitor.Gender || "",
-
-            CompetitionGender:
-                competitor.CompetitionGender || "",
-
-            TeamID:
-                competitor.TeamID || "",
-
-            Active:
-                competitor.Active === true ||
-                competitor.Active === "TRUE"
-
-        };
+        newCompetitor.ID =
+            Utils.uuid();
 
 
         Database.insert(
@@ -108,7 +95,7 @@ const CompetitorService = {
      *
      * @param {Object} competitor
      *
-     * @returns {boolean}
+     * @returns {Object}
      */
     update(competitor) {
 
@@ -122,15 +109,68 @@ const CompetitorService = {
         }
 
 
-        return Database.update(
+        const updatedCompetitor =
+            this.buildCompetitorRecord(
+                competitor
+            );
+
+
+        updatedCompetitor.ID =
+            competitor.ID;
+
+
+        const saved = Database.update(
 
             TABLES.COMPETITORS,
 
             competitor.ID,
 
-            competitor
+            updatedCompetitor
 
         );
+
+        if (!saved) {
+
+            throw new Error(
+                "Competitor not found."
+            );
+
+        }
+
+
+        return updatedCompetitor;
+
+    },
+
+
+    /**
+     * Builds a writable competitor record.
+     *
+     * @param {Object} competitor
+     *
+     * @returns {Object}
+     */
+    buildCompetitorRecord(competitor) {
+
+        return {
+
+            Name: competitor.Name || "",
+
+            Age: competitor.Age || "",
+
+            Gender: competitor.Gender || "",
+
+            CompetitionGender:
+                competitor.CompetitionGender || "",
+
+            TeamID:
+                competitor.TeamID || "",
+
+            Active:
+                competitor.Active === true ||
+                competitor.Active === "TRUE"
+
+        };
 
     }
 

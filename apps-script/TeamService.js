@@ -19,7 +19,7 @@ const TeamService = {
 
         return Database
             .get(TABLES.TEAMS)
-            .filter(team => team.Active === true || team.Active === "TRUE");
+            .filter(team => this.isActive(team));
 
     },
 
@@ -36,6 +36,34 @@ const TeamService = {
             TABLES.TEAMS,
             id
         );
+
+    },
+
+
+    /**
+     * Returns true if a team should be shown.
+     *
+     * @param {Object} team
+     * @returns {boolean}
+     */
+    isActive(team) {
+
+        if (!team.hasOwnProperty("Active")) {
+
+            return true;
+
+        }
+
+
+        if (Utils.isBlank(team.Active)) {
+
+            return true;
+
+        }
+
+
+        return team.Active === true ||
+            team.Active === "TRUE";
 
     }
 
