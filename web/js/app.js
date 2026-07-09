@@ -1,35 +1,192 @@
-async function loadTeams() {
+/**
+ * ==========================================================
+ * Sports Day Manager
+ *
+ * File: app.js
+ * Version: 0.4.0
+ *
+ * Main application controller.
+ * ==========================================================
+ */
 
-    const teams = await Api.getTeams();
+"use strict";
 
-    const container =
-        document.getElementById("teams");
+/**
+ * Application state.
+ */
+const App = {
 
-    container.innerHTML = "";
+    currentPage: "leaderboard",
 
-    teams.forEach(team => {
+    competitors: [],
 
-        const card =
-            document.createElement("div");
+    teams: [],
 
-        card.className = "card";
+    leaderboard: []
 
-        card.textContent = team.Name;
+};
 
-        container.appendChild(card);
+/**
+ * Entry point.
+ */
+window.addEventListener("load", initialise);
 
-    });
+/**
+ * Starts the application.
+ */
+async function initialise() {
+
+    registerNavigation();
+
+    await showPage("leaderboard");
 
 }
 
+/**
+ * Registers navigation buttons.
+ */
+function registerNavigation() {
 
+    document
+        .getElementById("nav-leaderboard")
+        .addEventListener("click", () => showPage("leaderboard"));
+
+    document
+        .getElementById("nav-competitors")
+        .addEventListener("click", () => showPage("competitors"));
+
+    document
+        .getElementById("nav-events")
+        .addEventListener("click", () => showPage("events"));
+
+    document
+        .getElementById("nav-settings")
+        .addEventListener("click", () => showPage("settings"));
+
+}
+
+/**
+ * Shows one page and hides the others.
+ *
+ * @param {string} page
+ */
+async function showPage(page) {
+
+    App.currentPage = page;
+
+    document
+        .querySelectorAll(".page")
+        .forEach(section => section.classList.add("hidden"));
+
+    document
+        .getElementById(`page-${page}`)
+        .classList.remove("hidden");
+
+    updateNavigation(page);
+
+    try {
+
+        switch (page) {
+
+            case "leaderboard":
+
+                await loadLeaderboard();
+
+                break;
+
+            case "competitors":
+
+                await loadCompetitors();
+
+                break;
+
+            case "events":
+
+                break;
+
+            case "settings":
+
+                break;
+
+        }
+
+    }
+    catch (error) {
+
+        console.error(error);
+
+        alert(error.message);
+
+    }
+
+}
+
+/**
+ * Highlights the active navigation button.
+ *
+ * @param {string} page
+ */
+function updateNavigation(page) {
+
+    document
+        .querySelectorAll("nav button")
+        .forEach(button => button.classList.remove("active"));
+
+    document
+        .getElementById(`nav-${page}`)
+        .classList.add("active");
+
+}
+
+/**
+ * Loads and renders the leaderboard.
+ */
 async function loadLeaderboard() {
 
-    const leaderboard =
+    App.leaderboard =
         await Api.getLeaderboard();
+
+    renderLeaderboard();
+
+}
+
+/**
+ * Loads competitors and teams.
+ */
+async function loadCompetitors() {
+
+    const [competitors, teams] = await Promise.all([
+
+        Api.getCompetitors(),
+
+        Api.getTeams()
+
+    ]);
+
+    App.competitors = competitors;
+
+    App.teams = teams;
+
+    renderCompetitors();
+
+}
+
+/**
+ * Renders the leaderboard.
+ */
+function renderLeaderboard() {
 
     const container =
         document.getElementById("leaderboard");
+
+    if (App.leaderboard.length === 0) {
+
+        container.innerHTML =
+            "<p>No scores recorded yet.</p>";
+
+        return;
+
+    }
 
     let html = `
 
@@ -38,6 +195,8 @@ async function loadLeaderboard() {
 <thead>
 
 <tr>
+
+<th>Position</th>
 
 <th>Team</th>
 
@@ -51,11 +210,13 @@ async function loadLeaderboard() {
 
 `;
 
-    leaderboard.forEach(team => {
+    App.leaderboard.forEach((team, index) => {
 
         html += `
 
 <tr>
+
+<td>${index + 1}</td>
 
 <td>${team.TeamName}</td>
 
@@ -79,27 +240,114 @@ async function loadLeaderboard() {
 
 }
 
+/**
+ * Renders the competitors table.
+ */
+function renderCompetitors() {
 
-async function initialise() {
+    const container =
+        document.getElementById("competitors");
 
-    try {
+    if (App.competitors.length === 0) {
 
-        await loadTeams();
+        container.innerHTML =
+            "<p>No competitors found.</p>";
 
-        await loadLeaderboard();
+        return;
 
     }
-    catch (error) {
 
-        alert(error.message);
+    const teamLookup = {};
 
-        console.error(error);
+    App.teams.forEach(team => {
 
-    }
+        teamLookup[team.ID] = team.Name;
+
+    });
+
+    let html = `
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Name</th>
+
+<th>Age</th>
+
+<th>Gender</th>
+
+<th>Competition</th>
+
+<th>Team</th>
+
+<th>Active</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+`;
+
+    App.competitors.forEach(person => {
+
+        html += `
+
+<tr>
+
+<td>${escapeHtml(person.Name)}</td>
+
+<td>${person.Age}</td>
+
+<td>${person.Gender}</td>
+
+<td>${person.CompetitionGender ?? ""}</td>
+
+<td>${teamLookup[person.TeamID] ?? person.TeamID}</td>
+
+<td>${person.Active ? "✓" : ""}</td>
+
+</tr>
+
+`;
+
+    });
+
+    html += `
+
+</tbody>
+
+</table>
+
+`;
+
+    container.innerHTML = html;
 
 }
 
-window.addEventListener(
-    "load",
-    initialise
-);
+/**
+ * Escapes text before rendering into HTML.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+function escapeHtml(value) {
+
+    if (value === null || value === undefined) {
+
+        return "";
+
+    }
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;")
+        .replaceAll("'", "&#39;");
+
+}

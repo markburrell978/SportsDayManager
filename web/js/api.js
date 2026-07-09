@@ -2,9 +2,14 @@
  * ==========================================================
  * Sports Day Manager
  *
- * REST API Client
+ * File: api.js
+ * Version: 0.4.0
+ *
+ * REST API client.
  * ==========================================================
  */
+
+"use strict";
 
 const Api = {
 
@@ -16,30 +21,27 @@ const Api = {
      */
     async get(action) {
 
-        const response = await fetch(
+        const url =
+            `${CONFIG.API_URL}?action=${encodeURIComponent(action)}`;
 
-            `${CONFIG.API_URL}?action=${action}`
-
-        );
+        const response =
+            await fetch(url);
 
         if (!response.ok) {
 
             throw new Error(
-
                 `HTTP ${response.status}`
-
             );
 
         }
 
-        const json = await response.json();
+        const json =
+            await response.json();
 
         if (!json.success) {
 
             throw new Error(
-
                 json.message
-
             );
 
         }
@@ -47,7 +49,6 @@ const Api = {
         return json.data;
 
     },
-
 
     /**
      * Performs a POST request.
@@ -58,50 +59,39 @@ const Api = {
      */
     async post(action, payload) {
 
-        const response = await fetch(
-
-            CONFIG.API_URL,
-
-            {
+        const response =
+            await fetch(CONFIG.API_URL, {
 
                 method: "POST",
 
                 headers: {
-
                     "Content-Type": "application/json"
-
                 },
 
                 body: JSON.stringify({
 
-                    action,
-
-                    payload
+                    action: action,
+                    payload: payload
 
                 })
 
-            }
-
-        );
+            });
 
         if (!response.ok) {
 
             throw new Error(
-
                 `HTTP ${response.status}`
-
             );
 
         }
 
-        const json = await response.json();
+        const json =
+            await response.json();
 
         if (!json.success) {
 
             throw new Error(
-
                 json.message
-
             );
 
         }
@@ -110,48 +100,42 @@ const Api = {
 
     },
 
-
     /**
      * Teams
      */
-
     async getTeams() {
 
-        return this.get("getTeams");
+        return await this.get("getTeams");
 
     },
-
 
     /**
      * Competitors
      */
-
     async getCompetitors() {
 
-        return this.get("getCompetitors");
+        return await this.get("getCompetitors");
 
     },
-
 
     /**
      * Events
      */
-
     async getEvents() {
 
-        return this.get("getEvents");
+        return await this.get("getEvents");
 
     },
-
 
     /**
      * Leaderboard
      */
-
     async getLeaderboard() {
 
-        return this.get("getLeaderboard");
+        return await this.get("getLeaderboard");
 
     }
 
 };
+
+window.Api = Api;
