@@ -18,7 +18,8 @@
 
 - [x] Add competitor
 - [x] Edit competitor
-- [ ] Delete competitor
+- [x] Deactivate competitor
+- [x] Restore competitor
 - [ ] Mark competitor present
 - [ ] Change competitor team
 

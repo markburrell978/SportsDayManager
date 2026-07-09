@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: app.js
- * Version: 0.4.2
+ * Version: 0.4.3
  *
  * Main application controller.
  * ==========================================================
@@ -248,10 +248,12 @@ async function loadCompetitors() {
 
     App.competitors = competitors;
 
-    App.filteredCompetitors = competitors;
-
     App.teams = teams;
 
+
+    populateTeamFilter();
+
+    applyCompetitorFilters();
 
     renderCompetitors();
 
@@ -305,6 +307,29 @@ function renderCompetitors() {
                 t => t.ID === person.TeamID
             );
 
+        const isActive =
+            isCompetitorActive(person);
+
+        const lifecycleButton = isActive
+            ? `
+
+<button onclick="deactivateCompetitor('${person.ID}')">
+
+Deactivate
+
+</button>
+
+`
+            : `
+
+<button onclick="restoreCompetitor('${person.ID}')">
+
+Restore
+
+</button>
+
+`;
+
 
         html += `
 
@@ -322,9 +347,9 @@ function renderCompetitors() {
 
 <td>
 
-<span class="badge ${isCompetitorActive(person) ? "badge-active" : "badge-inactive"}">
+<span class="badge ${isActive ? "badge-active" : "badge-inactive"}">
 
-${isCompetitorActive(person) ? "Active" : "Inactive"}
+${isActive ? "Active" : "Inactive"}
 
 </span>
 
@@ -338,6 +363,8 @@ ${isCompetitorActive(person) ? "Active" : "Inactive"}
 ✏️ Edit
 
 </button>
+
+${lifecycleButton}
 
 </td>
 
@@ -399,6 +426,22 @@ function registerCompetitorEvents() {
         .getElementById("search-competitors")
         .addEventListener(
             "input",
+            filterCompetitors
+        );
+
+
+    document
+        .getElementById("competitor-team-filter")
+        .addEventListener(
+            "change",
+            filterCompetitors
+        );
+
+
+    document
+        .getElementById("competitor-status")
+        .addEventListener(
+            "change",
             filterCompetitors
         );
 
@@ -550,6 +593,58 @@ function populateTeamDropdown() {
 
 
 
+function populateTeamFilter() {
+
+    const select =
+        document.getElementById("competitor-team-filter");
+
+    const selectedTeamID =
+        select.value;
+
+
+    select.innerHTML = "";
+
+
+    const allTeamsOption =
+        document.createElement("option");
+
+
+    allTeamsOption.value = "";
+
+    allTeamsOption.textContent = "All Teams";
+
+
+    select.appendChild(
+        allTeamsOption
+    );
+
+
+    App.teams.forEach(team => {
+
+        const option =
+            document.createElement("option");
+
+
+        option.value = team.ID;
+
+        option.textContent = team.Name;
+
+
+        select.appendChild(option);
+
+    });
+
+
+    select.value = App.teams.some(
+        team => team.ID === selectedTeamID
+    )
+        ? selectedTeamID
+        : "";
+
+}
+
+
+
 async function saveCompetitor() {
 
     const saveButton =
@@ -562,6 +657,10 @@ async function saveCompetitor() {
     try {
 
         saveButton.disabled = true;
+
+        validateCompetitor(
+            competitor
+        );
 
 
         if (competitor.ID) {
@@ -627,9 +726,11 @@ function getCompetitorFormData() {
                 .trim(),
 
         Age:
-            document
-                .getElementById("competitor-age")
-                .value,
+            Number(
+                document
+                    .getElementById("competitor-age")
+                    .value
+            ),
 
         Gender:
             document
@@ -652,6 +753,59 @@ function getCompetitorFormData() {
                 .checked
 
     };
+
+}
+
+
+
+function validateCompetitor(competitor) {
+
+    if (!competitor.Name) {
+
+        throw new Error(
+            "Please enter a competitor name."
+        );
+
+    }
+
+
+    if (!competitor.TeamID) {
+
+        throw new Error(
+            "Please choose a team."
+        );
+
+    }
+
+
+    if (!competitor.CompetitionGender) {
+
+        throw new Error(
+            "Please choose a competition gender."
+        );
+
+    }
+
+
+    if (
+        !Number.isInteger(competitor.Age) ||
+        competitor.Age <= 0
+    ) {
+
+        throw new Error(
+            "Please enter a positive whole number for age."
+        );
+
+    }
+
+
+    if (typeof competitor.Active !== "boolean") {
+
+        throw new Error(
+            "Please choose whether the competitor is active."
+        );
+
+    }
 
 }
 
@@ -713,26 +867,125 @@ function editCompetitor(id) {
 
 
 
+async function deactivateCompetitor(id) {
+
+    await updateCompetitorStatus(
+        id,
+        false,
+        "Competitor deactivated."
+    );
+
+}
+
+
+
+async function restoreCompetitor(id) {
+
+    await updateCompetitorStatus(
+        id,
+        true,
+        "Competitor restored."
+    );
+
+}
+
+
+
+async function updateCompetitorStatus(id, active, message) {
+
+    try {
+
+        await Api.updateCompetitor({
+
+            ID: id,
+
+            Active: active
+
+        });
+
+
+        showCompetitorMessage(
+            message
+        );
+
+        await loadCompetitors();
+
+    }
+    catch (error) {
+
+        showCompetitorMessage(
+            error.message,
+            true
+        );
+
+    }
+
+}
+
+
+
 /**
  * Search
  */
-function filterCompetitors(event) {
+function filterCompetitors() {
 
-    const search =
-        event.target.value
-            .toLowerCase();
-
-
-    App.filteredCompetitors =
-        App.competitors.filter(
-            person =>
-                person.Name
-                    .toLowerCase()
-                    .includes(search)
-        );
+    applyCompetitorFilters();
 
 
     renderCompetitors();
+
+}
+
+
+
+function applyCompetitorFilters() {
+
+    const search =
+        document
+            .getElementById("search-competitors")
+            .value
+            .toLowerCase();
+
+    const selectedTeamID =
+        document
+            .getElementById("competitor-team-filter")
+            .value;
+
+    const status =
+        document
+            .getElementById("competitor-status")
+            .value;
+
+
+    App.filteredCompetitors =
+        App.competitors.filter(person => {
+
+            const matchesSearch =
+                String(person.Name ?? "")
+                    .toLowerCase()
+                    .includes(search);
+
+            const matchesTeam =
+                !selectedTeamID ||
+                person.TeamID === selectedTeamID;
+
+            const matchesStatus =
+                status === "all" ||
+                (
+                    status === "active" &&
+                    isCompetitorActive(person)
+                ) ||
+                (
+                    status === "inactive" &&
+                    !isCompetitorActive(person)
+                );
+
+
+            return matchesSearch &&
+                matchesTeam &&
+                matchesStatus;
+
+        });
 
 }
 

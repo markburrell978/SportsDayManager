@@ -69,6 +69,11 @@ const CompetitorService = {
     create(competitor) {
 
 
+        this.validate(
+            competitor
+        );
+
+
         const newCompetitor =
             this.buildCompetitorRecord(
                 competitor
@@ -109,9 +114,36 @@ const CompetitorService = {
         }
 
 
+        const existingCompetitor =
+            this.getById(
+                competitor.ID
+            );
+
+
+        if (!existingCompetitor) {
+
+            throw new Error(
+                "Competitor not found."
+            );
+
+        }
+
+
+        const mergedCompetitor = Object.assign(
+            {},
+            existingCompetitor,
+            competitor
+        );
+
+
+        this.validate(
+            mergedCompetitor
+        );
+
+
         const updatedCompetitor =
             this.buildCompetitorRecord(
-                competitor
+                mergedCompetitor
             );
 
 
@@ -154,23 +186,149 @@ const CompetitorService = {
 
         return {
 
-            Name: competitor.Name || "",
+            Name: String(
+                competitor.Name
+            ).trim(),
 
-            Age: competitor.Age || "",
+            Age: Number(
+                competitor.Age
+            ),
 
             Gender: competitor.Gender || "",
 
             CompetitionGender:
-                competitor.CompetitionGender || "",
+                String(
+                    competitor.CompetitionGender
+                ).trim(),
 
             TeamID:
-                competitor.TeamID || "",
+                String(
+                    competitor.TeamID
+                ).trim(),
 
             Active:
-                competitor.Active === true ||
-                competitor.Active === "TRUE"
+                this.toBoolean(
+                    competitor.Active
+                )
 
         };
+
+    },
+
+
+    /**
+     * Validates a competitor before saving.
+     *
+     * @param {Object} competitor
+     */
+    validate(competitor) {
+
+        if (
+            Utils.isBlank(competitor.Name) ||
+            Utils.isBlank(
+                String(competitor.Name).trim()
+            )
+        ) {
+
+            throw new Error(
+                "Please enter a competitor name."
+            );
+
+        }
+
+
+        if (
+            Utils.isBlank(competitor.TeamID) ||
+            Utils.isBlank(
+                String(competitor.TeamID).trim()
+            )
+        ) {
+
+            throw new Error(
+                "Please choose a team."
+            );
+
+        }
+
+
+        if (
+            Utils.isBlank(competitor.CompetitionGender) ||
+            Utils.isBlank(
+                String(competitor.CompetitionGender).trim()
+            )
+        ) {
+
+            throw new Error(
+                "Please choose a competition gender."
+            );
+
+        }
+
+
+        if (!this.isPositiveInteger(competitor.Age)) {
+
+            throw new Error(
+                "Please enter a positive whole number for age."
+            );
+
+        }
+
+
+        if (!this.isBoolean(competitor.Active)) {
+
+            throw new Error(
+                "Please choose whether the competitor is active."
+            );
+
+        }
+
+    },
+
+
+    /**
+     * Returns true if a value is a boolean-like value.
+     *
+     * @param {*} value
+     * @returns {boolean}
+     */
+    isBoolean(value) {
+
+        return value === true ||
+            value === false ||
+            value === "TRUE" ||
+            value === "FALSE";
+
+    },
+
+
+    /**
+     * Converts a boolean-like value to a boolean.
+     *
+     * @param {*} value
+     * @returns {boolean}
+     */
+    toBoolean(value) {
+
+        return value === true ||
+            value === "TRUE";
+
+    },
+
+
+    /**
+     * Returns true when value is a positive whole number.
+     *
+     * @param {*} value
+     * @returns {boolean}
+     */
+    isPositiveInteger(value) {
+
+        const number =
+            Number(value);
+
+
+        return Number.isInteger(number) &&
+            number > 0;
 
     }
 

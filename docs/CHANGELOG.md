@@ -1,3 +1,21 @@
+# v0.4.3
+
+## Added
+
+- Competitor deactivation
+- Competitor restoration
+- Option to show inactive competitors
+- Team filter on the Competitors page
+- Frontend and backend competitor validation
+
+## Changed
+
+- Competitor list shows active competitors by default
+- Competitor search, team and status filters now combine
+- Competitor updates preserve existing IDs and rows
+
+---
+
 # v0.4.2
 
 ## Added
