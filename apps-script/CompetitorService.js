@@ -10,6 +10,7 @@
 
 const CompetitorService = {
 
+
     /**
      * Returns all competitors.
      *
@@ -45,6 +46,7 @@ const CompetitorService = {
      * Returns competitor by ID.
      *
      * @param {string} id
+     *
      * @returns {Object|null}
      */
     getById(id) {
@@ -54,6 +56,83 @@ const CompetitorService = {
             id
         );
 
+    },
+
+
+    /**
+     * Creates a new competitor.
+     *
+     * @param {Object} competitor
+     *
+     * @returns {Object}
+     */
+    create(competitor) {
+
+
+        const newCompetitor = {
+
+            ID: Utilities.uuid(),
+
+            Name: competitor.Name || "",
+
+            Age: competitor.Age || "",
+
+            Gender: competitor.Gender || "",
+
+            CompetitionGender:
+                competitor.CompetitionGender || "",
+
+            TeamID:
+                competitor.TeamID || "",
+
+            Active:
+                competitor.Active === true ||
+                competitor.Active === "TRUE"
+
+        };
+
+
+        Database.insert(
+            TABLES.COMPETITORS,
+            newCompetitor
+        );
+
+
+        return newCompetitor;
+
+    },
+
+
+    /**
+     * Updates an existing competitor.
+     *
+     * @param {Object} competitor
+     *
+     * @returns {boolean}
+     */
+    update(competitor) {
+
+
+        if (!competitor.ID) {
+
+            throw new Error(
+                "Competitor ID is required."
+            );
+
+        }
+
+
+        return Database.update(
+
+            TABLES.COMPETITORS,
+
+            competitor.ID,
+
+            competitor
+
+        );
+
     }
+
 
 };

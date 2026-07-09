@@ -59,47 +59,51 @@ const Api = {
      */
     async post(action, payload) {
 
-        const response =
-            await fetch(CONFIG.API_URL, {
+    const body = new URLSearchParams({
 
-                method: "POST",
+        action: action,
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
+        payload: JSON.stringify(payload)
 
-                body: JSON.stringify({
+    });
 
-                    action: action,
-                    payload: payload
 
-                })
+    const response =
+        await fetch(CONFIG.API_URL, {
 
-            });
+            method: "POST",
 
-        if (!response.ok) {
+            body: body
 
-            throw new Error(
-                `HTTP ${response.status}`
-            );
+        });
 
-        }
 
-        const json =
-            await response.json();
+    if (!response.ok) {
 
-        if (!json.success) {
+        throw new Error(
+            `HTTP ${response.status}`
+        );
 
-            throw new Error(
-                json.message
-            );
+    }
 
-        }
 
-        return json.data;
+    const json =
+        await response.json();
 
-    },
 
+    if (!json.success) {
+
+        throw new Error(
+            json.message
+        );
+
+    }
+
+
+    return json.data;
+
+}
+,
     /**
      * Teams
      */

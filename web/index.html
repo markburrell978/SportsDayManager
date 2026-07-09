@@ -15,125 +15,307 @@
 
 </head>
 
+
 <body>
 
-    <header>
+<header>
 
-        <h1>🏆 Sports Day Manager</h1>
+    <h1>🏆 Sports Day Manager</h1>
 
-    </header>
+</header>
 
-    <nav>
 
-        <button id="nav-leaderboard">
-            🏆 Leaderboard
+<nav>
+
+    <button id="nav-leaderboard">
+        🏆 Leaderboard
+    </button>
+
+    <button id="nav-competitors">
+        👥 Competitors
+    </button>
+
+    <button id="nav-events">
+        🎯 Events
+    </button>
+
+    <button id="nav-settings">
+        ⚙️ Settings
+    </button>
+
+</nav>
+
+
+<main>
+
+
+<!-- ================================================= -->
+<!-- Leaderboard                                       -->
+<!-- ================================================= -->
+
+<section id="page-leaderboard"
+         class="page">
+
+    <h2>
+        Leaderboard
+    </h2>
+
+    <div id="leaderboard">
+
+        Loading leaderboard...
+
+    </div>
+
+</section>
+
+
+
+<!-- ================================================= -->
+<!-- Competitors                                       -->
+<!-- ================================================= -->
+
+<section id="page-competitors"
+         class="page hidden">
+
+
+    <h2>
+        Competitors
+    </h2>
+
+
+    <div class="toolbar">
+
+
+        <button id="btn-add-competitor">
+
+            ➕ Add Competitor
+
         </button>
 
-        <button id="nav-competitors">
-            👥 Competitors
-        </button>
 
-        <button id="nav-events">
-            🎯 Events
-        </button>
+        <input
+            id="search-competitors"
+            type="text"
+            placeholder="Search competitors...">
 
-        <button id="nav-settings">
-            ⚙️ Settings
-        </button>
 
-    </nav>
+    </div>
 
-    <main>
 
-        <!-- ========================================== -->
-        <!-- Leaderboard                                -->
-        <!-- ========================================== -->
+    <div id="competitor-message"
+         class="hidden">
 
-        <section id="page-leaderboard" class="page">
+    </div>
 
-            <h2>Leaderboard</h2>
 
-            <div id="leaderboard">
+    <div id="competitors">
 
-                Loading leaderboard...
+        Loading competitors...
 
-            </div>
+    </div>
 
-        </section>
 
-        <!-- ========================================== -->
-        <!-- Competitors                                -->
-        <!-- ========================================== -->
+</section>
 
-        <section id="page-competitors"
-                 class="page hidden">
 
-            <h2>Competitors</h2>
 
-            <div class="toolbar">
+<!-- ================================================= -->
+<!-- Events                                            -->
+<!-- ================================================= -->
 
-                <button id="btn-add-competitor">
+<section id="page-events"
+         class="page hidden">
 
-                    ➕ Add Competitor
 
-                </button>
+    <h2>
+        Events
+    </h2>
 
-                <input
-                    id="search-competitors"
-                    type="text"
-                    placeholder="Search competitors...">
 
-            </div>
+    <p>
 
-            <div id="competitors">
+        Event management will be added in a future release.
 
-                Loading competitors...
+    </p>
 
-            </div>
 
-        </section>
+</section>
 
-        <!-- ========================================== -->
-        <!-- Events                                     -->
-        <!-- ========================================== -->
 
-        <section id="page-events"
-                 class="page hidden">
 
-            <h2>Events</h2>
+<!-- ================================================= -->
+<!-- Settings                                          -->
+<!-- ================================================= -->
 
-            <p>
+<section id="page-settings"
+         class="page hidden">
 
-                Event management will be added in a future release.
 
-            </p>
+    <h2>
+        Settings
+    </h2>
 
-        </section>
 
-        <!-- ========================================== -->
-        <!-- Settings                                   -->
-        <!-- ========================================== -->
+    <p>
 
-        <section id="page-settings"
-                 class="page hidden">
+        Settings will be added in a future release.
 
-            <h2>Settings</h2>
+    </p>
 
-            <p>
 
-                Settings will be added in a future release.
+</section>
 
-            </p>
 
-        </section>
+</main>
 
-    </main>
 
-    <!-- JavaScript -->
 
-    <script src="js/config.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/app.js"></script>
+<!-- ================================================= -->
+<!-- Competitor Modal                                  -->
+<!-- ================================================= -->
+
+<div id="competitor-modal"
+     class="modal hidden">
+
+
+    <div class="modal-content">
+
+
+        <h2 id="modal-title">
+
+            Add Competitor
+
+        </h2>
+
+
+        <input type="hidden"
+               id="competitor-id">
+
+
+        <label>
+
+            Name
+
+        </label>
+
+        <input
+            id="competitor-name"
+            type="text">
+
+
+
+        <label>
+
+            Age
+
+        </label>
+
+        <input
+            id="competitor-age"
+            type="number">
+
+
+
+        <label>
+
+            Gender
+
+        </label>
+
+        <select id="competitor-gender">
+
+            <option value="Male">
+                Male
+            </option>
+
+            <option value="Female">
+                Female
+            </option>
+
+            <option value="Non-binary">
+                Non-binary
+            </option>
+
+        </select>
+
+
+
+        <label>
+
+            Competition Gender
+
+        </label>
+
+        <select id="competition-gender">
+
+            <option value="Male">
+                Male
+            </option>
+
+            <option value="Female">
+                Female
+            </option>
+
+        </select>
+
+
+
+        <label>
+
+            Team
+
+        </label>
+
+        <select id="competitor-team">
+
+        </select>
+
+
+
+        <label>
+
+            Active
+
+        </label>
+
+        <input
+            id="competitor-active"
+            type="checkbox"
+            checked>
+
+
+
+        <div class="modal-buttons">
+
+
+            <button id="btn-cancel-competitor">
+
+                Cancel
+
+            </button>
+
+
+            <button id="btn-save-competitor">
+
+                Save
+
+            </button>
+
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+
 
 </body>
 

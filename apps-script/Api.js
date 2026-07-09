@@ -32,9 +32,36 @@ function doPost(e) {
 
     try {
 
-        const request = JSON.parse(
-            e.postData.contents
-        );
+        let request;
+
+
+        if (
+            e.postData &&
+            e.postData.type === "application/json"
+        ) {
+
+            request = JSON.parse(
+                e.postData.contents
+            );
+
+        }
+
+        else {
+
+            request = {
+
+                action: e.parameter.action,
+
+                payload: e.parameter.payload
+                    ? JSON.parse(
+                        e.parameter.payload
+                    )
+                    : {}
+
+            };
+
+        }
+
 
         return handleRequest(request);
 
@@ -42,7 +69,9 @@ function doPost(e) {
     catch (error) {
 
         return jsonResponse(
-            Utils.failure(error.message)
+            Utils.failure(
+                error.message
+            )
         );
 
     }
@@ -96,6 +125,27 @@ function handleRequest(request) {
 
                 break;
 
+            case API_ACTIONS.CREATE_COMPETITOR:
+
+                response = Utils.success(
+                    CompetitorService.create(
+                        request.payload
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.UPDATE_COMPETITOR:
+
+                response = Utils.success(
+                    CompetitorService.update(
+                        request.payload
+                    )
+                );
+
+                break;
+
 
             default:
 
@@ -123,11 +173,11 @@ function handleRequest(request) {
 /**
  * Returns JSON.
  */
-function jsonResponse(object) {
+function jsonResponse(data) {
 
     return ContentService
         .createTextOutput(
-            JSON.stringify(object)
+            JSON.stringify(data)
         )
         .setMimeType(
             ContentService.MimeType.JSON

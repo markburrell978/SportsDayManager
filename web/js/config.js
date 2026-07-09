@@ -13,6 +13,6 @@ const CONFIG = {
      *
      * Replace with your own deployment URL.
      */
-    API_URL: "https://script.google.com/macros/s/AKfycbxYkrxi_fLgbrsxPxVoqGCx7KuDvnPSmh0tSCaRv-EnrsFmHIjtqHBzarZ58kYs1CYQ/exec"
+    API_URL: "https://script.google.com/macros/s/AKfycbzpIpwp07pMhDF7KB_YIKY4drPDKJGVObpX8kYuFJuRLIRn73_aiVm4yExiF1rjvE03/exec"
 
 };

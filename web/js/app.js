@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: app.js
- * Version: 0.4.0
+ * Version: 0.4.1
  *
  * Main application controller.
  * ==========================================================
@@ -11,14 +11,14 @@
 
 "use strict";
 
-/**
- * Application state.
- */
+
 const App = {
 
     currentPage: "leaderboard",
 
     competitors: [],
+
+    filteredCompetitors: [],
 
     teams: [],
 
@@ -26,111 +26,120 @@ const App = {
 
 };
 
-/**
- * Entry point.
- */
-window.addEventListener("load", initialise);
 
-/**
- * Starts the application.
- */
+
+window.addEventListener(
+    "load",
+    initialise
+);
+
+
+
 async function initialise() {
 
     registerNavigation();
+
+    registerCompetitorEvents();
 
     await showPage("leaderboard");
 
 }
 
+
+
 /**
- * Registers navigation buttons.
+ * Navigation
  */
 function registerNavigation() {
 
     document
         .getElementById("nav-leaderboard")
-        .addEventListener("click", () => showPage("leaderboard"));
+        .addEventListener(
+            "click",
+            () => showPage("leaderboard")
+        );
+
 
     document
         .getElementById("nav-competitors")
-        .addEventListener("click", () => showPage("competitors"));
+        .addEventListener(
+            "click",
+            () => showPage("competitors")
+        );
+
 
     document
         .getElementById("nav-events")
-        .addEventListener("click", () => showPage("events"));
+        .addEventListener(
+            "click",
+            () => showPage("events")
+        );
+
 
     document
         .getElementById("nav-settings")
-        .addEventListener("click", () => showPage("settings"));
+        .addEventListener(
+            "click",
+            () => showPage("settings")
+        );
 
 }
 
-/**
- * Shows one page and hides the others.
- *
- * @param {string} page
- */
+
+
 async function showPage(page) {
 
     App.currentPage = page;
 
+
     document
         .querySelectorAll(".page")
-        .forEach(section => section.classList.add("hidden"));
+        .forEach(section => {
+
+            section.classList.add("hidden");
+
+        });
+
 
     document
         .getElementById(`page-${page}`)
         .classList.remove("hidden");
 
+
     updateNavigation(page);
 
-    try {
 
-        switch (page) {
 
-            case "leaderboard":
+    if (page === "leaderboard") {
 
-                await loadLeaderboard();
-
-                break;
-
-            case "competitors":
-
-                await loadCompetitors();
-
-                break;
-
-            case "events":
-
-                break;
-
-            case "settings":
-
-                break;
-
-        }
+        await loadLeaderboard();
 
     }
-    catch (error) {
 
-        console.error(error);
 
-        alert(error.message);
+    if (page === "competitors") {
+
+        await loadCompetitors();
 
     }
 
 }
 
+
+
 /**
- * Highlights the active navigation button.
- *
- * @param {string} page
+ * Highlight active page
  */
 function updateNavigation(page) {
 
     document
         .querySelectorAll("nav button")
-        .forEach(button => button.classList.remove("active"));
+        .forEach(button => {
+
+            button.classList.remove("active");
+
+        });
+
 
     document
         .getElementById(`nav-${page}`)
@@ -138,55 +147,28 @@ function updateNavigation(page) {
 
 }
 
+
+
 /**
- * Loads and renders the leaderboard.
+ * Leaderboard
  */
 async function loadLeaderboard() {
 
     App.leaderboard =
         await Api.getLeaderboard();
 
+
     renderLeaderboard();
 
 }
 
-/**
- * Loads competitors and teams.
- */
-async function loadCompetitors() {
 
-    const [competitors, teams] = await Promise.all([
 
-        Api.getCompetitors(),
-
-        Api.getTeams()
-
-    ]);
-
-    App.competitors = competitors;
-
-    App.teams = teams;
-
-    renderCompetitors();
-
-}
-
-/**
- * Renders the leaderboard.
- */
 function renderLeaderboard() {
 
     const container =
         document.getElementById("leaderboard");
 
-    if (App.leaderboard.length === 0) {
-
-        container.innerHTML =
-            "<p>No scores recorded yet.</p>";
-
-        return;
-
-    }
 
     let html = `
 
@@ -210,9 +192,11 @@ function renderLeaderboard() {
 
 `;
 
-    App.leaderboard.forEach((team, index) => {
 
-        html += `
+    App.leaderboard.forEach(
+        (team, index) => {
+
+            html += `
 
 <tr>
 
@@ -226,7 +210,9 @@ function renderLeaderboard() {
 
 `;
 
-    });
+        }
+    );
+
 
     html += `
 
@@ -236,34 +222,48 @@ function renderLeaderboard() {
 
 `;
 
+
     container.innerHTML = html;
 
 }
 
+
+
 /**
- * Renders the competitors table.
+ * Competitors
  */
+async function loadCompetitors() {
+
+    const [
+        competitors,
+        teams
+    ] = await Promise.all([
+
+        Api.getCompetitors(),
+
+        Api.getTeams()
+
+    ]);
+
+
+    App.competitors = competitors;
+
+    App.filteredCompetitors = competitors;
+
+    App.teams = teams;
+
+
+    renderCompetitors();
+
+}
+
+
+
 function renderCompetitors() {
 
     const container =
         document.getElementById("competitors");
 
-    if (App.competitors.length === 0) {
-
-        container.innerHTML =
-            "<p>No competitors found.</p>";
-
-        return;
-
-    }
-
-    const teamLookup = {};
-
-    App.teams.forEach(team => {
-
-        teamLookup[team.ID] = team.Name;
-
-    });
 
     let html = `
 
@@ -283,7 +283,9 @@ function renderCompetitors() {
 
 <th>Team</th>
 
-<th>Active</th>
+<th>Status</th>
+
+<th></th>
 
 </tr>
 
@@ -293,7 +295,16 @@ function renderCompetitors() {
 
 `;
 
-    App.competitors.forEach(person => {
+
+    App.filteredCompetitors.forEach(
+        person => {
+
+
+        const team =
+            App.teams.find(
+                t => t.ID === person.TeamID
+            );
+
 
         html += `
 
@@ -307,15 +318,37 @@ function renderCompetitors() {
 
 <td>${person.CompetitionGender ?? ""}</td>
 
-<td>${teamLookup[person.TeamID] ?? person.TeamID}</td>
+<td>${team ? team.Name : person.TeamID}</td>
 
-<td>${person.Active ? "✓" : ""}</td>
+<td>
+
+<span class="badge ${person.Active ? "badge-active" : "badge-inactive"}">
+
+${person.Active ? "Active" : "Inactive"}
+
+</span>
+
+</td>
+
+
+<td>
+
+<button onclick="editCompetitor('${person.ID}')">
+
+✏️ Edit
+
+</button>
+
+</td>
+
 
 </tr>
 
 `;
 
-    });
+        }
+    );
+
 
     html += `
 
@@ -325,29 +358,211 @@ function renderCompetitors() {
 
 `;
 
+
     container.innerHTML = html;
 
 }
 
+
+
 /**
- * Escapes text before rendering into HTML.
- *
- * @param {string} value
- * @returns {string}
+ * Competitor modal
  */
-function escapeHtml(value) {
+function registerCompetitorEvents() {
 
-    if (value === null || value === undefined) {
 
-        return "";
+    document
+        .getElementById("btn-add-competitor")
+        .addEventListener(
+            "click",
+            () => openCompetitorModal()
+        );
+
+
+    document
+        .getElementById("btn-cancel-competitor")
+        .addEventListener(
+            "click",
+            closeCompetitorModal
+        );
+
+
+    document
+        .getElementById("search-competitors")
+        .addEventListener(
+            "input",
+            filterCompetitors
+        );
+
+}
+
+
+
+function openCompetitorModal(person = null) {
+
+    document
+        .getElementById("competitor-modal")
+        .classList.remove("hidden");
+
+
+    populateTeamDropdown();
+
+
+
+    if (person) {
+
+        document
+            .getElementById("modal-title")
+            .innerText = "Edit Competitor";
+
+
+        document
+            .getElementById("competitor-id")
+            .value = person.ID;
+
+
+        document
+            .getElementById("competitor-name")
+            .value = person.Name;
+
+
+        document
+            .getElementById("competitor-age")
+            .value = person.Age;
+
+
+        document
+            .getElementById("competitor-gender")
+            .value = person.Gender;
+
+
+        document
+            .getElementById("competition-gender")
+            .value = person.CompetitionGender;
+
+
+        document
+            .getElementById("competitor-team")
+            .value = person.TeamID;
+
+
+        document
+            .getElementById("competitor-active")
+            .checked = person.Active;
+
+
+    }
+    else {
+
+        document
+            .getElementById("modal-title")
+            .innerText = "Add Competitor";
 
     }
 
-    return String(value)
+}
+
+
+
+function closeCompetitorModal() {
+
+    document
+        .getElementById("competitor-modal")
+        .classList.add("hidden");
+
+}
+
+
+
+function populateTeamDropdown() {
+
+    const select =
+        document.getElementById("competitor-team");
+
+
+    select.innerHTML = "";
+
+
+    App.teams.forEach(team => {
+
+        const option =
+            document.createElement("option");
+
+
+        option.value = team.ID;
+
+        option.textContent = team.Name;
+
+
+        select.appendChild(option);
+
+    });
+
+}
+
+
+
+/**
+ * Called by edit buttons
+ */
+function editCompetitor(id) {
+
+    const person =
+        App.competitors.find(
+            c => c.ID === id
+        );
+
+
+    if (person) {
+
+        openCompetitorModal(person);
+
+    }
+
+}
+
+
+
+/**
+ * Search
+ */
+function filterCompetitors(event) {
+
+    const search =
+        event.target.value
+            .toLowerCase();
+
+
+    App.filteredCompetitors =
+        App.competitors.filter(
+            person =>
+                person.Name
+                    .toLowerCase()
+                    .includes(search)
+        );
+
+
+    renderCompetitors();
+
+}
+
+
+
+/**
+ * Prevent HTML injection
+ */
+function escapeHtml(value) {
+
+    return String(value ?? "")
+
         .replaceAll("&", "&amp;")
+
         .replaceAll("<", "&lt;")
+
         .replaceAll(">", "&gt;")
+
         .replaceAll("\"", "&quot;")
+
         .replaceAll("'", "&#39;");
 
 }
