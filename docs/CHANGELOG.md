@@ -1,3 +1,13 @@
+# v0.5.0
+
+## Added
+
+- Event Browser
+- Event table showing event name, format, points profile and enabled status
+- Event selection and selected event details summary
+
+---
+
 # v0.4.3
 
 ## Added

@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: app.js
- * Version: 0.4.3
+ * Version: 0.5.0
  *
  * Main application controller.
  * ==========================================================
@@ -22,7 +22,11 @@ const App = {
 
     teams: [],
 
-    leaderboard: []
+    leaderboard: [],
+
+    events: [],
+
+    selectedEvent: null
 
 };
 
@@ -120,6 +124,13 @@ async function showPage(page) {
     if (page === "competitors") {
 
         await loadCompetitors();
+
+    }
+
+
+    if (page === "events") {
+
+        await loadEvents();
 
     }
 
@@ -224,6 +235,74 @@ function renderLeaderboard() {
 
 
     container.innerHTML = html;
+
+}
+
+
+
+/**
+ * Events
+ */
+async function loadEvents() {
+
+    App.events =
+        await Api.getEvents();
+
+
+    if (
+        !App.selectedEvent ||
+        !App.events.some(
+            event => event.ID === App.selectedEvent.ID
+        )
+    ) {
+
+        App.selectedEvent =
+            App.events.length
+                ? App.events[0]
+                : null;
+
+    }
+
+
+    renderEvents();
+
+}
+
+
+
+function renderEvents() {
+
+    EventUI.renderEventTable(
+        App.events,
+        App.selectedEvent
+    );
+
+    EventUI.renderEventDetails(
+        App.selectedEvent
+    );
+
+}
+
+
+
+function selectEvent(id) {
+
+    const event =
+        App.events.find(
+            item => item.ID === id
+        );
+
+
+    if (!event) {
+
+        return;
+
+    }
+
+
+    App.selectedEvent = event;
+
+    renderEvents();
 
 }
 

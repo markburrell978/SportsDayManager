@@ -3,7 +3,7 @@
 Sports Day Manager
 
 File: main.css
-Version: 0.4.1
+Version: 0.5.0
 
 Purpose:
 Application styling.
@@ -231,6 +231,16 @@ tbody tr:hover {
 
 
 
+tr.selected-row {
+
+    background: #dbeafe !important;
+
+    font-weight: bold;
+
+}
+
+
+
 .card {
 
     background: white;
@@ -262,6 +272,27 @@ tbody tr:hover {
     color: darkred;
 
     font-weight: bold;
+
+}
+
+
+/*
+==========================================================
+Event Browser
+==========================================================
+*/
+
+
+.event-details-card {
+
+    margin-top: 20px;
+
+}
+
+
+.event-details-card h3 {
+
+    margin-top: 0;
 
 }
 

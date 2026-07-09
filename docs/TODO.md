@@ -27,6 +27,7 @@
 
 ## Phase 3 - Events
 
+- [x] Browse events
 - [ ] Round Robin
 - [ ] Tournament
 - [ ] Heat & Final
