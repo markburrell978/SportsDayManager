@@ -2,106 +2,48 @@
  * ==========================================================
  * Sports Day Manager
  *
- * API Router
+ * REST API
  *
- * Handles web requests and routes them
- * to application services.
+ * Entry point for all frontend requests.
  * ==========================================================
  */
 
-
 /**
- * Handles browser GET requests.
+ * Handles GET requests.
  *
  * Example:
- * /exec?action=getTeams
  *
- * @param {Object} e
- * @returns {TextOutput}
+ * ?action=getTeams
  */
 function doGet(e) {
 
-    try {
-
-        const request = {
-
-            action: e.parameter.action,
-
-            payload: e.parameter
-
-        };
-
-
-        const response = api(request);
-
-
-        return ContentService
-            .createTextOutput(
-                JSON.stringify(response)
-            )
-            .setMimeType(
-                ContentService.MimeType.JSON
-            );
-
-
-    }
-    catch (error) {
-
-        return ContentService
-            .createTextOutput(
-                JSON.stringify(
-                    Utils.failure(error.message)
-                )
-            )
-            .setMimeType(
-                ContentService.MimeType.JSON
-            );
-
-    }
+    return handleRequest({
+        action: e?.parameter?.action || "",
+        payload: e?.parameter || {}
+    });
 
 }
 
 
 /**
- * Handles JSON POST requests.
- *
- * @param {Object} e
- * @returns {TextOutput}
+ * Handles POST requests.
  */
 function doPost(e) {
 
     try {
 
-        const request =
-            JSON.parse(
-                e.postData.contents
-            );
+        const request = JSON.parse(
+            e.postData.contents
+        );
 
-
-        const response = api(request);
-
-
-        return ContentService
-            .createTextOutput(
-                JSON.stringify(response)
-            )
-            .setMimeType(
-                ContentService.MimeType.JSON
-            );
-
+        return handleRequest(request);
 
     }
     catch (error) {
 
-        return ContentService
-            .createTextOutput(
-                JSON.stringify(
-                    Utils.failure(error.message)
-                )
-            )
-            .setMimeType(
-                ContentService.MimeType.JSON
-            );
+        return jsonResponse(
+            Utils.failure(error.message)
+        );
 
     }
 
@@ -109,49 +51,55 @@ function doPost(e) {
 
 
 /**
- * Main application API.
- *
- * @param {Object} request
- * @returns {Object}
+ * Routes API requests.
  */
-function api(request) {
+function handleRequest(request) {
+
+    let response;
 
     try {
 
         switch (request.action) {
 
-
             case API_ACTIONS.GET_TEAMS:
 
-                return Utils.success(
+                response = Utils.success(
                     TeamService.getAll()
                 );
+
+                break;
 
 
             case API_ACTIONS.GET_COMPETITORS:
 
-                return Utils.success(
+                response = Utils.success(
                     CompetitorService.getAll()
                 );
+
+                break;
 
 
             case API_ACTIONS.GET_EVENTS:
 
-                return Utils.success(
+                response = Utils.success(
                     EventService.getAll()
                 );
+
+                break;
 
 
             case API_ACTIONS.GET_LEADERBOARD:
 
-                return Utils.success(
+                response = Utils.success(
                     LeaderboardService.get()
                 );
+
+                break;
 
 
             default:
 
-                return Utils.failure(
+                response = Utils.failure(
                     "Unknown API action: " +
                     request.action
                 );
@@ -161,10 +109,28 @@ function api(request) {
     }
     catch (error) {
 
-        return Utils.failure(
+        response = Utils.failure(
             error.message
         );
 
     }
+
+    return jsonResponse(response);
+
+}
+
+
+/**
+ * Returns JSON.
+ */
+function jsonResponse(object) {
+
+    return ContentService
+        .createTextOutput(
+            JSON.stringify(object)
+        )
+        .setMimeType(
+            ContentService.MimeType.JSON
+        );
 
 }

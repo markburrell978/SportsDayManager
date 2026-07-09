@@ -1,0 +1,44 @@
+body {
+
+    font-family: Arial, sans-serif;
+
+    margin: 30px;
+
+}
+
+
+section {
+
+    margin-bottom: 30px;
+
+}
+
+
+.card {
+
+    padding: 10px;
+
+    margin: 5px 0;
+
+    border: 1px solid #ccc;
+
+}
+
+
+table {
+
+    border-collapse: collapse;
+
+    width: 100%;
+
+}
+
+
+td,
+th {
+
+    border: 1px solid #ccc;
+
+    padding: 8px;
+
+}
