@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: ui.js
- * Version: 0.5.4
+ * Version: 0.5.5
  *
  * Shared UI rendering helpers.
  * ==========================================================
@@ -120,6 +120,7 @@ const EventUI = {
      * @param {boolean} messageIsError
      * @param {Object|null} race
      * @param {string} raceCategory
+     * @param {Object|null} doubleTeamMatch
      */
     renderEventDetails(
         event,
@@ -130,7 +131,8 @@ const EventUI = {
         message = "",
         messageIsError = false,
         race = null,
-        raceCategory = "Male"
+        raceCategory = "Male",
+        doubleTeamMatch = null
     ) {
 
         const container =
@@ -185,6 +187,13 @@ ${this.renderRace(
     race,
     teams,
     raceCategory,
+    requestPending
+)}
+
+${this.renderDoubleTeam(
+    event,
+    doubleTeamMatch,
+    teams,
     requestPending
 )}
 
@@ -967,6 +976,180 @@ ${[1, 2, 3, 4].map(position => `
             3: "3rd",
             4: "4th"
         }[position] || position;
+
+    },
+
+
+    renderDoubleTeam(event, match, teams, requestPending) {
+
+        if (event.EventType !== "DOUBLE_TEAM") {
+
+            return "";
+
+        }
+
+
+        if (teams.length !== 4) {
+
+            return `
+<div class="double-team-engine">
+<h4>Double Team</h4>
+<p class="error">
+    A double-team event requires exactly four active teams. ${teams.length} are currently available.
+</p>
+</div>`;
+
+        }
+
+
+        const complete =
+            match &&
+            (
+                match.Complete === true ||
+                match.Complete === "TRUE"
+            );
+
+        const side1TeamIds = match
+            ? [match.Side1Team1ID, match.Side1Team2ID]
+            : [teams[0].ID, teams[1].ID];
+
+        const side2Teams =
+            teams.filter(team =>
+                !side1TeamIds.includes(team.ID)
+            );
+
+        let html = `
+<div class="double-team-engine">
+<h4>Double Team</h4>
+<p>Choose the two teams that form Side 1. Side 2 is formed automatically.</p>
+<div class="double-team-setup">
+<div class="double-team-side">
+<h5>Side 1</h5>
+<label for="double-team-side-1-team-1">
+    First team
+    <select id="double-team-side-1-team-1"
+            onchange="updateDoubleTeamPreview()"
+            ${requestPending || complete ? "disabled" : ""}>
+        ${this.renderDoubleTeamOptions(teams, side1TeamIds[0], side1TeamIds[1])}
+    </select>
+</label>
+<label for="double-team-side-1-team-2">
+    Second team
+    <select id="double-team-side-1-team-2"
+            onchange="updateDoubleTeamPreview()"
+            ${requestPending || complete ? "disabled" : ""}>
+        ${this.renderDoubleTeamOptions(teams, side1TeamIds[1], side1TeamIds[0])}
+    </select>
+</label>
+</div>
+<div class="double-team-side double-team-preview">
+<h5>Side 2</h5>
+<p id="double-team-side-2-preview">
+    ${this.escapeHtml(side2Teams.map(team => team.Name).join(" + "))}
+</p>
+</div>
+</div>
+<button onclick="saveDoubleTeamPairing()"
+        ${requestPending || complete ? "disabled" : ""}>
+    ${match ? "Update Pairing" : "Save Pairing"}
+</button>`;
+
+
+        if (!match) {
+
+            return html + `
+<p class="loading">Save the pairing to open winner controls.</p>
+</div>`;
+
+        }
+
+
+        const side1Name =
+            this.getCombinedSideName(
+                teams,
+                match.Side1Team1ID,
+                match.Side1Team2ID
+            );
+
+        const side2Name =
+            this.getCombinedSideName(
+                teams,
+                match.Side2Team1ID,
+                match.Side2Team2ID
+            );
+
+
+        html += `
+<div class="double-team-fixture ${complete ? "double-team-complete" : ""}">
+<h5>Saved fixture</h5>
+<div class="double-team-versus">
+<strong>${this.escapeHtml(side1Name)}</strong>
+<span>versus</span>
+<strong>${this.escapeHtml(side2Name)}</strong>
+</div>
+<p><strong>Status:</strong> ${complete ? "Complete" : "In progress"}</p>`;
+
+
+        if (complete) {
+
+            const winningName =
+                Number(match.WinnerSide) === 1
+                    ? side1Name
+                    : side2Name;
+
+
+            html += `
+<p class="double-team-winner">
+    <strong>Winner:</strong> ${this.escapeHtml(winningName)}
+</p>`;
+
+        }
+
+
+        html += `
+<label for="double-team-winner">
+    Winning combined side
+    <select id="double-team-winner" ${requestPending ? "disabled" : ""}>
+        <option value="">Choose winner</option>
+        <option value="1" ${Number(match.WinnerSide) === 1 ? "selected" : ""}>
+            Side 1 — ${this.escapeHtml(side1Name)}
+        </option>
+        <option value="2" ${Number(match.WinnerSide) === 2 ? "selected" : ""}>
+            Side 2 — ${this.escapeHtml(side2Name)}
+        </option>
+    </select>
+</label>
+<button onclick="saveDoubleTeamWinner()" ${requestPending ? "disabled" : ""}>
+    Save Winner
+</button>
+</div>
+</div>`;
+
+
+        return html;
+
+    },
+
+
+    renderDoubleTeamOptions(teams, selectedTeamId, unavailableTeamId) {
+
+        return `<option value="">Choose team</option>` +
+            teams.map(team => `
+<option value="${this.escapeHtml(team.ID)}"
+        ${team.ID === selectedTeamId ? "selected" : ""}
+        ${team.ID === unavailableTeamId ? "disabled" : ""}>
+    ${this.escapeHtml(team.Name)}
+</option>`).join("");
+
+    },
+
+
+    getCombinedSideName(teams, firstTeamId, secondTeamId) {
+
+        return [
+            this.getTeamName(teams, firstTeamId),
+            this.getTeamName(teams, secondTeamId)
+        ].join(" + ");
 
     },
 

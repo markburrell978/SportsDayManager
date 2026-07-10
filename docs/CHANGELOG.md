@@ -1,3 +1,18 @@
+# v0.5.5
+
+## Added
+
+- Persistent combined-team pairing setup for DOUBLE_TEAM events
+- Automatic opposing-side derivation from four active teams
+- Combined-side winner entry and correction
+- Double-team event status progression
+
+## Changed
+
+- Pairings may be updated before completion and are locked after completion
+
+---
+
 # v0.5.4
 
 ## Added

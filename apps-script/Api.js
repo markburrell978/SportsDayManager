@@ -239,6 +239,46 @@ function handleRequest(request) {
                 break;
 
 
+            case API_ACTIONS.GET_DOUBLE_TEAM_MATCH_FOR_EVENT:
+
+                response = Utils.success(
+                    DoubleTeamService.getForEvent(
+                        request.payload.eventId ||
+                        request.payload.EventID
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.SAVE_DOUBLE_TEAM_PAIRING:
+
+                response = Utils.success(
+                    DoubleTeamService.savePairing(
+                        request.payload.eventId ||
+                        request.payload.EventID,
+                        request.payload.side1TeamIds ||
+                        request.payload.Side1TeamIDs
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.SAVE_DOUBLE_TEAM_WINNER:
+
+                response = Utils.success(
+                    DoubleTeamService.saveWinner(
+                        request.payload.eventId ||
+                        request.payload.EventID,
+                        request.payload.winnerSide ||
+                        request.payload.WinnerSide
+                    )
+                );
+
+                break;
+
+
             case API_ACTIONS.GET_LEADERBOARD:
 
                 response = Utils.success(

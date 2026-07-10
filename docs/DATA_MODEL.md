@@ -129,3 +129,22 @@ Stores one selected team heat winner for each event and competition category.
 | FinalPosition | Number | No | Final position from 1 to 4; blank until recorded |
 
 The combination of `EventID`, `CompetitionGender` and `TeamID` must be unique.
+
+---
+
+# DoubleTeamMatches
+
+Stores the one combined-team fixture for a double-team event.
+
+| Column | Type | Required | Description |
+|---------|------|----------|-------------|
+| ID | UUID | Yes | Generated automatically |
+| EventID | String | Yes | References Events.ID |
+| Side1Team1ID | String | Yes | First team on Side 1; references Teams.ID |
+| Side1Team2ID | String | Yes | Second team on Side 1; references Teams.ID |
+| Side2Team1ID | String | Yes | First team on Side 2; references Teams.ID |
+| Side2Team2ID | String | Yes | Second team on Side 2; references Teams.ID |
+| WinnerSide | Number | No | Blank until complete, then 1 or 2 |
+| Complete | Boolean | Yes | Whether the event fixture is complete |
+
+`EventID` must be unique because each double-team event has one fixture.

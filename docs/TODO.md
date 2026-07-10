@@ -33,7 +33,7 @@
 - [x] Tournament
 - [x] Heat & Final
 - [ ] Distance Competition
-- [ ] Double Team
+- [x] Double Team
 
 ---
 

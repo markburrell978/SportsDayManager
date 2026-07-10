@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: api.js
- * Version: 0.5.4
+ * Version: 0.5.5
  *
  * REST API client.
  * ==========================================================
@@ -294,6 +294,52 @@ const Api = {
                 competitionGender,
 
                 positions
+
+            }
+        );
+
+    },
+
+
+    async getDoubleTeamMatchForEvent(eventId) {
+
+        return await this.post(
+            "getDoubleTeamMatchForEvent",
+            {
+
+                eventId
+
+            }
+        );
+
+    },
+
+
+    async saveDoubleTeamPairing(eventId, side1TeamIds) {
+
+        return await this.post(
+            "saveDoubleTeamPairing",
+            {
+
+                eventId,
+
+                side1TeamIds
+
+            }
+        );
+
+    },
+
+
+    async saveDoubleTeamWinner(eventId, winnerSide) {
+
+        return await this.post(
+            "saveDoubleTeamWinner",
+            {
+
+                eventId,
+
+                winnerSide
 
             }
         );

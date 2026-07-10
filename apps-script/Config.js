@@ -32,6 +32,8 @@ const TABLES = Object.freeze({
 
     EVENT_COMPETITORS: "EventCompetitors",
 
+    DOUBLE_TEAM_MATCHES: "DoubleTeamMatches",
+
     ATTEMPTS: "Attempts"
 
 });
@@ -85,6 +87,12 @@ const API_ACTIONS = Object.freeze({
     SAVE_RACE_HEAT_WINNER: "saveRaceHeatWinner",
 
     SAVE_RACE_FINAL_POSITIONS: "saveRaceFinalPositions",
+
+    GET_DOUBLE_TEAM_MATCH_FOR_EVENT: "getDoubleTeamMatchForEvent",
+
+    SAVE_DOUBLE_TEAM_PAIRING: "saveDoubleTeamPairing",
+
+    SAVE_DOUBLE_TEAM_WINNER: "saveDoubleTeamWinner",
 
     GET_LEADERBOARD: "getLeaderboard",
 

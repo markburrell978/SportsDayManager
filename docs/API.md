@@ -1,6 +1,6 @@
 # Sports Day Manager API
 
-Version: 0.5.4
+Version: 0.5.5
 
 ---
 
@@ -313,3 +313,65 @@ Payload:
 ```
 
 The competitor IDs must exactly match the four saved heat winners, and each integer position from 1 to 4 must be used once. Positions may be resubmitted while the same finalists remain selected.
+
+---
+
+# Double Team Events
+
+## getDoubleTeamMatchForEvent
+
+Returns the saved combined-team fixture for a `DOUBLE_TEAM` event, or `null` when no pairing has been saved.
+
+Method: `POST`
+
+Action: `getDoubleTeamMatchForEvent`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_ROUNDERS"
+}
+```
+
+---
+
+## saveDoubleTeamPairing
+
+Creates or updates the event's combined-team pairing. Side 2 is derived from the two active teams not selected for Side 1.
+
+Method: `POST`
+
+Action: `saveDoubleTeamPairing`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_ROUNDERS",
+    "side1TeamIds": ["TEAM_RED", "TEAM_BLUE"]
+}
+```
+
+Exactly four active teams must exist. The two Side 1 IDs must be different active teams. Saving again updates the existing row before completion and never creates a duplicate.
+
+---
+
+## saveDoubleTeamWinner
+
+Saves or corrects the winning combined side while preserving the pairing.
+
+Method: `POST`
+
+Action: `saveDoubleTeamWinner`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_ROUNDERS",
+    "winnerSide": 1
+}
+```
+
+`winnerSide` must be `1` or `2`, and a saved pairing must already exist.

@@ -182,6 +182,16 @@ RaceResults are event-engine state only. v0.5.4 does not create Results rows, aw
 
 ---
 
+# 6.3 Double Team Engine
+
+`DOUBLE_TEAM` events persist one fixture in DoubleTeamMatches. Four explicit team-reference columns keep the two combined sides unambiguous and allow future scoring to identify both teams on the winning side.
+
+The organiser selects the two Side 1 teams. `DoubleTeamService` validates four active teams and derives Side 2 from the remaining teams. Before completion, saving the pairing updates the existing event row. After completion the pairing is locked, while WinnerSide may still be resubmitted as 1 or 2 to correct the result.
+
+Saving a pairing moves the event to `IN_PROGRESS`. Saving a winner marks the fixture complete and moves the event to `COMPLETE`. v0.5.5 does not create Results rows, award points, or update the leaderboard.
+
+---
+
 # 7. IDs
 
 Static records use readable IDs.
@@ -205,6 +215,8 @@ Results
 Matches
 
 RaceResults
+
+DoubleTeamMatches
 
 ---
 

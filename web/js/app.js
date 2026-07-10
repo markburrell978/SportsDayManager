@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: app.js
- * Version: 0.5.4
+ * Version: 0.5.5
  *
  * Main application controller.
  * ==========================================================
@@ -33,6 +33,8 @@ const App = {
     currentMatches: [],
 
     currentRace: null,
+
+    currentDoubleTeamMatch: null,
 
     raceCategory: "Male",
 
@@ -286,6 +288,8 @@ async function loadEvents() {
 
         App.currentRace = null;
 
+        App.currentDoubleTeamMatch = null;
+
         clearEventMessage();
 
         renderEvents();
@@ -329,6 +333,8 @@ async function loadEvents() {
 
         await loadCurrentRace();
 
+        await loadCurrentDoubleTeamMatch();
+
     }
     catch (error) {
 
@@ -361,7 +367,8 @@ function renderEvents() {
         App.eventMessage,
         App.eventMessageIsError,
         App.currentRace,
-        App.raceCategory
+        App.raceCategory,
+        App.currentDoubleTeamMatch
     );
 
 }
@@ -393,6 +400,8 @@ async function selectEvent(id) {
 
     App.currentRace = null;
 
+    App.currentDoubleTeamMatch = null;
+
     App.eventRequestPending = true;
 
     App.eventMessage = "Loading event data...";
@@ -409,6 +418,9 @@ async function selectEvent(id) {
 
 
         await loadCurrentRace();
+
+
+        await loadCurrentDoubleTeamMatch();
 
 
         clearEventMessage();
@@ -502,6 +514,257 @@ async function loadCurrentRace() {
         await Api.getRaceResultsForEvent(
             App.currentEvent.ID
         );
+
+}
+
+
+
+async function loadCurrentDoubleTeamMatch() {
+
+    if (
+        !App.currentEvent ||
+        App.currentEvent.EventType !== "DOUBLE_TEAM"
+    ) {
+
+        App.currentDoubleTeamMatch = null;
+
+        return;
+
+    }
+
+
+    App.currentDoubleTeamMatch =
+        await Api.getDoubleTeamMatchForEvent(
+            App.currentEvent.ID
+        );
+
+}
+
+
+
+function updateDoubleTeamPreview() {
+
+    const firstSelect =
+        document.getElementById("double-team-side-1-team-1");
+
+    const secondSelect =
+        document.getElementById("double-team-side-1-team-2");
+
+
+    if (!firstSelect || !secondSelect) {
+
+        return;
+
+    }
+
+
+    const side1TeamIds = [
+        firstSelect.value,
+        secondSelect.value
+    ];
+
+
+    Array.from(firstSelect.options).forEach(option => {
+
+        option.disabled =
+            Boolean(option.value) &&
+            option.value === secondSelect.value;
+
+    });
+
+
+    Array.from(secondSelect.options).forEach(option => {
+
+        option.disabled =
+            Boolean(option.value) &&
+            option.value === firstSelect.value;
+
+    });
+
+
+    const side2Teams =
+        App.teams.filter(team =>
+            !side1TeamIds.includes(team.ID)
+        );
+
+    const preview =
+        document.getElementById("double-team-side-2-preview");
+
+
+    if (preview) {
+
+        preview.textContent =
+            side2Teams.length === 2
+                ? side2Teams.map(team => team.Name).join(" + ")
+                : "Choose two different Side 1 teams";
+
+    }
+
+}
+
+
+
+async function saveDoubleTeamPairing() {
+
+    if (
+        !App.currentEvent ||
+        App.currentEvent.EventType !== "DOUBLE_TEAM"
+    ) {
+
+        return;
+
+    }
+
+
+    const side1TeamIds = [
+        document
+            .getElementById("double-team-side-1-team-1")
+            .value,
+        document
+            .getElementById("double-team-side-1-team-2")
+            .value
+    ];
+
+
+    try {
+
+        if (
+            App.teams.length !== 4 ||
+            side1TeamIds.some(teamId => !teamId) ||
+            new Set(side1TeamIds).size !== 2
+        ) {
+
+            throw new Error(
+                "Choose two different active teams for Side 1."
+            );
+
+        }
+
+
+        setEventRequestPending(true);
+
+        await Api.saveDoubleTeamPairing(
+            App.currentEvent.ID,
+            side1TeamIds
+        );
+
+        await refreshDoubleTeamEvent();
+
+        showEventMessage(
+            "Combined-team pairing saved."
+        );
+
+    }
+    catch (error) {
+
+        showEventMessage(
+            error.message,
+            true
+        );
+
+    }
+    finally {
+
+        setEventRequestPending(false);
+
+    }
+
+}
+
+
+
+async function saveDoubleTeamWinner() {
+
+    if (
+        !App.currentEvent ||
+        !App.currentDoubleTeamMatch
+    ) {
+
+        return;
+
+    }
+
+
+    const winnerSide =
+        Number(
+            document
+                .getElementById("double-team-winner")
+                .value
+        );
+
+
+    if (![1, 2].includes(winnerSide)) {
+
+        showEventMessage(
+            "Choose Side 1 or Side 2 as the winner.",
+            true
+        );
+
+        renderEvents();
+
+        return;
+
+    }
+
+
+    try {
+
+        setEventRequestPending(true);
+
+        await Api.saveDoubleTeamWinner(
+            App.currentEvent.ID,
+            winnerSide
+        );
+
+        await refreshDoubleTeamEvent();
+
+        showEventMessage(
+            "Winning combined side saved."
+        );
+
+    }
+    catch (error) {
+
+        showEventMessage(
+            error.message,
+            true
+        );
+
+    }
+    finally {
+
+        setEventRequestPending(false);
+
+    }
+
+}
+
+
+
+async function refreshDoubleTeamEvent() {
+
+    const [
+        events,
+        match
+    ] = await Promise.all([
+
+        Api.getEvents(),
+
+        Api.getDoubleTeamMatchForEvent(
+            App.currentEvent.ID
+        )
+
+    ]);
+
+
+    App.events = events;
+
+    App.currentEvent =
+        events.find(event =>
+            event.ID === App.currentEvent.ID
+        ) || App.currentEvent;
+
+    App.currentDoubleTeamMatch = match;
 
 }
 
