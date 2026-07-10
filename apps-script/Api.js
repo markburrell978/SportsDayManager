@@ -117,6 +117,56 @@ function handleRequest(request) {
                 break;
 
 
+            case API_ACTIONS.GET_POINT_PROFILE:
+
+                response = Utils.success(
+                    EventService.getPointProfile(
+                        request.payload.id ||
+                        request.payload.ID
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.GET_MATCHES_FOR_EVENT:
+
+                response = Utils.success(
+                    EventService.getMatchesForEvent(
+                        request.payload.eventId ||
+                        request.payload.EventID
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.CREATE_ROUND_ROBIN_FIXTURES:
+
+                response = Utils.success(
+                    EventService.createRoundRobinFixtures(
+                        request.payload.eventId ||
+                        request.payload.EventID
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.UPDATE_MATCH_WINNER:
+
+                response = Utils.success(
+                    EventService.updateMatchWinner(
+                        request.payload.matchId ||
+                        request.payload.ID,
+                        request.payload.winnerId ||
+                        request.payload.WinnerID
+                    )
+                );
+
+                break;
+
+
             case API_ACTIONS.GET_LEADERBOARD:
 
                 response = Utils.success(

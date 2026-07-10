@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: app.js
- * Version: 0.5.0
+ * Version: 0.5.2
  *
  * Main application controller.
  * ==========================================================
@@ -26,7 +26,11 @@ const App = {
 
     events: [],
 
-    selectedEvent: null
+    currentEvent: null,
+
+    currentPointsProfile: [],
+
+    currentMatches: []
 
 };
 
@@ -245,24 +249,57 @@ function renderLeaderboard() {
  */
 async function loadEvents() {
 
-    App.events =
-        await Api.getEvents();
+    const [
+        events,
+        teams
+    ] = await Promise.all([
+
+        Api.getEvents(),
+
+        Api.getTeams()
+
+    ]);
 
 
-    if (
-        !App.selectedEvent ||
-        !App.events.some(
-            event => event.ID === App.selectedEvent.ID
-        )
-    ) {
+    App.events = events;
 
-        App.selectedEvent =
-            App.events.length
-                ? App.events[0]
-                : null;
+    App.teams = teams;
+
+
+    if (!App.events.length) {
+
+        App.currentEvent = null;
+
+        App.currentPointsProfile = [];
+
+        App.currentMatches = [];
+
+        renderEvents();
+
+        return;
 
     }
 
+
+    if (
+        !App.currentEvent ||
+        !App.events.some(
+            event => event.ID === App.currentEvent.ID
+        )
+    ) {
+
+        await selectEvent(
+            App.events[0].ID
+        );
+
+        return;
+
+    }
+
+
+    await loadCurrentPointsProfile();
+
+    await loadCurrentMatches();
 
     renderEvents();
 
@@ -274,18 +311,21 @@ function renderEvents() {
 
     EventUI.renderEventTable(
         App.events,
-        App.selectedEvent
+        App.currentEvent
     );
 
     EventUI.renderEventDetails(
-        App.selectedEvent
+        App.currentEvent,
+        App.currentPointsProfile,
+        App.currentMatches,
+        App.teams
     );
 
 }
 
 
 
-function selectEvent(id) {
+async function selectEvent(id) {
 
     const event =
         App.events.find(
@@ -300,7 +340,100 @@ function selectEvent(id) {
     }
 
 
-    App.selectedEvent = event;
+    App.currentEvent = event;
+
+    await loadCurrentPointsProfile();
+
+    await loadCurrentMatches();
+
+    renderEvents();
+
+}
+
+
+
+async function loadCurrentPointsProfile() {
+
+    if (
+        !App.currentEvent ||
+        !App.currentEvent.PointsProfileID
+    ) {
+
+        App.currentPointsProfile = [];
+
+        return;
+
+    }
+
+
+    App.currentPointsProfile =
+        await Api.getPointProfile(
+            App.currentEvent.PointsProfileID
+        );
+
+}
+
+
+
+async function loadCurrentMatches() {
+
+    if (
+        !App.currentEvent ||
+        App.currentEvent.EventType !== "ROUND_ROBIN"
+    ) {
+
+        App.currentMatches = [];
+
+        return;
+
+    }
+
+
+    App.currentMatches =
+        await Api.getMatchesForEvent(
+            App.currentEvent.ID
+        );
+
+}
+
+
+
+async function generateRoundRobinFixtures() {
+
+    if (!App.currentEvent) {
+
+        return;
+
+    }
+
+
+    await Api.createRoundRobinFixtures(
+        App.currentEvent.ID
+    );
+
+    await loadCurrentMatches();
+
+    renderEvents();
+
+}
+
+
+
+async function saveMatchWinner(matchId, winnerId) {
+
+    if (!winnerId) {
+
+        return;
+
+    }
+
+
+    await Api.updateMatchWinner(
+        matchId,
+        winnerId
+    );
+
+    await loadCurrentMatches();
 
     renderEvents();
 

@@ -28,7 +28,8 @@
 ## Phase 3 - Events
 
 - [x] Browse events
-- [ ] Round Robin
+- [x] Prepare selected event
+- [x] Round Robin
 - [ ] Tournament
 - [ ] Heat & Final
 - [ ] Distance Competition

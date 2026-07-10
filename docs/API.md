@@ -1,6 +1,6 @@
 # Sports Day Manager API
 
-Version: 0.4.3
+Version: 0.5.2
 
 ---
 
@@ -102,3 +102,96 @@ Restore payload:
 ```
 
 Competitors are not permanently deleted by the API.
+
+---
+
+# Events
+
+## getEvents
+
+Returns enabled events.
+
+Method: `GET`
+
+Action: `getEvents`
+
+---
+
+## getPointProfile
+
+Returns point profile rows by profile ID.
+
+Method: `POST`
+
+Action: `getPointProfile`
+
+Payload:
+
+```json
+{
+    "id": "PP_STANDARD"
+}
+```
+
+Response data is an array because point profiles use one row per position.
+
+---
+
+# Matches
+
+## getMatchesForEvent
+
+Returns match rows for an event.
+
+Method: `POST`
+
+Action: `getMatchesForEvent`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_CROQUET"
+}
+```
+
+---
+
+## createRoundRobinFixtures
+
+Creates round robin fixtures for a `ROUND_ROBIN` event using active teams.
+
+Method: `POST`
+
+Action: `createRoundRobinFixtures`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_CROQUET"
+}
+```
+
+If fixtures already exist for the event, the existing matches are returned.
+
+---
+
+## updateMatchWinner
+
+Stores the winner for a match and marks it complete.
+
+Method: `POST`
+
+Action: `updateMatchWinner`
+
+Payload:
+
+```json
+{
+    "matchId": "match-uuid",
+    "winnerId": "TEAM_RED"
+}
+```
+
+This updates `WinnerID` and sets `Complete` to `TRUE`.

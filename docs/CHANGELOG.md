@@ -1,3 +1,25 @@
+# v0.5.2
+
+## Added
+
+- Round robin fixture generation
+- Match winner selection for round robin events
+- Match results saved to the Matches sheet
+- Round robin interface for selected ROUND_ROBIN events
+
+---
+
+# v0.5.1
+
+## Added
+
+- Event preparation state
+- Current event selection stored in application state
+- Point profile loading for the selected event
+- Selected event summary includes point profile rows
+
+---
+
 # v0.5.0
 
 ## Added
