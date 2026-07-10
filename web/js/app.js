@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: app.js
- * Version: 0.5.6
+ * Version: 0.5.7
  *
  * Main application controller.
  * ==========================================================
@@ -37,6 +37,10 @@ const App = {
     currentRace: null,
 
     currentDoubleTeamMatch: null,
+
+    currentDistance: null,
+
+    distanceCategory: "Male",
 
     raceCategory: "Male",
 
@@ -294,6 +298,8 @@ async function loadEvents() {
 
         App.currentDoubleTeamMatch = null;
 
+        App.currentDistance = null;
+
         clearEventMessage();
 
         renderEvents();
@@ -341,6 +347,8 @@ async function loadEvents() {
 
         await loadCurrentDoubleTeamMatch();
 
+        await loadCurrentDistance();
+
     }
     catch (error) {
 
@@ -375,7 +383,9 @@ function renderEvents() {
         App.currentEventRun,
         App.currentRace,
         App.raceCategory,
-        App.currentDoubleTeamMatch
+        App.currentDoubleTeamMatch,
+        App.currentDistance,
+        App.distanceCategory
     );
 
 }
@@ -411,6 +421,8 @@ async function selectEvent(id) {
 
     App.currentDoubleTeamMatch = null;
 
+    App.currentDistance = null;
+
     App.eventRequestPending = true;
 
     App.eventMessage = "Loading event data...";
@@ -432,6 +444,9 @@ async function selectEvent(id) {
 
 
         await loadCurrentDoubleTeamMatch();
+
+
+        await loadCurrentDistance();
 
 
         clearEventMessage();
@@ -574,6 +589,235 @@ async function loadCurrentDoubleTeamMatch() {
             App.currentEvent.ID,
             App.currentEventRun.ID
         );
+
+}
+
+
+
+async function loadCurrentDistance() {
+
+    if (
+        !App.currentEvent ||
+        App.currentEvent.EventType !== "DISTANCE"
+    ) {
+
+        App.currentDistance = null;
+
+        return;
+
+    }
+
+
+    App.currentDistance =
+        await Api.getDistanceResultsForEventRun(
+            App.currentEvent.ID,
+            App.currentEventRun.ID
+        );
+
+}
+
+
+
+function selectDistanceCategory(category) {
+
+    if (!["Male", "Female"].includes(category)) {
+
+        return;
+
+    }
+
+
+    App.distanceCategory = category;
+
+    clearEventMessage();
+
+    renderEvents();
+
+}
+
+
+
+async function saveDistanceCategoryPositions() {
+
+    if (
+        !App.currentEvent ||
+        !App.currentEventRun ||
+        !App.currentDistance
+    ) {
+
+        return;
+
+    }
+
+
+    const positions =
+        App.teams.map((team, index) => ({
+
+            teamId: team.ID,
+
+            position: Number(
+                document
+                    .getElementById(
+                        `distance-position-${index}`
+                    )
+                    .value
+            )
+
+        }));
+
+
+    try {
+
+        validateDistancePositions(positions);
+
+        setEventRequestPending(true);
+
+        await Api.saveDistanceCategoryPositions(
+            App.currentEvent.ID,
+            App.currentEventRun.ID,
+            App.distanceCategory,
+            positions
+        );
+
+        await refreshDistanceEvent();
+
+        showEventMessage(
+            `${App.distanceCategory} team placings saved.`
+        );
+
+    }
+    catch (error) {
+
+        showEventMessage(
+            error.message,
+            true
+        );
+
+    }
+    finally {
+
+        setEventRequestPending(false);
+
+    }
+
+}
+
+
+
+function validateDistancePositions(positions) {
+
+    const values =
+        positions.map(position =>
+            position.position
+        );
+
+
+    if (
+        positions.length !== 4 ||
+        new Set(values).size !== 4 ||
+        !values.every(position =>
+            Number.isInteger(position) &&
+            position >= 1 &&
+            position <= 4
+        )
+    ) {
+
+        throw new Error(
+            "Use each position from 1st to 4th exactly once."
+        );
+
+    }
+
+}
+
+
+
+async function completeDistanceEventRun() {
+
+    if (!App.currentEvent || !App.currentEventRun) {
+
+        return;
+
+    }
+
+
+    if (
+        !window.confirm(
+            "Mark this distance event complete? Corrections will require resetting the event."
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        setEventRequestPending(true);
+
+        await Api.completeDistanceEventRun(
+            App.currentEvent.ID,
+            App.currentEventRun.ID
+        );
+
+        await refreshDistanceEvent();
+
+        showEventMessage(
+            "Distance event marked complete."
+        );
+
+    }
+    catch (error) {
+
+        showEventMessage(
+            error.message,
+            true
+        );
+
+    }
+    finally {
+
+        setEventRequestPending(false);
+
+    }
+
+}
+
+
+
+async function refreshDistanceEvent() {
+
+    const [
+        events,
+        distance,
+        eventRun
+    ] = await Promise.all([
+
+        Api.getEvents(),
+
+        Api.getDistanceResultsForEventRun(
+            App.currentEvent.ID,
+            App.currentEventRun.ID
+        ),
+
+        Api.getCurrentEventRun(
+            App.currentEvent.ID
+        )
+
+    ]);
+
+
+    App.events = events;
+
+    App.currentEvent =
+        events.find(event =>
+            event.ID === App.currentEvent.ID
+        ) || App.currentEvent;
+
+    App.currentDistance = distance;
+
+    App.currentEventRun = eventRun;
 
 }
 
@@ -1381,6 +1625,8 @@ async function resetCurrentEvent() {
 
         App.currentDoubleTeamMatch = null;
 
+        App.currentDistance = null;
+
 
         App.events =
             await Api.getEvents();
@@ -1396,6 +1642,8 @@ async function resetCurrentEvent() {
         await loadCurrentRace();
 
         await loadCurrentDoubleTeamMatch();
+
+        await loadCurrentDistance();
 
 
         showEventMessage(

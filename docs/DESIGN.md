@@ -141,7 +141,7 @@ An Event is permanent configuration. An EventRun is one execution of that event.
 
 EventRuns.Status is the authoritative execution status. Events.Status mirrors the current run for backward compatibility. `EventRunService` exclusively synchronises these values and owns current-run creation, legacy migration and reset locking.
 
-Matches, RaceResults, DoubleTeamMatches, Attempts, Results and EventCompetitors retain EventID and also use EventRunID. All engine reads, inserts, updates and duplicate checks are scoped to the supplied current run.
+Matches, RaceResults, DoubleTeamMatches, DistanceResults, Attempts, Results and EventCompetitors retain EventID and also use EventRunID. All engine reads, inserts, updates and duplicate checks are scoped to the supplied current run.
 
 When an event without an EventRun is selected, Run 1 is created under an Apps Script lock. Existing related rows whose EventRunID is blank are assigned to Run 1. The migration is idempotent and never changes rows already owned by a run.
 
@@ -208,6 +208,18 @@ Saving a pairing moves the event to `IN_PROGRESS`. Saving a winner marks the fix
 
 ---
 
+# 6.4 Distance Competition Engine
+
+`DISTANCE` events are run as observed Male and Female team placements because exact measurements are not available on the day. DistanceResults stores one position for each active team and category within an Event Run. It does not store measurements, competitors, ranking duplicates or points.
+
+Each category must use every active team and each position from 1 to 4 exactly once. Saving a category updates the existing run/category/team rows rather than creating duplicates and moves the run to `IN_PROGRESS`.
+
+Completion is explicit and requires complete Male and Female placements. It moves the run to `COMPLETE` and locks editing; corrections use Reset Event. Reset creates an empty run while previous DistanceResults remain attached to their historical EventRunID.
+
+The Attempts model remains reserved for a possible future measured-distance engine and is not used by v0.5.7. No Results rows are created and no points are awarded.
+
+---
+
 # 7. IDs
 
 Static records use readable IDs.
@@ -233,6 +245,8 @@ Matches
 RaceResults
 
 DoubleTeamMatches
+
+DistanceResults
 
 EventRuns
 

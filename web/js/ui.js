@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: ui.js
- * Version: 0.5.6
+ * Version: 0.5.7
  *
  * Shared UI rendering helpers.
  * ==========================================================
@@ -122,6 +122,8 @@ const EventUI = {
      * @param {Object|null} race
      * @param {string} raceCategory
      * @param {Object|null} doubleTeamMatch
+     * @param {Object|null} distance
+     * @param {string} distanceCategory
      */
     renderEventDetails(
         event,
@@ -134,7 +136,9 @@ const EventUI = {
         eventRun = null,
         race = null,
         raceCategory = "Male",
-        doubleTeamMatch = null
+        doubleTeamMatch = null,
+        distance = null,
+        distanceCategory = "Male"
     ) {
 
         const container =
@@ -198,6 +202,15 @@ ${this.renderDoubleTeam(
     event,
     doubleTeamMatch,
     teams,
+    requestPending
+)}
+
+${this.renderDistance(
+    event,
+    eventRun,
+    distance,
+    teams,
+    distanceCategory,
     requestPending
 )}
 
@@ -1182,6 +1195,203 @@ ${[1, 2, 3, 4].map(position => `
             this.getTeamName(teams, firstTeamId),
             this.getTeamName(teams, secondTeamId)
         ].join(" + ");
+
+    },
+
+
+    renderDistance(
+        event,
+        eventRun,
+        distance,
+        teams,
+        category,
+        requestPending
+    ) {
+
+        if (event.EventType !== "DISTANCE") {
+
+            return "";
+
+        }
+
+
+        if (!distance || !eventRun) {
+
+            return `
+<div class="distance-engine">
+<h4>Distance Competition</h4>
+<p class="loading">Loading team placings...</p>
+</div>`;
+
+        }
+
+
+        if (teams.length !== 4) {
+
+            return `
+<div class="distance-engine">
+<h4>Distance Competition</h4>
+<p class="error">
+    A distance competition requires exactly four active teams. ${teams.length} are currently available.
+</p>
+</div>`;
+
+        }
+
+
+        const completed =
+            eventRun.Status === "COMPLETE";
+
+        const categoryResults =
+            distance.results.filter(result =>
+                result.CompetitionGender === category
+            );
+
+        const categoryComplete =
+            this.isDistanceCategoryComplete(
+                teams,
+                categoryResults
+            );
+
+        const allCategoriesComplete =
+            ["Male", "Female"].every(item =>
+                this.isDistanceCategoryComplete(
+                    teams,
+                    distance.results.filter(result =>
+                        result.CompetitionGender === item
+                    )
+                )
+            );
+
+        let html = `
+<div class="distance-engine ${completed ? "distance-complete" : ""}">
+<h4>Distance Competition</h4>
+<p>Record the observed team finishing order for each competition category.</p>
+<div class="distance-categories" role="group" aria-label="Distance category">
+${["Male", "Female"].map(item => `
+<button class="${item === category ? "active" : ""}"
+        onclick="selectDistanceCategory('${item}')"
+        ${requestPending ? "disabled" : ""}>
+    ${item}
+</button>`).join("")}
+</div>
+<h5>${this.escapeHtml(category)} team placings</h5>
+<div class="distance-positions">`;
+
+
+        teams.forEach((team, index) => {
+
+            const savedResult =
+                categoryResults.find(result =>
+                    result.TeamID === team.ID
+                );
+
+
+            html += `
+<label for="distance-position-${index}">
+<span>${this.escapeHtml(team.Name)}</span>
+<select id="distance-position-${index}"
+        ${requestPending || completed ? "disabled" : ""}>
+    <option value="">Choose position</option>
+    ${[1, 2, 3, 4].map(position => `
+    <option value="${position}"
+            ${savedResult && Number(savedResult.Position) === position ? "selected" : ""}>
+        ${this.formatOrdinal(position)}
+    </option>`).join("")}
+</select>
+</label>`;
+
+        });
+
+
+        html += `
+</div>
+<button onclick="saveDistanceCategoryPositions()"
+        ${requestPending || completed ? "disabled" : ""}>
+    Save ${this.escapeHtml(category)} Placings
+</button>`;
+
+
+        if (categoryComplete) {
+
+            const orderedResults =
+                [...categoryResults].sort(
+                    (a, b) =>
+                        Number(a.Position) -
+                        Number(b.Position)
+                );
+
+
+            html += `
+<div class="distance-standings">
+<h5>${completed ? "Final" : "Saved"} ${this.escapeHtml(category)} standings</h5>
+<ol>
+${orderedResults.map(result => `
+<li>${this.escapeHtml(this.getTeamName(teams, result.TeamID))}</li>`).join("")}
+</ol>
+</div>`;
+
+        }
+
+
+        if (completed) {
+
+            html += `
+<p class="distance-complete-message">
+    This distance event is complete. Reset the event to record a new run.
+</p>`;
+
+        }
+        else {
+
+            html += `
+<button class="distance-complete-button"
+        onclick="completeDistanceEventRun()"
+        ${requestPending || !allCategoriesComplete ? "disabled" : ""}>
+    Mark Distance Event Complete
+</button>`;
+
+
+            if (!allCategoriesComplete) {
+
+                html += `
+<p class="loading">
+    Save complete Male and Female placings before completing the event.
+</p>`;
+
+            }
+
+        }
+
+
+        html += `</div>`;
+
+
+        return html;
+
+    },
+
+
+    isDistanceCategoryComplete(teams, results) {
+
+        const teamIds =
+            results.map(result => result.TeamID);
+
+        const positions =
+            results.map(result =>
+                Number(result.Position)
+            );
+
+
+        return results.length === 4 &&
+            new Set(teamIds).size === 4 &&
+            teams.every(team =>
+                teamIds.includes(team.ID)
+            ) &&
+            new Set(positions).size === 4 &&
+            positions.every(position =>
+                [1, 2, 3, 4].includes(position)
+            );
 
     },
 

@@ -327,6 +327,52 @@ function handleRequest(request) {
                 break;
 
 
+            case API_ACTIONS.GET_DISTANCE_RESULTS_FOR_EVENT_RUN:
+
+                response = Utils.success(
+                    DistanceService.getForEventRun(
+                        request.payload.eventId ||
+                        request.payload.EventID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.SAVE_DISTANCE_CATEGORY_POSITIONS:
+
+                response = Utils.success(
+                    DistanceService.saveCategoryPositions(
+                        request.payload.eventId ||
+                        request.payload.EventID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID,
+                        request.payload.competitionGender ||
+                        request.payload.CompetitionGender,
+                        request.payload.positions ||
+                        request.payload.Positions
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.COMPLETE_DISTANCE_EVENT_RUN:
+
+                response = Utils.success(
+                    DistanceService.completeEventRun(
+                        request.payload.eventId ||
+                        request.payload.EventID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID
+                    )
+                );
+
+                break;
+
+
             case API_ACTIONS.GET_LEADERBOARD:
 
                 response = Utils.success(

@@ -375,6 +375,7 @@ const EventRunService = {
             TABLES.DOUBLE_TEAM_MATCHES,
             TABLES.ATTEMPTS,
             TABLES.RESULTS,
+            TABLES.DISTANCE_RESULTS,
             TABLES.EVENT_COMPETITORS
         ];
 

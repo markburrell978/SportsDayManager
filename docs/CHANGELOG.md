@@ -1,3 +1,18 @@
+# v0.5.7
+
+## Added
+
+- Male and Female observed team-placement entry for DISTANCE events
+- Persistent run-scoped DistanceResults rows
+- Explicit Distance Event completion after both categories are ranked
+- Reset support preserving historical distance placements
+
+## Changed
+
+- Distance events use observed team positions rather than measured competitor attempts
+
+---
+
 # v0.5.6
 
 ## Added

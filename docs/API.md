@@ -1,6 +1,6 @@
 # Sports Day Manager API
 
-Version: 0.5.6
+Version: 0.5.7
 
 ---
 
@@ -433,3 +433,73 @@ Payload:
 ```
 
 The operation uses an Apps Script lock and rejects stale run IDs, preventing repeated submissions from creating multiple current runs.
+
+---
+
+# Distance Competitions
+
+## getDistanceResultsForEventRun
+
+Returns the observed team placings for the current DISTANCE Event Run.
+
+Method: `POST`
+
+Action: `getDistanceResultsForEventRun`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_WELLY_WANGING",
+    "eventRunId": "run-uuid"
+}
+```
+
+---
+
+## saveDistanceCategoryPositions
+
+Creates or updates all four team positions for one competition category.
+
+Method: `POST`
+
+Action: `saveDistanceCategoryPositions`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_WELLY_WANGING",
+    "eventRunId": "run-uuid",
+    "competitionGender": "Female",
+    "positions": [
+        { "teamId": "TEAM_RED", "position": 1 },
+        { "teamId": "TEAM_BLUE", "position": 2 },
+        { "teamId": "TEAM_GREEN", "position": 3 },
+        { "teamId": "TEAM_YELLOW", "position": 4 }
+    ]
+}
+```
+
+Every active team and each integer position from 1 to 4 must appear exactly once. Saving again updates existing DistanceResults rows for the current run and category.
+
+---
+
+## completeDistanceEventRun
+
+Marks the current Distance Event Run complete after both Male and Female categories have valid team placings.
+
+Method: `POST`
+
+Action: `completeDistanceEventRun`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_WELLY_WANGING",
+    "eventRunId": "run-uuid"
+}
+```
+
+Completed distance runs cannot be edited. Corrections require the existing Reset Event workflow.

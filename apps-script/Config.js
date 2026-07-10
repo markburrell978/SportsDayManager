@@ -36,6 +36,8 @@ const TABLES = Object.freeze({
 
     EVENT_RUNS: "EventRuns",
 
+    DISTANCE_RESULTS: "DistanceResults",
+
     ATTEMPTS: "Attempts"
 
 });
@@ -99,6 +101,12 @@ const API_ACTIONS = Object.freeze({
     GET_CURRENT_EVENT_RUN: "getCurrentEventRun",
 
     RESET_EVENT: "resetEvent",
+
+    GET_DISTANCE_RESULTS_FOR_EVENT_RUN: "getDistanceResultsForEventRun",
+
+    SAVE_DISTANCE_CATEGORY_POSITIONS: "saveDistanceCategoryPositions",
+
+    COMPLETE_DISTANCE_EVENT_RUN: "completeDistanceEventRun",
 
     GET_LEADERBOARD: "getLeaderboard",
 

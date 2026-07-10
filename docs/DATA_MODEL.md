@@ -138,6 +138,23 @@ Maps competitors to a specific event execution.
 
 ---
 
+# DistanceResults
+
+Stores observed team placings for Male and Female distance categories.
+
+| Column | Type | Required | Description |
+|---------|------|----------|-------------|
+| ID | UUID | Yes | Generated automatically |
+| EventID | String | Yes | References Events.ID |
+| EventRunID | UUID | Yes | References EventRuns.ID |
+| CompetitionGender | Enum | Yes | Male or Female category |
+| TeamID | String | Yes | References Teams.ID |
+| Position | Number | Yes | Observed finishing position from 1 to 4 |
+
+The combination of `EventRunID`, `CompetitionGender` and `TeamID` must be unique. Within each EventRunID and CompetitionGender, every active team and each position from 1 to 4 must appear exactly once.
+
+---
+
 # RaceResults
 
 Stores one selected team heat winner for each event and competition category.

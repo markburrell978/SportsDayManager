@@ -32,7 +32,7 @@
 - [x] Round Robin
 - [x] Tournament
 - [x] Heat & Final
-- [ ] Distance Competition
+- [x] Distance Competition
 - [x] Double Team
 - [x] Event Runs and Reset
 
