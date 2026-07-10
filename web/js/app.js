@@ -32,6 +32,8 @@ const App = {
 
     currentPointsProfile: [],
 
+    pointProfilesById: {},
+
     currentMatches: [],
 
     currentRace: null,
@@ -339,15 +341,13 @@ async function loadEvents() {
 
         await loadCurrentEventRun();
 
-        await loadCurrentPointsProfile();
-
-        await loadCurrentMatches();
-
-        await loadCurrentRace();
-
-        await loadCurrentDoubleTeamMatch();
-
-        await loadCurrentDistance();
+        await Promise.all([
+            loadCurrentPointsProfile(),
+            loadCurrentMatches(),
+            loadCurrentRace(),
+            loadCurrentDoubleTeamMatch(),
+            loadCurrentDistance()
+        ]);
 
     }
     catch (error) {
@@ -434,19 +434,13 @@ async function selectEvent(id) {
 
         await loadCurrentEventRun();
 
-        await loadCurrentPointsProfile();
-
-
-        await loadCurrentMatches();
-
-
-        await loadCurrentRace();
-
-
-        await loadCurrentDoubleTeamMatch();
-
-
-        await loadCurrentDistance();
+        await Promise.all([
+            loadCurrentPointsProfile(),
+            loadCurrentMatches(),
+            loadCurrentRace(),
+            loadCurrentDoubleTeamMatch(),
+            loadCurrentDistance()
+        ]);
 
 
         clearEventMessage();
@@ -510,10 +504,27 @@ async function loadCurrentPointsProfile() {
     }
 
 
+    const profileId =
+        App.currentEvent.PointsProfileID;
+
+
+    if (App.pointProfilesById.hasOwnProperty(profileId)) {
+
+        App.currentPointsProfile =
+            App.pointProfilesById[profileId];
+
+        return;
+
+    }
+
+
     App.currentPointsProfile =
         await Api.getPointProfile(
-            App.currentEvent.PointsProfileID
+            profileId
         );
+
+    App.pointProfilesById[profileId] =
+        App.currentPointsProfile;
 
 }
 

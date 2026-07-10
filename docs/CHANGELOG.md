@@ -10,6 +10,7 @@
 ## Changed
 
 - Distance events use observed team positions rather than measured competitor attempts
+- Event loading now caches point profiles, parallelizes independent requests, and avoids repeating completed legacy migration scans
 
 ---
 

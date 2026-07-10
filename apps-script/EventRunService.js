@@ -52,6 +52,8 @@ const EventRunService = {
             let currentRun =
                 currentRuns[0] || null;
 
+            let createdRun = false;
+
 
             if (!currentRun && runs.length) {
 
@@ -94,23 +96,19 @@ const EventRunService = {
                     currentRun
                 );
 
+                createdRun = true;
+
             }
 
 
-            const firstRun =
-                runs.length
-                    ? [...runs, currentRun].sort(
-                        (a, b) =>
-                            Number(a.RunNumber) -
-                            Number(b.RunNumber)
-                    )[0]
-                    : currentRun;
+            if (createdRun) {
 
+                this.migrateLegacyRows(
+                    eventId,
+                    currentRun.ID
+                );
 
-            this.migrateLegacyRows(
-                eventId,
-                firstRun.ID
-            );
+            }
 
 
             return currentRun;
