@@ -228,6 +228,61 @@ const Database = {
 
     },
 
+
+    /**
+     * Removes every record matching a predicate.
+     * Rows are deleted from bottom to top to preserve indexes.
+     *
+     * @param {string} tableName
+     * @param {Function} predicate
+     * @returns {number}
+     */
+    removeWhere(tableName, predicate) {
+
+        const sheet = this.getSheet(tableName);
+
+        const values = sheet.getDataRange().getValues();
+
+
+        if (values.length < 2) {
+
+            return 0;
+
+        }
+
+
+        const headers = values[0];
+
+        let removedCount = 0;
+
+
+        for (let row = values.length - 1; row >= 1; row--) {
+
+            const record = {};
+
+
+            headers.forEach((header, column) => {
+
+                record[header] = values[row][column];
+
+            });
+
+
+            if (predicate(record)) {
+
+                sheet.deleteRow(row + 1);
+
+                removedCount++;
+
+            }
+
+        }
+
+
+        return removedCount;
+
+    },
+
     /**
      * Deletes a record.
      *

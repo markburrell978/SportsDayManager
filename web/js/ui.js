@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: ui.js
- * Version: 0.5.7
+ * Version: 0.6.0
  *
  * Shared UI rendering helpers.
  * ==========================================================
@@ -230,6 +230,13 @@ ${this.renderDistance(
         }
 
 
+        const resultsConfirmed =
+            eventRun.ResultsConfirmed === true;
+
+        const canConfirm =
+            eventRun.Status === "COMPLETE";
+
+
         return `
 <div class="event-run-summary">
 <div>
@@ -244,6 +251,19 @@ ${this.renderDistance(
         ${requestPending ? "disabled" : ""}>
     Reset Event
 </button>
+${canConfirm ? `
+<div class="result-confirmation">
+    ${resultsConfirmed ? `
+    <span class="results-confirmed">
+        Results Confirmed (${this.escapeHtml(eventRun.ConfirmedResultCount || 0)} rows)
+    </span>` : ""}
+    <button onclick="confirmCurrentEventResults()"
+            ${requestPending ? "disabled" : ""}>
+        ${resultsConfirmed
+            ? "Update Confirmed Results"
+            : "Confirm Results"}
+    </button>
+</div>` : ""}
 </div>`;
 
     },

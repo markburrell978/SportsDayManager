@@ -3,7 +3,7 @@
 Sports Day Manager
 
 File: main.css
-Version: 0.5.7
+Version: 0.6.0
 
 Purpose:
 Application styling.
@@ -362,6 +362,36 @@ Event Browser
     background: #8b1e1e;
 
     color: white;
+
+}
+
+
+.result-confirmation {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    gap: 10px;
+
+}
+
+
+.results-confirmed {
+
+    padding: 6px 10px;
+
+    color: #155724;
+
+    background: #d4edda;
+
+    border-radius: 12px;
+
+    font-size: 13px;
+
+    font-weight: bold;
 
 }
 

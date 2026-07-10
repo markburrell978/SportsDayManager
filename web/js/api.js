@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: api.js
- * Version: 0.5.7
+ * Version: 0.6.0
  *
  * REST API client.
  * ==========================================================
@@ -431,6 +431,19 @@ const Api = {
 
         return await this.post(
             "completeDistanceEventRun",
+            {
+                eventId,
+                eventRunId
+            }
+        );
+
+    },
+
+
+    async confirmEventResults(eventId, eventRunId) {
+
+        return await this.post(
+            "confirmEventResults",
             {
                 eventId,
                 eventRunId

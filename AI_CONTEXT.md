@@ -2,7 +2,7 @@
 
 Project: Sports Day Manager
 
-Version: v0.4.x
+Version: v0.6.0
 
 ---
 
@@ -76,6 +76,8 @@ Database.js is the only place allowed to access Google Sheets.
 API endpoints should be thin.
 
 Event execution data belongs to an Event Run. Events are permanent configuration; EventRuns are resettable executions. Every engine record is scoped by EventRunID, and reset creates a new current run without deleting historical rows.
+
+Completed Event Runs require explicit organiser confirmation before Results rows are generated. Results.Position is authoritative; PointsAwarded is a compatibility snapshot. Reconfirmation replaces only the current run's Results rows.
 
 ---
 

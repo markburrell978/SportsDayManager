@@ -40,9 +40,8 @@
 
 ## Phase 4 - Leaderboard
 
-- [ ] Points calculation
+- [x] Points calculation
 - [ ] Live leaderboard
-- [ ] Shareable leaderboard
 
 ---
 
@@ -52,3 +51,4 @@
 - [ ] Offline mode
 - [ ] Historical events
 - [ ] Authentication
+- [ ] Shareable leaderboard (v1.2 stretch)

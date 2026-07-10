@@ -151,6 +151,22 @@ Future scoring must associate Results with EventRunID and explicitly choose whic
 
 ---
 
+# 5.2 Result Confirmation and Points
+
+Completing an event engine does not write Results. Once the current Event Run is complete, the organiser explicitly confirms its results. `ResultService` validates the event, current run, engine state and point profile, derives placings, and replaces that run's Results rows under a script lock.
+
+Reconfirmation is idempotent and correctable: current-run rows are removed and regenerated, while historical runs remain untouched. A reset creates a new unconfirmed run because confirmation state is detected only from Results with the current EventRunID.
+
+Results.Position is the authoritative confirmed placing. PointsAwarded stores an integer compatibility snapshot from the point profile at confirmation time. The v0.7.0 leaderboard will calculate current totals from saved positions and current point profiles so later profile edits can affect totals.
+
+Missing profile positions award zero. Profile positions must be unique positive integers. Point values must be integers and may be positive, zero or negative. Duplicate positions or decimal values reject confirmation.
+
+Round Robin uses wins and competition ranking. Tied teams share a position and each receives the rounded-up average of points for all places occupied by the tie. Male and Female Heat & Final and Distance categories score independently. Each Double Team member receives the full points for its side's placing.
+
+Only results from the intended current Event Run should contribute to the future live leaderboard. v0.6.0 persists confirmed placings but does not implement the v0.7.0 leaderboard redesign.
+
+---
+
 # 6. Points
 
 Points are separate from event types.

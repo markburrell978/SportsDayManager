@@ -1,3 +1,21 @@
+# v0.6.0
+
+## Added
+
+- Explicit Confirm Results workflow for completed current Event Runs
+- Idempotent result replacement and lightweight reconfirmation
+- Placing extraction for all five event engines
+- Integer point-profile validation and compatibility point snapshots
+- Round-robin competition ranking and rounded-up averaged tie points
+
+## Changed
+
+- Engine completion no longer implies confirmed Results
+- Male and Female Heat & Final and Distance categories score independently
+- Double-team members each receive full points for their side's placing
+
+---
+
 # v0.5.7
 
 ## Added

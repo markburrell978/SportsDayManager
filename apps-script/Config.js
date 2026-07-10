@@ -108,6 +108,8 @@ const API_ACTIONS = Object.freeze({
 
     COMPLETE_DISTANCE_EVENT_RUN: "completeDistanceEventRun",
 
+    CONFIRM_EVENT_RESULTS: "confirmEventResults",
+
     GET_LEADERBOARD: "getLeaderboard",
 
     CREATE_COMPETITOR: "createCompetitor",

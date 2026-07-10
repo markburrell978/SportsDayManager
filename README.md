@@ -9,7 +9,7 @@ A reusable web application for managing an annual Sports Day.
 - Team management
 - Competitor management
 - Multiple event types
-- Live leaderboard
+- Confirmed event placings and points snapshots
 - Google Sheets database
 - Mobile-friendly interface
 
@@ -40,6 +40,7 @@ sports-day-manager/
 │   ├── CompetitorService.js
 │   ├── EventService.js
 │   ├── LeaderboardService.js
+│   ├── ResultService.js
 │   ├── Utils.js
 │   └── appsscript.json
 │
@@ -69,4 +70,4 @@ clasp push
 
 ## Current Version
 
-v0.2.0
+v0.6.0

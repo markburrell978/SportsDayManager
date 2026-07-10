@@ -51,8 +51,8 @@ Version: 0.1
 | Column | Type | Required | Description |
 |---------|------|----------|-------------|
 | ID | String | Yes | Points profile identifier |
-| Position | Number | Yes | Finishing position |
-| Points | Number | Yes | Points awarded |
+| Position | Positive Integer | Yes | Finishing position; unique within a profile ID |
+| Points | Integer | Yes | Points awarded; may be positive, zero or negative |
 
 Example:
 
@@ -61,6 +61,8 @@ Example:
 | PP_STANDARD | 1 | 10 |
 | PP_STANDARD | 2 | 6 |
 | PP_STANDARD | 3 | 3 |
+
+Undefined positions award zero points. Duplicate Position rows within the same profile ID are invalid because the applicable point value would be ambiguous.
 
 ---
 
@@ -92,7 +94,11 @@ Exactly one row per EventID must have `IsCurrent = TRUE`. `RunNumber` must be un
 | EventRunID | UUID | Yes | References EventRuns.ID |
 | TeamID | String | Yes | References Teams.ID |
 | Position | Number | Yes | Final placing |
-| PointsAwarded | Number | Yes | Points awarded at the time |
+| PointsAwarded | Integer | Yes | Compatibility snapshot of points awarded at confirmation time |
+
+Results are created only through explicit organiser confirmation of a completed current Event Run. Reconfirmation replaces that run's Results rows. `Position` is the authoritative saved placing. `PointsAwarded` is a compatibility snapshot; future live leaderboard totals will use saved positions and the event's current point profile.
+
+Only Results belonging to the intended current Event Run should contribute to future leaderboard totals.
 
 ---
 

@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: app.js
- * Version: 0.5.7
+ * Version: 0.6.0
  *
  * Main application controller.
  * ==========================================================
@@ -1659,6 +1659,60 @@ async function resetCurrentEvent() {
 
         showEventMessage(
             `Event reset successfully. Run ${newRun.RunNumber} is ready.`
+        );
+
+    }
+    catch (error) {
+
+        showEventMessage(
+            error.message,
+            true
+        );
+
+    }
+    finally {
+
+        setEventRequestPending(false);
+
+    }
+
+}
+
+
+
+async function confirmCurrentEventResults() {
+
+    if (
+        !App.currentEvent ||
+        !App.currentEventRun ||
+        App.currentEventRun.Status !== "COMPLETE"
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        setEventRequestPending(true);
+
+        const confirmation =
+            await Api.confirmEventResults(
+                App.currentEvent.ID,
+                App.currentEventRun.ID
+            );
+
+
+        App.currentEventRun.ResultsConfirmed = true;
+
+        App.currentEventRun.ConfirmedResultCount =
+            confirmation.resultCount;
+
+
+        showEventMessage(
+            confirmation.message ||
+                "Results confirmed."
         );
 
     }

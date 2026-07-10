@@ -1,6 +1,6 @@
 # Sports Day Manager API
 
-Version: 0.5.7
+Version: 0.6.0
 
 ---
 
@@ -399,7 +399,7 @@ Payload:
 
 ## getCurrentEventRun
 
-Returns the current run for an event. If the event has no run, Run 1 is created and legacy rows with blank EventRunID are migrated to it.
+Returns the current run for an event. If the event has no run, Run 1 is created and legacy rows with blank EventRunID are migrated to it. The response also includes transient `ResultsConfirmed` and `ConfirmedResultCount` fields for the current run.
 
 Method: `POST`
 
@@ -503,3 +503,32 @@ Payload:
 ```
 
 Completed distance runs cannot be edited. Corrections require the existing Reset Event workflow.
+
+---
+
+# Result Confirmation
+
+## confirmEventResults
+
+Calculates and persists team placings for a completed current Event Run. Reconfirmation removes and regenerates only that run's Results rows.
+
+Method: `POST`
+
+Action: `confirmEventResults`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_EXAMPLE",
+    "eventRunId": "run-uuid"
+}
+```
+
+The response includes whether existing rows were replaced, the result count, the generated rows and a confirmation message.
+
+Point-profile positions must be unique positive integers. Point values must be integers and may be positive, zero or negative. Undefined placing positions award zero.
+
+Round-robin ties use competition ranking. Each tied team receives the rounded-up average of the point values for every place occupied by the tied group.
+
+Male and Female Heat & Final and Distance categories are confirmed independently and may create two rows for the same team. Double-team members each receive the full points for their side's placing.

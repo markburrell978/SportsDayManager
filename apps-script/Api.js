@@ -303,10 +303,15 @@ function handleRequest(request) {
 
             case API_ACTIONS.GET_CURRENT_EVENT_RUN:
 
-                response = Utils.success(
+                const currentEventRun =
                     EventRunService.getCurrent(
                         request.payload.eventId ||
                         request.payload.EventID
+                    );
+
+                response = Utils.success(
+                    ResultService.addConfirmationStatus(
+                        currentEventRun
                     )
                 );
 
@@ -363,6 +368,20 @@ function handleRequest(request) {
 
                 response = Utils.success(
                     DistanceService.completeEventRun(
+                        request.payload.eventId ||
+                        request.payload.EventID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.CONFIRM_EVENT_RESULTS:
+
+                response = Utils.success(
+                    ResultService.confirm(
                         request.payload.eventId ||
                         request.payload.EventID,
                         request.payload.eventRunId ||
