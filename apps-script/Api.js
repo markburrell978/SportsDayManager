@@ -153,6 +153,20 @@ function handleRequest(request) {
                 break;
 
 
+            case API_ACTIONS.CREATE_TOURNAMENT_FIXTURES:
+
+                response = Utils.success(
+                    EventService.createTournamentFixtures(
+                        request.payload.eventId ||
+                        request.payload.EventID,
+                        request.payload.teamIds ||
+                        request.payload.TeamIDs
+                    )
+                );
+
+                break;
+
+
             case API_ACTIONS.UPDATE_MATCH_WINNER:
 
                 response = Utils.success(

@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: api.js
- * Version: 0.5.2
+ * Version: 0.5.3
  *
  * REST API client.
  * ==========================================================
@@ -187,6 +187,22 @@ const Api = {
             {
 
                 eventId
+
+            }
+        );
+
+    },
+
+
+    async createTournamentFixtures(eventId, teamIds) {
+
+        return await this.post(
+            "createTournamentFixtures",
+            {
+
+                eventId,
+
+                teamIds
 
             }
         );

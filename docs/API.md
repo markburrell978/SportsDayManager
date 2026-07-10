@@ -1,6 +1,6 @@
 # Sports Day Manager API
 
-Version: 0.5.2
+Version: 0.5.3
 
 ---
 
@@ -195,3 +195,31 @@ Payload:
 ```
 
 This updates `WinnerID` and sets `Complete` to `TRUE`.
+
+For a `TOURNAMENT` event, saving the second semi-final winner also creates the third-place playoff and final if they do not already exist. Semi-final winners cannot be changed after those dependent matches have been created.
+
+---
+
+## createTournamentFixtures
+
+Creates two semi-final fixtures for a four-team `TOURNAMENT` event.
+
+Method: `POST`
+
+Action: `createTournamentFixtures`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_TUG_OF_WAR",
+    "teamIds": [
+        "TEAM_RED",
+        "TEAM_BLUE",
+        "TEAM_GREEN",
+        "TEAM_YELLOW"
+    ]
+}
+```
+
+The team IDs are ordered as semi-final 1 team 1, semi-final 1 team 2, semi-final 2 team 1, and semi-final 2 team 2. All four IDs must be unique active teams. If tournament fixtures already exist, the existing matches are returned without creating duplicates.

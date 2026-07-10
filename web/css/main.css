@@ -3,7 +3,7 @@
 Sports Day Manager
 
 File: main.css
-Version: 0.5.0
+Version: 0.5.3
 
 Purpose:
 Application styling.
@@ -293,6 +293,113 @@ Event Browser
 .event-details-card h3 {
 
     margin-top: 0;
+
+}
+
+
+.event-details-card h5 {
+
+    margin-bottom: 8px;
+
+}
+
+
+.event-message {
+
+    padding: 10px;
+
+    border-radius: 6px;
+
+}
+
+
+.success {
+
+    color: #155724;
+
+    background: #d4edda;
+
+}
+
+
+.tournament-pairings {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 15px;
+
+    margin: 15px 0;
+
+}
+
+
+.tournament-pairings label {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+
+    font-weight: bold;
+
+}
+
+
+.tournament-pairings select,
+.event-details-card td select {
+
+    padding: 8px;
+
+}
+
+
+.table-scroll {
+
+    overflow-x: auto;
+
+}
+
+
+.tournament-placings {
+
+    margin-top: 20px;
+
+    padding: 15px;
+
+    border-radius: 6px;
+
+    background: #eef5ff;
+
+}
+
+
+.tournament-placings ol {
+
+    margin-bottom: 0;
+
+}
+
+
+button:disabled,
+select:disabled {
+
+    cursor: not-allowed;
+
+    opacity: 0.65;
+
+}
+
+
+@media (max-width: 650px) {
+
+    .tournament-pairings {
+
+        grid-template-columns: 1fr;
+
+    }
 
 }
 

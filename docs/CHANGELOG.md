@@ -1,3 +1,19 @@
+# v0.5.3
+
+## Added
+
+- Four-team knockout tournament setup with organiser-selected semi-final pairings
+- Automatic final and third-place playoff creation after both semi-finals complete
+- Tournament match result entry and final placings display
+- Validation for active, unique tournament teams and tournament match winners
+
+## Changed
+
+- Shared match loading, rendering and winner-saving behavior now supports Round Robin and Tournament events
+- Completed semi-finals are locked once dependent tournament matches exist
+
+---
+
 # v0.5.2
 
 ## Added

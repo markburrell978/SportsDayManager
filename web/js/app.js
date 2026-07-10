@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: app.js
- * Version: 0.5.2
+ * Version: 0.5.3
  *
  * Main application controller.
  * ==========================================================
@@ -30,7 +30,13 @@ const App = {
 
     currentPointsProfile: [],
 
-    currentMatches: []
+    currentMatches: [],
+
+    eventRequestPending: false,
+
+    eventMessage: "",
+
+    eventMessageIsError: false
 
 };
 
@@ -274,6 +280,8 @@ async function loadEvents() {
 
         App.currentMatches = [];
 
+        clearEventMessage();
+
         renderEvents();
 
         return;
@@ -318,7 +326,10 @@ function renderEvents() {
         App.currentEvent,
         App.currentPointsProfile,
         App.currentMatches,
-        App.teams
+        App.teams,
+        App.eventRequestPending,
+        App.eventMessage,
+        App.eventMessageIsError
     );
 
 }
@@ -341,6 +352,8 @@ async function selectEvent(id) {
 
 
     App.currentEvent = event;
+
+    clearEventMessage();
 
     await loadCurrentPointsProfile();
 
@@ -379,7 +392,10 @@ async function loadCurrentMatches() {
 
     if (
         !App.currentEvent ||
-        App.currentEvent.EventType !== "ROUND_ROBIN"
+        ![
+            "ROUND_ROBIN",
+            "TOURNAMENT"
+        ].includes(App.currentEvent.EventType)
     ) {
 
         App.currentMatches = [];
@@ -407,13 +423,158 @@ async function generateRoundRobinFixtures() {
     }
 
 
-    await Api.createRoundRobinFixtures(
-        App.currentEvent.ID
+    try {
+
+        setEventRequestPending(true);
+
+        await Api.createRoundRobinFixtures(
+            App.currentEvent.ID
+        );
+
+        await loadCurrentMatches();
+
+        showEventMessage(
+            "Round robin fixtures are ready."
+        );
+
+    }
+    catch (error) {
+
+        showEventMessage(
+            error.message,
+            true
+        );
+
+    }
+    finally {
+
+        setEventRequestPending(false);
+
+    }
+
+}
+
+
+
+async function generateTournamentFixtures() {
+
+    if (
+        !App.currentEvent ||
+        App.currentEvent.EventType !== "TOURNAMENT"
+    ) {
+
+        return;
+
+    }
+
+
+    const teamIds = [
+        "tournament-semi-1-team-1",
+        "tournament-semi-1-team-2",
+        "tournament-semi-2-team-1",
+        "tournament-semi-2-team-2"
+    ].map(id =>
+        document.getElementById(id).value
     );
 
-    await loadCurrentMatches();
 
-    renderEvents();
+    try {
+
+        validateTournamentPairings(teamIds);
+
+        setEventRequestPending(true);
+
+        await Api.createTournamentFixtures(
+            App.currentEvent.ID,
+            teamIds
+        );
+
+        await loadCurrentMatches();
+
+        showEventMessage(
+            "Tournament semi-finals created."
+        );
+
+    }
+    catch (error) {
+
+        showEventMessage(
+            error.message,
+            true
+        );
+
+    }
+    finally {
+
+        setEventRequestPending(false);
+
+    }
+
+}
+
+
+
+function validateTournamentPairings(teamIds) {
+
+    if (App.teams.length !== 4) {
+
+        throw new Error(
+            "A tournament requires exactly four active teams."
+        );
+
+    }
+
+
+    if (teamIds.some(teamId => !teamId)) {
+
+        throw new Error(
+            "Assign all four active teams to the semi-finals."
+        );
+
+    }
+
+
+    if (new Set(teamIds).size !== 4) {
+
+        throw new Error(
+            "Each team must appear exactly once."
+        );
+
+    }
+
+}
+
+
+
+function updateTournamentPairingOptions() {
+
+    const selectIds = [
+        "tournament-semi-1-team-1",
+        "tournament-semi-1-team-2",
+        "tournament-semi-2-team-1",
+        "tournament-semi-2-team-2"
+    ];
+
+    const selects =
+        selectIds.map(id =>
+            document.getElementById(id)
+        );
+
+    const selectedTeamIds =
+        selects.map(select => select.value);
+
+
+    selects.forEach(select => {
+
+        Array.from(select.options).forEach(option => {
+
+            option.disabled =
+                option.value !== select.value &&
+                selectedTeamIds.includes(option.value);
+
+        });
+
+    });
 
 }
 
@@ -428,14 +589,65 @@ async function saveMatchWinner(matchId, winnerId) {
     }
 
 
-    await Api.updateMatchWinner(
-        matchId,
-        winnerId
-    );
+    try {
 
-    await loadCurrentMatches();
+        setEventRequestPending(true);
+
+        await Api.updateMatchWinner(
+            matchId,
+            winnerId
+        );
+
+        await loadCurrentMatches();
+
+        showEventMessage(
+            "Match winner saved."
+        );
+
+    }
+    catch (error) {
+
+        showEventMessage(
+            error.message,
+            true
+        );
+
+    }
+    finally {
+
+        setEventRequestPending(false);
+
+    }
+
+}
+
+
+
+function setEventRequestPending(isPending) {
+
+    App.eventRequestPending = isPending;
 
     renderEvents();
+
+}
+
+
+
+function showEventMessage(message, isError = false) {
+
+    App.eventMessage = message;
+
+    App.eventMessageIsError = isError;
+
+}
+
+
+
+function clearEventMessage() {
+
+    App.eventMessage = "";
+
+    App.eventMessageIsError = false;
 
 }
 

@@ -152,6 +152,20 @@ Future versions may support additional positions.
 
 ---
 
+# 6.1 Knockout Tournament Engine
+
+Four-team `TOURNAMENT` events use match rows with numeric round values:
+
+- Round 1: two semi-finals
+- Round 2: third-place playoff
+- Round 3: final
+
+The organiser chooses the initial semi-final pairings. Only the two semi-final rows are created during setup. After both winners are recorded, `EventService` determines the losing and winning teams and creates the third-place playoff and final exactly once.
+
+Tournament progression is backend business logic. The frontend renders the returned matches and does not calculate or persist progression. Semi-final results cannot be changed after dependent matches exist. Tournament placings are display-only in v0.5.3; no Results rows or points are created.
+
+---
+
 # 7. IDs
 
 Static records use readable IDs.

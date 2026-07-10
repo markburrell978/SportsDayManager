@@ -30,7 +30,7 @@
 - [x] Browse events
 - [x] Prepare selected event
 - [x] Round Robin
-- [ ] Tournament
+- [x] Tournament
 - [ ] Heat & Final
 - [ ] Distance Competition
 - [ ] Double Team

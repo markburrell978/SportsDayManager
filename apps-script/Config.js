@@ -70,6 +70,8 @@ const API_ACTIONS = Object.freeze({
 
     CREATE_ROUND_ROBIN_FIXTURES: "createRoundRobinFixtures",
 
+    CREATE_TOURNAMENT_FIXTURES: "createTournamentFixtures",
+
     UPDATE_MATCH_WINNER: "updateMatchWinner",
 
     GET_LEADERBOARD: "getLeaderboard",
