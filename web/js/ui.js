@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: ui.js
- * Version: 0.5.5
+ * Version: 0.5.6
  *
  * Shared UI rendering helpers.
  * ==========================================================
@@ -118,6 +118,7 @@ const EventUI = {
      * @param {boolean} requestPending
      * @param {string} message
      * @param {boolean} messageIsError
+     * @param {Object|null} eventRun
      * @param {Object|null} race
      * @param {string} raceCategory
      * @param {Object|null} doubleTeamMatch
@@ -130,6 +131,7 @@ const EventUI = {
         requestPending = false,
         message = "",
         messageIsError = false,
+        eventRun = null,
         race = null,
         raceCategory = "Male",
         doubleTeamMatch = null
@@ -174,6 +176,8 @@ const EventUI = {
     ${this.formatBoolean(event.Enabled)}
 </p>
 
+${this.renderEventRun(eventRun, requestPending)}
+
 ${this.renderPointsProfile(pointsProfile)}
 
 ${this.renderEventMessage(message, messageIsError)}
@@ -200,6 +204,34 @@ ${this.renderDoubleTeam(
 </div>
 
 `;
+
+    },
+
+
+    renderEventRun(eventRun, requestPending) {
+
+        if (!eventRun) {
+
+            return "";
+
+        }
+
+
+        return `
+<div class="event-run-summary">
+<div>
+    <strong>Current run:</strong>
+    Run ${this.escapeHtml(eventRun.RunNumber)}
+    <span class="event-run-status">
+        ${this.escapeHtml(eventRun.Status)}
+    </span>
+</div>
+<button class="reset-event-button"
+        onclick="resetCurrentEvent()"
+        ${requestPending ? "disabled" : ""}>
+    Reset Event
+</button>
+</div>`;
 
     },
 

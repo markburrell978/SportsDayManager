@@ -75,6 +75,8 @@ Database.js is the only place allowed to access Google Sheets.
 
 API endpoints should be thin.
 
+Event execution data belongs to an Event Run. Events are permanent configuration; EventRuns are resettable executions. Every engine record is scoped by EventRunID, and reset creates a new current run without deleting historical rows.
+
 ---
 
 # Development Workflow

@@ -134,7 +134,9 @@ function handleRequest(request) {
                 response = Utils.success(
                     EventService.getMatchesForEvent(
                         request.payload.eventId ||
-                        request.payload.EventID
+                        request.payload.EventID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID
                     )
                 );
 
@@ -146,7 +148,9 @@ function handleRequest(request) {
                 response = Utils.success(
                     EventService.createRoundRobinFixtures(
                         request.payload.eventId ||
-                        request.payload.EventID
+                        request.payload.EventID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID
                     )
                 );
 
@@ -159,6 +163,8 @@ function handleRequest(request) {
                     EventService.createTournamentFixtures(
                         request.payload.eventId ||
                         request.payload.EventID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID,
                         request.payload.teamIds ||
                         request.payload.TeamIDs
                     )
@@ -174,7 +180,9 @@ function handleRequest(request) {
                         request.payload.matchId ||
                         request.payload.ID,
                         request.payload.winnerId ||
-                        request.payload.WinnerID
+                        request.payload.WinnerID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID
                     )
                 );
 
@@ -186,7 +194,9 @@ function handleRequest(request) {
                 response = Utils.success(
                     RaceService.getForEvent(
                         request.payload.eventId ||
-                        request.payload.EventID
+                        request.payload.EventID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID
                     )
                 );
 
@@ -198,7 +208,9 @@ function handleRequest(request) {
                 response = Utils.success(
                     RaceService.startEvent(
                         request.payload.eventId ||
-                        request.payload.EventID
+                        request.payload.EventID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID
                     )
                 );
 
@@ -211,6 +223,8 @@ function handleRequest(request) {
                     RaceService.saveHeatWinner(
                         request.payload.eventId ||
                         request.payload.EventID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID,
                         request.payload.competitionGender ||
                         request.payload.CompetitionGender,
                         request.payload.teamId ||
@@ -229,6 +243,8 @@ function handleRequest(request) {
                     RaceService.saveFinalPositions(
                         request.payload.eventId ||
                         request.payload.EventID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID,
                         request.payload.competitionGender ||
                         request.payload.CompetitionGender,
                         request.payload.positions ||
@@ -244,7 +260,9 @@ function handleRequest(request) {
                 response = Utils.success(
                     DoubleTeamService.getForEvent(
                         request.payload.eventId ||
-                        request.payload.EventID
+                        request.payload.EventID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID
                     )
                 );
 
@@ -257,6 +275,8 @@ function handleRequest(request) {
                     DoubleTeamService.savePairing(
                         request.payload.eventId ||
                         request.payload.EventID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID,
                         request.payload.side1TeamIds ||
                         request.payload.Side1TeamIDs
                     )
@@ -271,8 +291,36 @@ function handleRequest(request) {
                     DoubleTeamService.saveWinner(
                         request.payload.eventId ||
                         request.payload.EventID,
+                        request.payload.eventRunId ||
+                        request.payload.EventRunID,
                         request.payload.winnerSide ||
                         request.payload.WinnerSide
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.GET_CURRENT_EVENT_RUN:
+
+                response = Utils.success(
+                    EventRunService.getCurrent(
+                        request.payload.eventId ||
+                        request.payload.EventID
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.RESET_EVENT:
+
+                response = Utils.success(
+                    EventRunService.reset(
+                        request.payload.eventId ||
+                        request.payload.EventID,
+                        request.payload.currentEventRunId ||
+                        request.payload.CurrentEventRunID
                     )
                 );
 

@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: api.js
- * Version: 0.5.5
+ * Version: 0.5.6
  *
  * REST API client.
  * ==========================================================
@@ -166,13 +166,15 @@ const Api = {
     },
 
 
-    async getMatchesForEvent(eventId) {
+    async getMatchesForEvent(eventId, eventRunId) {
 
         return await this.post(
             "getMatchesForEvent",
             {
 
-                eventId
+                eventId,
+
+                eventRunId
 
             }
         );
@@ -180,13 +182,15 @@ const Api = {
     },
 
 
-    async createRoundRobinFixtures(eventId) {
+    async createRoundRobinFixtures(eventId, eventRunId) {
 
         return await this.post(
             "createRoundRobinFixtures",
             {
 
-                eventId
+                eventId,
+
+                eventRunId
 
             }
         );
@@ -194,13 +198,15 @@ const Api = {
     },
 
 
-    async createTournamentFixtures(eventId, teamIds) {
+    async createTournamentFixtures(eventId, eventRunId, teamIds) {
 
         return await this.post(
             "createTournamentFixtures",
             {
 
                 eventId,
+
+                eventRunId,
 
                 teamIds
 
@@ -210,7 +216,7 @@ const Api = {
     },
 
 
-    async updateMatchWinner(matchId, winnerId) {
+    async updateMatchWinner(matchId, winnerId, eventRunId) {
 
         return await this.post(
             "updateMatchWinner",
@@ -218,7 +224,9 @@ const Api = {
 
                 matchId,
 
-                winnerId
+                winnerId,
+
+                eventRunId
 
             }
         );
@@ -226,13 +234,15 @@ const Api = {
     },
 
 
-    async getRaceResultsForEvent(eventId) {
+    async getRaceResultsForEvent(eventId, eventRunId) {
 
         return await this.post(
             "getRaceResultsForEvent",
             {
 
-                eventId
+                eventId,
+
+                eventRunId
 
             }
         );
@@ -240,13 +250,15 @@ const Api = {
     },
 
 
-    async startRaceEvent(eventId) {
+    async startRaceEvent(eventId, eventRunId) {
 
         return await this.post(
             "startRaceEvent",
             {
 
-                eventId
+                eventId,
+
+                eventRunId
 
             }
         );
@@ -256,6 +268,7 @@ const Api = {
 
     async saveRaceHeatWinner(
         eventId,
+        eventRunId,
         competitionGender,
         teamId,
         competitorId
@@ -266,6 +279,8 @@ const Api = {
             {
 
                 eventId,
+
+                eventRunId,
 
                 competitionGender,
 
@@ -281,6 +296,7 @@ const Api = {
 
     async saveRaceFinalPositions(
         eventId,
+        eventRunId,
         competitionGender,
         positions
     ) {
@@ -290,6 +306,8 @@ const Api = {
             {
 
                 eventId,
+
+                eventRunId,
 
                 competitionGender,
 
@@ -301,13 +319,15 @@ const Api = {
     },
 
 
-    async getDoubleTeamMatchForEvent(eventId) {
+    async getDoubleTeamMatchForEvent(eventId, eventRunId) {
 
         return await this.post(
             "getDoubleTeamMatchForEvent",
             {
 
-                eventId
+                eventId,
+
+                eventRunId
 
             }
         );
@@ -315,13 +335,15 @@ const Api = {
     },
 
 
-    async saveDoubleTeamPairing(eventId, side1TeamIds) {
+    async saveDoubleTeamPairing(eventId, eventRunId, side1TeamIds) {
 
         return await this.post(
             "saveDoubleTeamPairing",
             {
 
                 eventId,
+
+                eventRunId,
 
                 side1TeamIds
 
@@ -331,7 +353,7 @@ const Api = {
     },
 
 
-    async saveDoubleTeamWinner(eventId, winnerSide) {
+    async saveDoubleTeamWinner(eventId, eventRunId, winnerSide) {
 
         return await this.post(
             "saveDoubleTeamWinner",
@@ -339,8 +361,33 @@ const Api = {
 
                 eventId,
 
+                eventRunId,
+
                 winnerSide
 
+            }
+        );
+
+    },
+
+
+    async getCurrentEventRun(eventId) {
+
+        return await this.post(
+            "getCurrentEventRun",
+            { eventId }
+        );
+
+    },
+
+
+    async resetEvent(eventId, currentEventRunId) {
+
+        return await this.post(
+            "resetEvent",
+            {
+                eventId,
+                currentEventRunId
             }
         );
 

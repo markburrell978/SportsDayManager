@@ -77,12 +77,18 @@ const EventService = {
      * @param {string} eventId
      * @returns {Object[]}
      */
-    getMatchesForEvent(eventId) {
+    getMatchesForEvent(eventId, eventRunId) {
+
+        EventRunService.assertCurrent(
+            eventId,
+            eventRunId
+        );
 
         return Database
             .get(TABLES.MATCHES)
             .filter(match =>
-                match.EventID === eventId
+                match.EventID === eventId &&
+                match.EventRunID === eventRunId
             );
 
     },
@@ -94,7 +100,7 @@ const EventService = {
      * @param {string} eventId
      * @returns {Object[]}
      */
-    createRoundRobinFixtures(eventId) {
+    createRoundRobinFixtures(eventId, eventRunId) {
 
         const event =
             this.getById(eventId);
@@ -119,7 +125,10 @@ const EventService = {
 
 
         const existingMatches =
-            this.getMatchesForEvent(eventId);
+            this.getMatchesForEvent(
+                eventId,
+                eventRunId
+            );
 
 
         if (existingMatches.length) {
@@ -151,6 +160,8 @@ const EventService = {
 
                     EventID: eventId,
 
+                    EventRunID: eventRunId,
+
                     Round: round,
 
                     Team1ID: teams[teamIndex].ID,
@@ -179,6 +190,13 @@ const EventService = {
         }
 
 
+        EventRunService.updateStatus(
+            eventId,
+            eventRunId,
+            EVENT_STATUS.IN_PROGRESS
+        );
+
+
         return matches;
 
     },
@@ -193,7 +211,7 @@ const EventService = {
      * @param {string[]} teamIds
      * @returns {Object[]}
      */
-    createTournamentFixtures(eventId, teamIds) {
+    createTournamentFixtures(eventId, eventRunId, teamIds) {
 
         const event =
             this.getById(eventId);
@@ -218,7 +236,10 @@ const EventService = {
 
 
         const existingMatches =
-            this.getMatchesForEvent(eventId);
+            this.getMatchesForEvent(
+                eventId,
+                eventRunId
+            );
 
 
         if (existingMatches.length) {
@@ -283,6 +304,7 @@ const EventService = {
 
             this.buildMatch(
                 eventId,
+                eventRunId,
                 TOURNAMENT_ROUNDS.SEMI_FINAL,
                 teamIds[0],
                 teamIds[1]
@@ -290,6 +312,7 @@ const EventService = {
 
             this.buildMatch(
                 eventId,
+                eventRunId,
                 TOURNAMENT_ROUNDS.SEMI_FINAL,
                 teamIds[2],
                 teamIds[3]
@@ -306,6 +329,13 @@ const EventService = {
         );
 
 
+        EventRunService.updateStatus(
+            eventId,
+            eventRunId,
+            EVENT_STATUS.IN_PROGRESS
+        );
+
+
         return matches;
 
     },
@@ -318,7 +348,7 @@ const EventService = {
      * @param {string} winnerId
      * @returns {Object}
      */
-    updateMatchWinner(matchId, winnerId) {
+    updateMatchWinner(matchId, winnerId, eventRunId) {
 
         const match =
             Database.findById(
@@ -331,6 +361,21 @@ const EventService = {
 
             throw new Error(
                 "Match not found."
+            );
+
+        }
+
+
+        EventRunService.assertCurrent(
+            match.EventID,
+            eventRunId
+        );
+
+
+        if (match.EventRunID !== eventRunId) {
+
+            throw new Error(
+                "Match does not belong to the current event run."
             );
 
         }
@@ -376,7 +421,10 @@ const EventService = {
         ) {
 
             const dependentMatches =
-                this.getMatchesForEvent(match.EventID)
+                this.getMatchesForEvent(
+                    match.EventID,
+                    eventRunId
+                )
                     .filter(item =>
                         Number(item.Round) !==
                             TOURNAMENT_ROUNDS.SEMI_FINAL
@@ -399,6 +447,8 @@ const EventService = {
             ID: match.ID,
 
             EventID: match.EventID,
+
+            EventRunID: match.EventRunID,
 
             Round: match.Round,
 
@@ -432,10 +482,34 @@ const EventService = {
         if (event.EventType === EVENT_TYPES.TOURNAMENT) {
 
             this.createTournamentPlacementMatches(
-                match.EventID
+                match.EventID,
+                eventRunId
             );
 
         }
+
+
+        const currentMatches =
+            this.getMatchesForEvent(
+                match.EventID,
+                eventRunId
+            );
+
+        const allComplete =
+            currentMatches.length > 0 &&
+            currentMatches.every(item =>
+                item.Complete === true ||
+                item.Complete === "TRUE"
+            );
+
+
+        EventRunService.updateStatus(
+            match.EventID,
+            eventRunId,
+            allComplete
+                ? EVENT_STATUS.COMPLETE
+                : EVENT_STATUS.IN_PROGRESS
+        );
 
 
         return updatedMatch;
@@ -450,10 +524,13 @@ const EventService = {
      * @param {string} eventId
      * @returns {Object[]}
      */
-    createTournamentPlacementMatches(eventId) {
+    createTournamentPlacementMatches(eventId, eventRunId) {
 
         const matches =
-            this.getMatchesForEvent(eventId);
+            this.getMatchesForEvent(
+                eventId,
+                eventRunId
+            );
 
         const semiFinals =
             matches.filter(match =>
@@ -512,6 +589,7 @@ const EventService = {
                 const newMatch =
                     this.buildMatch(
                         eventId,
+                        eventRunId,
                         fixture.round,
                         fixture.team1Id,
                         fixture.team2Id
@@ -545,13 +623,21 @@ const EventService = {
      * @param {string} team2Id
      * @returns {Object}
      */
-    buildMatch(eventId, round, team1Id, team2Id) {
+    buildMatch(
+        eventId,
+        eventRunId,
+        round,
+        team1Id,
+        team2Id
+    ) {
 
         return {
 
             ID: Utils.uuid(),
 
             EventID: eventId,
+
+            EventRunID: eventRunId,
 
             Round: round,
 

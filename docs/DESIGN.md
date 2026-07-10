@@ -135,6 +135,22 @@ Event types do NOT define points.
 
 ---
 
+# 5.1 Event Runs and Reset
+
+An Event is permanent configuration. An EventRun is one execution of that event. Every event has exactly one current run, and each reset closes the current run and creates the next numbered run without deleting historical data.
+
+EventRuns.Status is the authoritative execution status. Events.Status mirrors the current run for backward compatibility. `EventRunService` exclusively synchronises these values and owns current-run creation, legacy migration and reset locking.
+
+Matches, RaceResults, DoubleTeamMatches, Attempts, Results and EventCompetitors retain EventID and also use EventRunID. All engine reads, inserts, updates and duplicate checks are scoped to the supplied current run.
+
+When an event without an EventRun is selected, Run 1 is created under an Apps Script lock. Existing related rows whose EventRunID is blank are assigned to Run 1. The migration is idempotent and never changes rows already owned by a run.
+
+Reset requires the currently displayed EventRunID. Inside a script lock, the backend rejects stale IDs, marks the previous run non-current and creates the next current run in NOT_STARTED state. Historical engine rows are untouched.
+
+Future scoring must associate Results with EventRunID and explicitly choose which completed run contributes to the leaderboard. Reset itself does not create Results or award points.
+
+---
+
 # 6. Points
 
 Points are separate from event types.
@@ -217,6 +233,8 @@ Matches
 RaceResults
 
 DoubleTeamMatches
+
+EventRuns
 
 ---
 

@@ -1,6 +1,6 @@
 # Sports Day Manager API
 
-Version: 0.5.5
+Version: 0.5.6
 
 ---
 
@@ -139,6 +139,8 @@ Response data is an array because point profiles use one row per position.
 
 # Matches
 
+All match actions require the current `eventRunId`. Match reads, fixture duplicate checks and winner updates are scoped to that run.
+
 ## getMatchesForEvent
 
 Returns match rows for an event.
@@ -151,7 +153,8 @@ Payload:
 
 ```json
 {
-    "eventId": "EV_CROQUET"
+    "eventId": "EV_CROQUET",
+    "eventRunId": "run-uuid"
 }
 ```
 
@@ -169,7 +172,8 @@ Payload:
 
 ```json
 {
-    "eventId": "EV_CROQUET"
+    "eventId": "EV_CROQUET",
+    "eventRunId": "run-uuid"
 }
 ```
 
@@ -190,7 +194,8 @@ Payload:
 ```json
 {
     "matchId": "match-uuid",
-    "winnerId": "TEAM_RED"
+    "winnerId": "TEAM_RED",
+    "eventRunId": "run-uuid"
 }
 ```
 
@@ -213,6 +218,7 @@ Payload:
 ```json
 {
     "eventId": "EV_TUG_OF_WAR",
+    "eventRunId": "run-uuid",
     "teamIds": [
         "TEAM_RED",
         "TEAM_BLUE",
@@ -228,6 +234,8 @@ The team IDs are ordered as semi-final 1 team 1, semi-final 1 team 2, semi-final
 
 # Heats & Final Races
 
+All race actions require the current `eventRunId`. RaceResults and EventCompetitors are isolated to that run.
+
 ## getRaceResultsForEvent
 
 Returns persistent race-result rows and the competitors eligible for a `HEAT_FINAL` event. EventCompetitors mappings restrict the eligible list when mappings exist for the event.
@@ -240,7 +248,8 @@ Payload:
 
 ```json
 {
-    "eventId": "EV_EGG_AND_SPOON"
+    "eventId": "EV_EGG_AND_SPOON",
+    "eventRunId": "run-uuid"
 }
 ```
 
@@ -259,6 +268,7 @@ Payload:
 ```json
 {
     "eventId": "EV_EGG_AND_SPOON",
+    "eventRunId": "run-uuid",
     "competitionGender": "Female",
     "teamId": "TEAM_RED",
     "competitorId": "competitor-uuid"
@@ -281,7 +291,8 @@ Payload:
 
 ```json
 {
-    "eventId": "EV_EGG_AND_SPOON"
+    "eventId": "EV_EGG_AND_SPOON",
+    "eventRunId": "run-uuid"
 }
 ```
 
@@ -302,6 +313,7 @@ Payload:
 ```json
 {
     "eventId": "EV_EGG_AND_SPOON",
+    "eventRunId": "run-uuid",
     "competitionGender": "Female",
     "positions": [
         { "competitorId": "first-uuid", "finalPosition": 1 },
@@ -318,6 +330,8 @@ The competitor IDs must exactly match the four saved heat winners, and each inte
 
 # Double Team Events
 
+All double-team actions require the current `eventRunId` and isolate the saved fixture to that run.
+
 ## getDoubleTeamMatchForEvent
 
 Returns the saved combined-team fixture for a `DOUBLE_TEAM` event, or `null` when no pairing has been saved.
@@ -330,7 +344,8 @@ Payload:
 
 ```json
 {
-    "eventId": "EV_ROUNDERS"
+    "eventId": "EV_ROUNDERS",
+    "eventRunId": "run-uuid"
 }
 ```
 
@@ -349,6 +364,7 @@ Payload:
 ```json
 {
     "eventId": "EV_ROUNDERS",
+    "eventRunId": "run-uuid",
     "side1TeamIds": ["TEAM_RED", "TEAM_BLUE"]
 }
 ```
@@ -370,8 +386,50 @@ Payload:
 ```json
 {
     "eventId": "EV_ROUNDERS",
+    "eventRunId": "run-uuid",
     "winnerSide": 1
 }
 ```
 
 `winnerSide` must be `1` or `2`, and a saved pairing must already exist.
+
+---
+
+# Event Runs
+
+## getCurrentEventRun
+
+Returns the current run for an event. If the event has no run, Run 1 is created and legacy rows with blank EventRunID are migrated to it.
+
+Method: `POST`
+
+Action: `getCurrentEventRun`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_CROQUET"
+}
+```
+
+---
+
+## resetEvent
+
+Closes the supplied current run and creates the next current run without changing or deleting historical engine rows.
+
+Method: `POST`
+
+Action: `resetEvent`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_CROQUET",
+    "currentEventRunId": "current-run-uuid"
+}
+```
+
+The operation uses an Apps Script lock and rejects stale run IDs, preventing repeated submissions from creating multiple current runs.

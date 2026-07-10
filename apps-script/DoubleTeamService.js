@@ -16,15 +16,17 @@ const DoubleTeamService = {
      * @param {string} eventId
      * @returns {Object|null}
      */
-    getForEvent(eventId) {
+    getForEvent(eventId, eventRunId) {
 
         this.getDoubleTeamEvent(eventId);
+        EventRunService.assertCurrent(eventId, eventRunId);
 
 
         return Database
             .get(TABLES.DOUBLE_TEAM_MATCHES)
             .find(match =>
-                match.EventID === eventId
+                match.EventID === eventId &&
+                match.EventRunID === eventRunId
             ) || null;
 
     },
@@ -38,9 +40,10 @@ const DoubleTeamService = {
      * @param {string[]} side1TeamIds
      * @returns {Object}
      */
-    savePairing(eventId, side1TeamIds) {
+    savePairing(eventId, eventRunId, side1TeamIds) {
 
         this.getDoubleTeamEvent(eventId);
+        EventRunService.assertCurrent(eventId, eventRunId);
 
         const activeTeams =
             TeamService.getAll();
@@ -107,7 +110,7 @@ const DoubleTeamService = {
 
 
         const existing =
-            this.getForEvent(eventId);
+            this.getForEvent(eventId, eventRunId);
 
 
         if (
@@ -132,6 +135,8 @@ const DoubleTeamService = {
                 : Utils.uuid(),
 
             EventID: eventId,
+
+            EventRunID: eventRunId,
 
             Side1Team1ID: side1TeamIds[0],
 
@@ -175,8 +180,9 @@ const DoubleTeamService = {
         }
 
 
-        this.updateEventStatus(
+        EventRunService.updateStatus(
             eventId,
+            eventRunId,
             EVENT_STATUS.IN_PROGRESS
         );
 
@@ -193,9 +199,10 @@ const DoubleTeamService = {
      * @param {number|string} winnerSide
      * @returns {Object}
      */
-    saveWinner(eventId, winnerSide) {
+    saveWinner(eventId, eventRunId, winnerSide) {
 
         this.getDoubleTeamEvent(eventId);
+        EventRunService.assertCurrent(eventId, eventRunId);
 
         const numericWinnerSide =
             Number(winnerSide);
@@ -211,7 +218,7 @@ const DoubleTeamService = {
 
 
         const existing =
-            this.getForEvent(eventId);
+            this.getForEvent(eventId, eventRunId);
 
 
         if (!existing) {
@@ -249,8 +256,9 @@ const DoubleTeamService = {
         }
 
 
-        this.updateEventStatus(
+        EventRunService.updateStatus(
             eventId,
+            eventRunId,
             EVENT_STATUS.COMPLETE
         );
 
@@ -285,25 +293,6 @@ const DoubleTeamService = {
 
 
         return event;
-
-    },
-
-
-    updateEventStatus(eventId, status) {
-
-        if (
-            !Database.update(
-                TABLES.EVENTS,
-                eventId,
-                { Status: status }
-            )
-        ) {
-
-            throw new Error(
-                "Event status could not be updated."
-            );
-
-        }
 
     }
 

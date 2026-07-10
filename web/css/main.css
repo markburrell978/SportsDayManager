@@ -3,7 +3,7 @@
 Sports Day Manager
 
 File: main.css
-Version: 0.5.5
+Version: 0.5.6
 
 Purpose:
 Application styling.
@@ -309,6 +309,59 @@ Event Browser
     padding: 10px;
 
     border-radius: 6px;
+
+}
+
+
+.event-run-summary {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 12px;
+
+    margin: 16px 0;
+
+    padding: 12px;
+
+    background: #f7f7f7;
+
+    border: 1px solid #dddddd;
+
+    border-radius: 6px;
+
+}
+
+
+.event-run-status {
+
+    display: inline-block;
+
+    margin-left: 8px;
+
+    padding: 4px 8px;
+
+    background: #dbeafe;
+
+    border-radius: 12px;
+
+    font-size: 12px;
+
+    font-weight: bold;
+
+}
+
+
+.reset-event-button {
+
+    background: #8b1e1e;
+
+    color: white;
 
 }
 

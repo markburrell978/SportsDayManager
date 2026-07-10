@@ -11,6 +11,20 @@
 const Database = {
 
     /**
+     * Returns whether a sheet exists.
+     *
+     * @param {string} tableName
+     * @returns {boolean}
+     */
+    exists(tableName) {
+
+        return Boolean(
+            getSpreadsheet().getSheetByName(tableName)
+        );
+
+    },
+
+    /**
      * Returns a sheet by name.
      *
      * @param {string} tableName
@@ -142,6 +156,75 @@ const Database = {
         }
 
         return false;
+
+    },
+
+
+    /**
+     * Updates every record matching a predicate.
+     * Header names determine column positions.
+     *
+     * @param {string} tableName
+     * @param {Function} predicate
+     * @param {Object} updates
+     * @returns {number}
+     */
+    updateWhere(tableName, predicate, updates) {
+
+        const sheet = this.getSheet(tableName);
+
+        const values = sheet.getDataRange().getValues();
+
+
+        if (values.length < 2) {
+
+            return 0;
+
+        }
+
+
+        const headers = values[0];
+
+        let updatedCount = 0;
+
+
+        for (let row = 1; row < values.length; row++) {
+
+            const record = {};
+
+
+            headers.forEach((header, column) => {
+
+                record[header] = values[row][column];
+
+            });
+
+
+            if (!predicate(record)) {
+
+                continue;
+
+            }
+
+
+            headers.forEach((header, column) => {
+
+                if (updates.hasOwnProperty(header)) {
+
+                    sheet
+                        .getRange(row + 1, column + 1)
+                        .setValue(updates[header]);
+
+                }
+
+            });
+
+            updatedCount++;
+
+        }
+
+
+        return updatedCount;
 
     },
 

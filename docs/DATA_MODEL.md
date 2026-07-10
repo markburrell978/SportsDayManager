@@ -64,12 +64,32 @@ Example:
 
 ---
 
+# EventRuns
+
+Represents one execution of a permanent configured event.
+
+| Column | Type | Required | Description |
+|---------|------|----------|-------------|
+| ID | UUID | Yes | Generated automatically |
+| EventID | String | Yes | References Events.ID |
+| RunNumber | Number | Yes | Sequential run number beginning at 1 per event |
+| Status | Enum | Yes | NOT_STARTED, IN_PROGRESS, COMPLETE |
+| IsCurrent | Boolean | Yes | Whether this is the event's current run |
+| StartedAt | DateTime | No | Set when the run first enters progress |
+| CompletedAt | DateTime | No | Set when the run completes |
+| ResetFromRunID | UUID | No | References the EventRuns.ID replaced by reset |
+
+Exactly one row per EventID must have `IsCurrent = TRUE`. `RunNumber` must be unique within an EventID. EventRuns.Status is authoritative; Events.Status mirrors the current run for backward compatibility.
+
+---
+
 # Results
 
 | Column | Type | Required | Description |
 |---------|------|----------|-------------|
 | ID | UUID | Yes | Generated automatically |
 | EventID | String | Yes | References Events.ID |
+| EventRunID | UUID | Yes | References EventRuns.ID |
 | TeamID | String | Yes | References Teams.ID |
 | Position | Number | Yes | Final placing |
 | PointsAwarded | Number | Yes | Points awarded at the time |
@@ -82,6 +102,7 @@ Example:
 |---------|------|----------|-------------|
 | ID | UUID | Yes | Generated automatically |
 | EventID | String | Yes | References Events.ID |
+| EventRunID | UUID | Yes | References EventRuns.ID |
 | Round | Number | Yes | Round number |
 | Team1ID | String | Yes | References Teams.ID |
 | Team2ID | String | Yes | References Teams.ID |
@@ -98,6 +119,7 @@ Used by distance-based events.
 |---------|------|----------|-------------|
 | ID | UUID | Yes | Generated automatically |
 | EventID | String | Yes | References Events.ID |
+| EventRunID | UUID | Yes | References EventRuns.ID |
 | CompetitorID | UUID | Yes | References Competitors.ID |
 | AttemptNumber | Number | Yes | Attempt 1 or 2 |
 | Value | Number | Yes | Distance achieved |
@@ -106,11 +128,12 @@ Used by distance-based events.
 
 # EventCompetitors
 
-Maps competitors to events.
+Maps competitors to a specific event execution.
 
 | Column | Type | Required | Description |
 |---------|------|----------|-------------|
 | EventID | String | Yes | References Events.ID |
+| EventRunID | UUID | Yes | References EventRuns.ID |
 | CompetitorID | UUID | Yes | References Competitors.ID |
 
 ---
@@ -123,12 +146,13 @@ Stores one selected team heat winner for each event and competition category.
 |---------|------|----------|-------------|
 | ID | UUID | Yes | Generated automatically |
 | EventID | String | Yes | References Events.ID |
+| EventRunID | UUID | Yes | References EventRuns.ID |
 | CompetitionGender | Enum | Yes | Male or Female race category |
 | TeamID | String | Yes | References Teams.ID |
 | CompetitorID | UUID | Yes | References Competitors.ID |
 | FinalPosition | Number | No | Final position from 1 to 4; blank until recorded |
 
-The combination of `EventID`, `CompetitionGender` and `TeamID` must be unique.
+The combination of `EventRunID`, `CompetitionGender` and `TeamID` must be unique.
 
 ---
 
@@ -140,6 +164,7 @@ Stores the one combined-team fixture for a double-team event.
 |---------|------|----------|-------------|
 | ID | UUID | Yes | Generated automatically |
 | EventID | String | Yes | References Events.ID |
+| EventRunID | UUID | Yes | References EventRuns.ID |
 | Side1Team1ID | String | Yes | First team on Side 1; references Teams.ID |
 | Side1Team2ID | String | Yes | Second team on Side 1; references Teams.ID |
 | Side2Team1ID | String | Yes | First team on Side 2; references Teams.ID |
@@ -147,4 +172,4 @@ Stores the one combined-team fixture for a double-team event.
 | WinnerSide | Number | No | Blank until complete, then 1 or 2 |
 | Complete | Boolean | Yes | Whether the event fixture is complete |
 
-`EventID` must be unique because each double-team event has one fixture.
+`EventRunID` must be unique because each double-team event run has one fixture.

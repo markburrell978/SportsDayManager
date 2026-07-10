@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: app.js
- * Version: 0.5.5
+ * Version: 0.5.6
  *
  * Main application controller.
  * ==========================================================
@@ -27,6 +27,8 @@ const App = {
     events: [],
 
     currentEvent: null,
+
+    currentEventRun: null,
 
     currentPointsProfile: [],
 
@@ -282,6 +284,8 @@ async function loadEvents() {
 
         App.currentEvent = null;
 
+        App.currentEventRun = null;
+
         App.currentPointsProfile = [];
 
         App.currentMatches = [];
@@ -327,6 +331,8 @@ async function loadEvents() {
 
     try {
 
+        await loadCurrentEventRun();
+
         await loadCurrentPointsProfile();
 
         await loadCurrentMatches();
@@ -366,6 +372,7 @@ function renderEvents() {
         App.eventRequestPending,
         App.eventMessage,
         App.eventMessageIsError,
+        App.currentEventRun,
         App.currentRace,
         App.raceCategory,
         App.currentDoubleTeamMatch
@@ -396,6 +403,8 @@ async function selectEvent(id) {
 
     App.currentPointsProfile = [];
 
+    App.currentEventRun = null;
+
     App.currentMatches = [];
 
     App.currentRace = null;
@@ -410,6 +419,8 @@ async function selectEvent(id) {
 
 
     try {
+
+        await loadCurrentEventRun();
 
         await loadCurrentPointsProfile();
 
@@ -442,6 +453,29 @@ async function selectEvent(id) {
         renderEvents();
 
     }
+
+}
+
+
+
+async function loadCurrentEventRun() {
+
+    if (!App.currentEvent) {
+
+        App.currentEventRun = null;
+
+        return;
+
+    }
+
+
+    App.currentEventRun =
+        await Api.getCurrentEventRun(
+            App.currentEvent.ID
+        );
+
+    App.currentEvent.Status =
+        App.currentEventRun.Status;
 
 }
 
@@ -489,7 +523,8 @@ async function loadCurrentMatches() {
 
     App.currentMatches =
         await Api.getMatchesForEvent(
-            App.currentEvent.ID
+            App.currentEvent.ID,
+            App.currentEventRun.ID
         );
 
 }
@@ -512,7 +547,8 @@ async function loadCurrentRace() {
 
     App.currentRace =
         await Api.getRaceResultsForEvent(
-            App.currentEvent.ID
+            App.currentEvent.ID,
+            App.currentEventRun.ID
         );
 
 }
@@ -535,7 +571,8 @@ async function loadCurrentDoubleTeamMatch() {
 
     App.currentDoubleTeamMatch =
         await Api.getDoubleTeamMatchForEvent(
-            App.currentEvent.ID
+            App.currentEvent.ID,
+            App.currentEventRun.ID
         );
 
 }
@@ -645,6 +682,7 @@ async function saveDoubleTeamPairing() {
 
         await Api.saveDoubleTeamPairing(
             App.currentEvent.ID,
+            App.currentEventRun.ID,
             side1TeamIds
         );
 
@@ -713,6 +751,7 @@ async function saveDoubleTeamWinner() {
 
         await Api.saveDoubleTeamWinner(
             App.currentEvent.ID,
+            App.currentEventRun.ID,
             winnerSide
         );
 
@@ -745,12 +784,18 @@ async function refreshDoubleTeamEvent() {
 
     const [
         events,
-        match
+        match,
+        eventRun
     ] = await Promise.all([
 
         Api.getEvents(),
 
         Api.getDoubleTeamMatchForEvent(
+            App.currentEvent.ID,
+            App.currentEventRun.ID
+        ),
+
+        Api.getCurrentEventRun(
             App.currentEvent.ID
         )
 
@@ -765,6 +810,8 @@ async function refreshDoubleTeamEvent() {
         ) || App.currentEvent;
 
     App.currentDoubleTeamMatch = match;
+
+    App.currentEventRun = eventRun;
 
 }
 
@@ -807,7 +854,8 @@ async function startRaceEvent() {
 
         App.currentRace =
             await Api.startRaceEvent(
-                App.currentEvent.ID
+                App.currentEvent.ID,
+                App.currentEventRun.ID
             );
 
         showEventMessage(
@@ -869,6 +917,7 @@ async function saveRaceHeatWinner(teamId, selectId) {
 
         await Api.saveRaceHeatWinner(
             App.currentEvent.ID,
+            App.currentEventRun.ID,
             App.raceCategory,
             teamId,
             competitorId
@@ -940,6 +989,7 @@ async function saveRaceFinalPositions() {
 
         await Api.saveRaceFinalPositions(
             App.currentEvent.ID,
+            App.currentEventRun.ID,
             App.raceCategory,
             positions
         );
@@ -1001,12 +1051,18 @@ async function refreshRaceEvent() {
 
     const [
         events,
-        race
+        race,
+        eventRun
     ] = await Promise.all([
 
         Api.getEvents(),
 
         Api.getRaceResultsForEvent(
+            App.currentEvent.ID,
+            App.currentEventRun.ID
+        ),
+
+        Api.getCurrentEventRun(
             App.currentEvent.ID
         )
 
@@ -1021,6 +1077,8 @@ async function refreshRaceEvent() {
         ) || App.currentEvent;
 
     App.currentRace = race;
+
+    App.currentEventRun = eventRun;
 
 }
 
@@ -1040,10 +1098,13 @@ async function generateRoundRobinFixtures() {
         setEventRequestPending(true);
 
         await Api.createRoundRobinFixtures(
-            App.currentEvent.ID
+            App.currentEvent.ID,
+            App.currentEventRun.ID
         );
 
         await loadCurrentMatches();
+
+        await loadCurrentEventRun();
 
         showEventMessage(
             "Round robin fixtures are ready."
@@ -1098,10 +1159,13 @@ async function generateTournamentFixtures() {
 
         await Api.createTournamentFixtures(
             App.currentEvent.ID,
+            App.currentEventRun.ID,
             teamIds
         );
 
         await loadCurrentMatches();
+
+        await loadCurrentEventRun();
 
         showEventMessage(
             "Tournament semi-finals created."
@@ -1207,10 +1271,13 @@ async function saveMatchWinner(matchId, winnerId) {
 
         await Api.updateMatchWinner(
             matchId,
-            winnerId
+            winnerId,
+            App.currentEventRun.ID
         );
 
         await loadCurrentMatches();
+
+        await loadCurrentEventRun();
 
         showEventMessage(
             "Match winner saved."
@@ -1269,6 +1336,86 @@ function clearEventMessage() {
     App.eventMessage = "";
 
     App.eventMessageIsError = false;
+
+}
+
+
+
+async function resetCurrentEvent() {
+
+    if (!App.currentEvent || !App.currentEventRun) {
+
+        return;
+
+    }
+
+
+    const confirmed = window.confirm(
+        "Reset this event and start a new run? Existing data will be kept in history."
+    );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    try {
+
+        setEventRequestPending(true);
+
+        const newRun =
+            await Api.resetEvent(
+                App.currentEvent.ID,
+                App.currentEventRun.ID
+            );
+
+
+        App.currentEventRun = newRun;
+
+        App.currentMatches = [];
+
+        App.currentRace = null;
+
+        App.currentDoubleTeamMatch = null;
+
+
+        App.events =
+            await Api.getEvents();
+
+        App.currentEvent =
+            App.events.find(event =>
+                event.ID === App.currentEvent.ID
+            ) || App.currentEvent;
+
+
+        await loadCurrentMatches();
+
+        await loadCurrentRace();
+
+        await loadCurrentDoubleTeamMatch();
+
+
+        showEventMessage(
+            `Event reset successfully. Run ${newRun.RunNumber} is ready.`
+        );
+
+    }
+    catch (error) {
+
+        showEventMessage(
+            error.message,
+            true
+        );
+
+    }
+    finally {
+
+        setEventRequestPending(false);
+
+    }
 
 }
 

@@ -25,21 +25,23 @@ const RaceService = {
      * @param {string} eventId
      * @returns {Object}
      */
-    getForEvent(eventId) {
+    getForEvent(eventId, eventRunId) {
 
         this.getRaceEvent(eventId);
+        EventRunService.assertCurrent(eventId, eventRunId);
 
         const eventMappings =
-            this.getEventMappings(eventId);
+            this.getEventMappings(eventId, eventRunId);
 
 
         return {
 
-            results: this.getResults(eventId),
+            results: this.getResults(eventId, eventRunId),
 
             eligibleCompetitors:
                 this.getEligibleCompetitors(
                     eventId,
+                    eventRunId,
                     eventMappings
                 ),
 
@@ -61,9 +63,10 @@ const RaceService = {
      * @param {string} eventId
      * @returns {Object}
      */
-    startEvent(eventId) {
+    startEvent(eventId, eventRunId) {
 
         this.getRaceEvent(eventId);
+        EventRunService.assertCurrent(eventId, eventRunId);
 
         const competitors =
             CompetitorService.getPresent();
@@ -79,7 +82,7 @@ const RaceService = {
 
 
         const mappings =
-            this.getEventMappings(eventId);
+            this.getEventMappings(eventId, eventRunId);
 
         const mappedCompetitorIds =
             mappings.map(mapping =>
@@ -95,6 +98,7 @@ const RaceService = {
                     TABLES.EVENT_COMPETITORS,
                     {
                         EventID: eventId,
+                        EventRunID: eventRunId,
                         CompetitorID: competitor.ID
                     }
                 );
@@ -109,7 +113,7 @@ const RaceService = {
         });
 
 
-        return this.getForEvent(eventId);
+        return this.getForEvent(eventId, eventRunId);
 
     },
 
@@ -125,12 +129,14 @@ const RaceService = {
      */
     saveHeatWinner(
         eventId,
+        eventRunId,
         competitionGender,
         teamId,
         competitorId
     ) {
 
         this.getRaceEvent(eventId);
+        EventRunService.assertCurrent(eventId, eventRunId);
         this.validateCategory(competitionGender);
 
         const team =
@@ -147,7 +153,7 @@ const RaceService = {
 
 
         const categoryResults =
-            this.getResults(eventId)
+            this.getResults(eventId, eventRunId)
                 .filter(result =>
                     result.CompetitionGender === competitionGender
                 );
@@ -163,7 +169,7 @@ const RaceService = {
 
 
         const competitor =
-            this.getEligibleCompetitors(eventId)
+            this.getEligibleCompetitors(eventId, eventRunId)
                 .find(item => item.ID === competitorId);
 
 
@@ -237,6 +243,8 @@ const RaceService = {
 
                 EventID: eventId,
 
+                EventRunID: eventRunId,
+
                 CompetitionGender: competitionGender,
 
                 TeamID: teamId,
@@ -256,10 +264,10 @@ const RaceService = {
         }
 
 
-        this.updateEventStatus(eventId);
+        this.updateEventStatus(eventId, eventRunId);
 
 
-        return this.getForEvent(eventId);
+        return this.getForEvent(eventId, eventRunId);
 
     },
 
@@ -274,18 +282,20 @@ const RaceService = {
      */
     saveFinalPositions(
         eventId,
+        eventRunId,
         competitionGender,
         positions
     ) {
 
         this.getRaceEvent(eventId);
+        EventRunService.assertCurrent(eventId, eventRunId);
         this.validateCategory(competitionGender);
 
         const activeTeams =
             TeamService.getAll();
 
         const finalists =
-            this.getResults(eventId)
+            this.getResults(eventId, eventRunId)
                 .filter(result =>
                     result.CompetitionGender === competitionGender
                 );
@@ -409,10 +419,10 @@ const RaceService = {
         });
 
 
-        this.updateEventStatus(eventId);
+        this.updateEventStatus(eventId, eventRunId);
 
 
-        return this.getForEvent(eventId);
+        return this.getForEvent(eventId, eventRunId);
 
     },
 
@@ -459,33 +469,39 @@ const RaceService = {
     },
 
 
-    getResults(eventId) {
+    getResults(eventId, eventRunId) {
 
         return Database
             .get(TABLES.RACE_RESULTS)
             .filter(result =>
-                result.EventID === eventId
+                result.EventID === eventId &&
+                result.EventRunID === eventRunId
             );
 
     },
 
 
-    getEventMappings(eventId) {
+    getEventMappings(eventId, eventRunId) {
 
         return Database
             .get(TABLES.EVENT_COMPETITORS)
             .filter(mapping =>
-                mapping.EventID === eventId
+                mapping.EventID === eventId &&
+                mapping.EventRunID === eventRunId
             );
 
     },
 
 
-    getEligibleCompetitors(eventId, eventMappings = null) {
+    getEligibleCompetitors(
+        eventId,
+        eventRunId,
+        eventMappings = null
+    ) {
 
         const mappings =
             eventMappings ||
-            this.getEventMappings(eventId);
+            this.getEventMappings(eventId, eventRunId);
 
         const mappedCompetitorIds =
             mappings.map(mapping =>
@@ -527,10 +543,10 @@ const RaceService = {
     },
 
 
-    updateEventStatus(eventId) {
+    updateEventStatus(eventId, eventRunId) {
 
         const results =
-            this.getResults(eventId);
+            this.getResults(eventId, eventRunId);
 
         const complete =
             RACE_CATEGORIES.every(category =>
@@ -546,19 +562,11 @@ const RaceService = {
             : EVENT_STATUS.IN_PROGRESS;
 
 
-        if (
-            !Database.update(
-                TABLES.EVENTS,
-                eventId,
-                { Status: status }
-            )
-        ) {
-
-            throw new Error(
-                "Event status could not be updated."
-            );
-
-        }
+        EventRunService.updateStatus(
+            eventId,
+            eventRunId,
+            status
+        );
 
     }
 

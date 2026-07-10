@@ -1,3 +1,23 @@
+# v0.5.6
+
+## Added
+
+- Persistent EventRuns with sequential run numbers and current-run ownership
+- Safe Reset Event action with confirmation and Apps Script locking
+- Automatic idempotent migration of legacy engine rows into Run 1
+- Current run number and status in the selected event summary
+
+## Changed
+
+- Matches, race results, race entrants, attempts, results and double-team fixtures are scoped by EventRunID
+- EventRuns.Status is authoritative while Events.Status remains a synchronized compatibility mirror
+
+## Fixed
+
+- Event Run migration skips optional engine sheets that do not yet exist, such as Attempts before the Distance engine is implemented
+
+---
+
 # v0.5.5
 
 ## Added

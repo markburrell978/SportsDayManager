@@ -20,8 +20,8 @@
 - [x] Edit competitor
 - [x] Deactivate competitor
 - [x] Restore competitor
-- [ ] Mark competitor present
-- [ ] Change competitor team
+- [x] Mark competitor present
+- [x] Change competitor team
 
 ---
 
@@ -34,6 +34,7 @@
 - [x] Heat & Final
 - [ ] Distance Competition
 - [x] Double Team
+- [x] Event Runs and Reset
 
 ---
 
