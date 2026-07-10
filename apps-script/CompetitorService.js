@@ -33,11 +33,35 @@ const CompetitorService = {
     getPresent() {
 
         return this.getAll()
-            .filter(
-                competitor =>
-                    competitor.Present === true ||
-                    competitor.Present === "TRUE"
+            .filter(competitor =>
+                this.isAvailableForEvents(competitor)
             );
+
+    },
+
+
+    /**
+     * Returns true when a competitor is available for events.
+     * Current sheets use Active; older/data-model sheets may use Present.
+     *
+     * @param {Object} competitor
+     * @returns {boolean}
+     */
+    isAvailableForEvents(competitor) {
+
+        if (
+            competitor.hasOwnProperty("Active") &&
+            !Utils.isBlank(competitor.Active)
+        ) {
+
+            return competitor.Active === true ||
+                competitor.Active === "TRUE";
+
+        }
+
+
+        return competitor.Present === true ||
+            competitor.Present === "TRUE";
 
     },
 

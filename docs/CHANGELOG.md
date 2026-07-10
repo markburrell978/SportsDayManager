@@ -1,3 +1,21 @@
+# v0.5.4
+
+## Added
+
+- Male and Female team heats for HEAT_FINAL events
+- Persistent RaceResults heat winners and final positions
+- Optional EventCompetitors entrant filtering
+- Four-finalist position entry and completed category summaries
+- HEAT_FINAL event status progression
+- Idempotent Start Event action for populating EventCompetitors
+- Visible event-loading errors when race data cannot be loaded
+
+## Changed
+
+- Competitor event availability consistently supports the current Active field with a Present fallback
+
+---
+
 # v0.5.3
 
 ## Added

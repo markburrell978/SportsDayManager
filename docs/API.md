@@ -1,6 +1,6 @@
 # Sports Day Manager API
 
-Version: 0.5.3
+Version: 0.5.4
 
 ---
 
@@ -223,3 +223,93 @@ Payload:
 ```
 
 The team IDs are ordered as semi-final 1 team 1, semi-final 1 team 2, semi-final 2 team 1, and semi-final 2 team 2. All four IDs must be unique active teams. If tournament fixtures already exist, the existing matches are returned without creating duplicates.
+
+---
+
+# Heats & Final Races
+
+## getRaceResultsForEvent
+
+Returns persistent race-result rows and the competitors eligible for a `HEAT_FINAL` event. EventCompetitors mappings restrict the eligible list when mappings exist for the event.
+
+Method: `POST`
+
+Action: `getRaceResultsForEvent`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_EGG_AND_SPOON"
+}
+```
+
+---
+
+## saveRaceHeatWinner
+
+Creates or updates one team heat winner for an event and category.
+
+Method: `POST`
+
+Action: `saveRaceHeatWinner`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_EGG_AND_SPOON",
+    "competitionGender": "Female",
+    "teamId": "TEAM_RED",
+    "competitorId": "competitor-uuid"
+}
+```
+
+The competitor must be available for events, belong to the selected active team, match the competition category, and satisfy any EventCompetitors restriction. Saving another winner for the same event, category and team updates the existing RaceResults row.
+
+---
+
+## startRaceEvent
+
+Adds every currently active/present competitor to the selected HEAT_FINAL event's EventCompetitors rows.
+
+Method: `POST`
+
+Action: `startRaceEvent`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_EGG_AND_SPOON"
+}
+```
+
+The action is idempotent: existing event/competitor mappings are preserved and only missing mappings are inserted.
+
+---
+
+## saveRaceFinalPositions
+
+Stores the four unique final positions for a completed set of team heats.
+
+Method: `POST`
+
+Action: `saveRaceFinalPositions`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_EGG_AND_SPOON",
+    "competitionGender": "Female",
+    "positions": [
+        { "competitorId": "first-uuid", "finalPosition": 1 },
+        { "competitorId": "second-uuid", "finalPosition": 2 },
+        { "competitorId": "third-uuid", "finalPosition": 3 },
+        { "competitorId": "fourth-uuid", "finalPosition": 4 }
+    ]
+}
+```
+
+The competitor IDs must exactly match the four saved heat winners, and each integer position from 1 to 4 must be used once. Positions may be resubmitted while the same finalists remain selected.

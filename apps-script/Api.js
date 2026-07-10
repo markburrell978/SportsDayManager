@@ -181,6 +181,64 @@ function handleRequest(request) {
                 break;
 
 
+            case API_ACTIONS.GET_RACE_RESULTS_FOR_EVENT:
+
+                response = Utils.success(
+                    RaceService.getForEvent(
+                        request.payload.eventId ||
+                        request.payload.EventID
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.START_RACE_EVENT:
+
+                response = Utils.success(
+                    RaceService.startEvent(
+                        request.payload.eventId ||
+                        request.payload.EventID
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.SAVE_RACE_HEAT_WINNER:
+
+                response = Utils.success(
+                    RaceService.saveHeatWinner(
+                        request.payload.eventId ||
+                        request.payload.EventID,
+                        request.payload.competitionGender ||
+                        request.payload.CompetitionGender,
+                        request.payload.teamId ||
+                        request.payload.TeamID,
+                        request.payload.competitorId ||
+                        request.payload.CompetitorID
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.SAVE_RACE_FINAL_POSITIONS:
+
+                response = Utils.success(
+                    RaceService.saveFinalPositions(
+                        request.payload.eventId ||
+                        request.payload.EventID,
+                        request.payload.competitionGender ||
+                        request.payload.CompetitionGender,
+                        request.payload.positions ||
+                        request.payload.Positions
+                    )
+                );
+
+                break;
+
+
             case API_ACTIONS.GET_LEADERBOARD:
 
                 response = Utils.success(

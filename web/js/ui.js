@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: ui.js
- * Version: 0.5.3
+ * Version: 0.5.4
  *
  * Shared UI rendering helpers.
  * ==========================================================
@@ -118,6 +118,8 @@ const EventUI = {
      * @param {boolean} requestPending
      * @param {string} message
      * @param {boolean} messageIsError
+     * @param {Object|null} race
+     * @param {string} raceCategory
      */
     renderEventDetails(
         event,
@@ -126,7 +128,9 @@ const EventUI = {
         teams = [],
         requestPending = false,
         message = "",
-        messageIsError = false
+        messageIsError = false,
+        race = null,
+        raceCategory = "Male"
     ) {
 
         const container =
@@ -170,14 +174,19 @@ const EventUI = {
 
 ${this.renderPointsProfile(pointsProfile)}
 
-${this.renderEventMessage(
-    requestPending ? "Saving changes..." : message,
-    requestPending ? false : messageIsError
-)}
+${this.renderEventMessage(message, messageIsError)}
 
 ${this.renderRoundRobin(event, matches, teams, requestPending)}
 
 ${this.renderTournament(event, matches, teams, requestPending)}
+
+${this.renderRace(
+    event,
+    race,
+    teams,
+    raceCategory,
+    requestPending
+)}
 
 </div>
 
@@ -629,6 +638,335 @@ ${this.renderWinnerOption(teams, match.Team2ID, match.WinnerID)}
 <li>${this.escapeHtml(this.getTeamName(teams, thirdPlaceLoser))}</li>
 </ol>
 </div>`;
+
+    },
+
+
+    /**
+     * Renders a gender-category heats and final race.
+     *
+     * @param {Object} event
+     * @param {Object|null} race
+     * @param {Object[]} teams
+     * @param {string} category
+     * @param {boolean} requestPending
+     * @returns {string}
+     */
+    renderRace(
+        event,
+        race,
+        teams,
+        category,
+        requestPending
+    ) {
+
+        if (event.EventType !== "HEAT_FINAL") {
+
+            return "";
+
+        }
+
+
+        if (!race) {
+
+            return `
+<h4>Heats &amp; Final</h4>
+<p class="loading">Loading race data...</p>`;
+
+        }
+
+
+        const categoryResults =
+            race.results.filter(result =>
+                result.CompetitionGender === category
+            );
+
+        const complete =
+            this.isRaceCategoryComplete(categoryResults);
+
+        let html = `
+<div class="race-engine">
+<h4>Heats &amp; Final</h4>
+<div class="race-categories" role="group" aria-label="Race category">
+${["Male", "Female"].map(item => `
+<button class="${item === category ? "active" : ""}"
+        onclick="selectRaceCategory('${item}')"
+        ${requestPending ? "disabled" : ""}>
+    ${item}
+</button>`).join("")}
+</div>
+<div class="race-start">
+<button onclick="startRaceEvent()" ${requestPending ? "disabled" : ""}>
+    ${race.entrantsExplicit ? "Add Current Active Competitors" : "Start Event"}
+</button>
+<span>
+    ${race.entrantsExplicit
+        ? `${this.escapeHtml(race.entrantCount)} explicit entrants saved`
+        : "No explicit entrants saved; currently using all active competitors"}
+</span>
+</div>
+<h5>${this.escapeHtml(category)} team heats</h5>`;
+
+
+        teams.forEach((team, index) => {
+
+            const eligibleCompetitors =
+                race.eligibleCompetitors.filter(competitor =>
+                    competitor.TeamID === team.ID &&
+                    competitor.CompetitionGender === category
+                );
+
+            const savedResult =
+                categoryResults.find(result =>
+                    result.TeamID === team.ID
+                );
+
+            const selectId =
+                `race-heat-winner-${index}`;
+
+
+            html += `
+<div class="race-heat-card">
+<h6>${this.escapeHtml(team.Name)}</h6>`;
+
+
+            if (!eligibleCompetitors.length) {
+
+                html += `
+<p class="loading">
+    No eligible ${this.escapeHtml(category)} competitors are available for this team.
+</p>`;
+
+            }
+            else {
+
+                html += `
+<div class="race-heat-control">
+<select id="${selectId}" ${requestPending || complete ? "disabled" : ""}>
+<option value="">Choose heat winner</option>
+${eligibleCompetitors.map(competitor => `
+<option value="${this.escapeHtml(competitor.ID)}"
+        ${savedResult && savedResult.CompetitorID === competitor.ID ? "selected" : ""}>
+    ${this.escapeHtml(competitor.Name)}
+</option>`).join("")}
+</select>
+<button onclick="saveRaceHeatWinner('${this.escapeHtml(team.ID)}', '${selectId}')"
+        ${requestPending || complete ? "disabled" : ""}>
+    Save Winner
+</button>
+</div>`;
+
+            }
+
+
+            if (savedResult) {
+
+                html += `
+<p>
+    <strong>Selected:</strong>
+    ${this.escapeHtml(
+        this.getCompetitorName(
+            race.eligibleCompetitors,
+            savedResult.CompetitorID
+        )
+    )}
+</p>`;
+
+            }
+
+
+            html += `</div>`;
+
+        });
+
+
+        html += this.renderRaceFinal(
+            categoryResults,
+            race.eligibleCompetitors,
+            teams,
+            category,
+            requestPending
+        );
+
+        html += `</div>`;
+
+
+        return html;
+
+    },
+
+
+    renderRaceFinal(
+        results,
+        competitors,
+        teams,
+        category,
+        requestPending
+    ) {
+
+        const hasAllFinalists =
+            teams.length === 4 &&
+            results.length === teams.length &&
+            teams.every(team =>
+                results.some(result =>
+                    result.TeamID === team.ID
+                )
+            );
+
+
+        if (!hasAllFinalists) {
+
+            return `
+<div class="race-final">
+<h5>${this.escapeHtml(category)} final</h5>
+<p class="loading">
+    Select one heat winner for every active team to open the final.
+</p>
+</div>`;
+
+        }
+
+
+        const complete =
+            this.isRaceCategoryComplete(results);
+
+
+        if (complete) {
+
+            const orderedResults =
+                [...results].sort(
+                    (a, b) =>
+                        Number(a.FinalPosition) -
+                        Number(b.FinalPosition)
+                );
+
+
+            return `
+<div class="race-final race-complete">
+<h5>${this.escapeHtml(category)} final placings</h5>
+<ol>
+${orderedResults.map(result => `
+<li>
+    ${this.escapeHtml(this.getCompetitorName(competitors, result.CompetitorID))}
+    — ${this.escapeHtml(this.getTeamName(teams, result.TeamID))}
+</li>`).join("")}
+</ol>
+${this.renderRaceFinalPositionControls(
+    results,
+    competitors,
+    teams,
+    requestPending
+)}
+</div>`;
+
+        }
+
+
+        return `
+<div class="race-final">
+<h5>${this.escapeHtml(category)} final</h5>
+<p>Assign each finalist a unique finishing position.</p>
+${this.renderRaceFinalPositionControls(
+    results,
+    competitors,
+    teams,
+    requestPending
+)}
+</div>`;
+
+    },
+
+
+    renderRaceFinalPositionControls(
+        results,
+        competitors,
+        teams,
+        requestPending
+    ) {
+
+        let html = `<div class="race-finalists">`;
+
+
+        results.forEach(result => {
+
+            html += `
+<label for="race-final-position-${this.escapeHtml(result.ID)}">
+<span>
+    ${this.escapeHtml(this.getCompetitorName(competitors, result.CompetitorID))}
+    <small>${this.escapeHtml(this.getTeamName(teams, result.TeamID))}</small>
+</span>
+<select id="race-final-position-${this.escapeHtml(result.ID)}"
+        ${requestPending ? "disabled" : ""}>
+<option value="">Choose position</option>
+${[1, 2, 3, 4].map(position => `
+<option value="${position}"
+        ${Number(result.FinalPosition) === position ? "selected" : ""}>
+    ${this.formatOrdinal(position)}
+</option>`).join("")}
+</select>
+</label>`;
+
+        });
+
+
+        html += `
+</div>
+<button onclick="saveRaceFinalPositions()" ${requestPending ? "disabled" : ""}>
+    Save Final Positions
+</button>`;
+
+
+        return html;
+
+    },
+
+
+    isRaceCategoryComplete(results) {
+
+        return results.length === 4 &&
+            new Set(
+                results.map(result => result.TeamID)
+            ).size === 4 &&
+            new Set(
+                results.map(result => result.CompetitorID)
+            ).size === 4 &&
+            results.every(result =>
+                [1, 2, 3, 4].includes(
+                    Number(result.FinalPosition)
+                )
+            ) &&
+            new Set(
+                results.map(result =>
+                    Number(result.FinalPosition)
+                )
+            ).size === 4;
+
+    },
+
+
+    getCompetitorName(competitors, competitorId) {
+
+        const competitor =
+            competitors.find(item =>
+                item.ID === competitorId
+            );
+
+
+        return competitor
+            ? competitor.Name
+            : competitorId;
+
+    },
+
+
+    formatOrdinal(position) {
+
+        return {
+            1: "1st",
+            2: "2nd",
+            3: "3rd",
+            4: "4th"
+        }[position] || position;
 
     },
 

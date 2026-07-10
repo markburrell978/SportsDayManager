@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: app.js
- * Version: 0.5.3
+ * Version: 0.5.4
  *
  * Main application controller.
  * ==========================================================
@@ -31,6 +31,10 @@ const App = {
     currentPointsProfile: [],
 
     currentMatches: [],
+
+    currentRace: null,
+
+    raceCategory: "Male",
 
     eventRequestPending: false,
 
@@ -280,11 +284,23 @@ async function loadEvents() {
 
         App.currentMatches = [];
 
+        App.currentRace = null;
+
         clearEventMessage();
 
         renderEvents();
 
         return;
+
+    }
+
+
+    if (App.currentEvent) {
+
+        App.currentEvent =
+            App.events.find(event =>
+                event.ID === App.currentEvent.ID
+            ) || null;
 
     }
 
@@ -305,9 +321,23 @@ async function loadEvents() {
     }
 
 
-    await loadCurrentPointsProfile();
+    try {
 
-    await loadCurrentMatches();
+        await loadCurrentPointsProfile();
+
+        await loadCurrentMatches();
+
+        await loadCurrentRace();
+
+    }
+    catch (error) {
+
+        showEventMessage(
+            `This event could not be loaded: ${error.message}`,
+            true
+        );
+
+    }
 
     renderEvents();
 
@@ -329,7 +359,9 @@ function renderEvents() {
         App.teams,
         App.eventRequestPending,
         App.eventMessage,
-        App.eventMessageIsError
+        App.eventMessageIsError,
+        App.currentRace,
+        App.raceCategory
     );
 
 }
@@ -355,11 +387,49 @@ async function selectEvent(id) {
 
     clearEventMessage();
 
-    await loadCurrentPointsProfile();
+    App.currentPointsProfile = [];
 
-    await loadCurrentMatches();
+    App.currentMatches = [];
+
+    App.currentRace = null;
+
+    App.eventRequestPending = true;
+
+    App.eventMessage = "Loading event data...";
 
     renderEvents();
+
+
+    try {
+
+        await loadCurrentPointsProfile();
+
+
+        await loadCurrentMatches();
+
+
+        await loadCurrentRace();
+
+
+        clearEventMessage();
+
+
+    }
+    catch (error) {
+
+        showEventMessage(
+            `This event could not be loaded: ${error.message}`,
+            true
+        );
+
+    }
+    finally {
+
+        App.eventRequestPending = false;
+
+        renderEvents();
+
+    }
 
 }
 
@@ -409,6 +479,285 @@ async function loadCurrentMatches() {
         await Api.getMatchesForEvent(
             App.currentEvent.ID
         );
+
+}
+
+
+
+async function loadCurrentRace() {
+
+    if (
+        !App.currentEvent ||
+        App.currentEvent.EventType !== "HEAT_FINAL"
+    ) {
+
+        App.currentRace = null;
+
+        return;
+
+    }
+
+
+    App.currentRace =
+        await Api.getRaceResultsForEvent(
+            App.currentEvent.ID
+        );
+
+}
+
+
+
+function selectRaceCategory(category) {
+
+    if (!["Male", "Female"].includes(category)) {
+
+        return;
+
+    }
+
+
+    App.raceCategory = category;
+
+    clearEventMessage();
+
+    renderEvents();
+
+}
+
+
+
+async function startRaceEvent() {
+
+    if (
+        !App.currentEvent ||
+        App.currentEvent.EventType !== "HEAT_FINAL"
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        setEventRequestPending(true);
+
+        App.currentRace =
+            await Api.startRaceEvent(
+                App.currentEvent.ID
+            );
+
+        showEventMessage(
+            `${App.currentRace.entrantCount} active competitors are entered in this event.`
+        );
+
+    }
+    catch (error) {
+
+        showEventMessage(
+            error.message,
+            true
+        );
+
+    }
+    finally {
+
+        setEventRequestPending(false);
+
+    }
+
+}
+
+
+
+async function saveRaceHeatWinner(teamId, selectId) {
+
+    if (
+        !App.currentEvent ||
+        App.currentEvent.EventType !== "HEAT_FINAL"
+    ) {
+
+        return;
+
+    }
+
+
+    const competitorId =
+        document.getElementById(selectId).value;
+
+
+    if (!competitorId) {
+
+        showEventMessage(
+            "Please choose a heat winner.",
+            true
+        );
+
+        renderEvents();
+
+        return;
+
+    }
+
+
+    try {
+
+        setEventRequestPending(true);
+
+        await Api.saveRaceHeatWinner(
+            App.currentEvent.ID,
+            App.raceCategory,
+            teamId,
+            competitorId
+        );
+
+        await refreshRaceEvent();
+
+        showEventMessage(
+            "Heat winner saved."
+        );
+
+    }
+    catch (error) {
+
+        showEventMessage(
+            error.message,
+            true
+        );
+
+    }
+    finally {
+
+        setEventRequestPending(false);
+
+    }
+
+}
+
+
+
+async function saveRaceFinalPositions() {
+
+    if (
+        !App.currentEvent ||
+        !App.currentRace
+    ) {
+
+        return;
+
+    }
+
+
+    const finalists =
+        App.currentRace.results.filter(result =>
+            result.CompetitionGender === App.raceCategory
+        );
+
+    const positions =
+        finalists.map(result => ({
+
+            competitorId: result.CompetitorID,
+
+            finalPosition: Number(
+                document
+                    .getElementById(
+                        `race-final-position-${result.ID}`
+                    )
+                    .value
+            )
+
+        }));
+
+
+    try {
+
+        validateRaceFinalPositions(positions);
+
+        setEventRequestPending(true);
+
+        await Api.saveRaceFinalPositions(
+            App.currentEvent.ID,
+            App.raceCategory,
+            positions
+        );
+
+        await refreshRaceEvent();
+
+        showEventMessage(
+            `${App.raceCategory} final positions saved.`
+        );
+
+    }
+    catch (error) {
+
+        showEventMessage(
+            error.message,
+            true
+        );
+
+    }
+    finally {
+
+        setEventRequestPending(false);
+
+    }
+
+}
+
+
+
+function validateRaceFinalPositions(positions) {
+
+    const finalPositions =
+        positions.map(position =>
+            position.finalPosition
+        );
+
+
+    if (
+        positions.length !== 4 ||
+        new Set(finalPositions).size !== 4 ||
+        !finalPositions.every(position =>
+            Number.isInteger(position) &&
+            position >= 1 &&
+            position <= 4
+        )
+    ) {
+
+        throw new Error(
+            "Use each final position from 1st to 4th exactly once."
+        );
+
+    }
+
+}
+
+
+
+async function refreshRaceEvent() {
+
+    const [
+        events,
+        race
+    ] = await Promise.all([
+
+        Api.getEvents(),
+
+        Api.getRaceResultsForEvent(
+            App.currentEvent.ID
+        )
+
+    ]);
+
+
+    App.events = events;
+
+    App.currentEvent =
+        events.find(event =>
+            event.ID === App.currentEvent.ID
+        ) || App.currentEvent;
+
+    App.currentRace = race;
 
 }
 
@@ -626,6 +975,15 @@ async function saveMatchWinner(matchId, winnerId) {
 function setEventRequestPending(isPending) {
 
     App.eventRequestPending = isPending;
+
+
+    if (isPending) {
+
+        App.eventMessage = "Saving changes...";
+
+        App.eventMessageIsError = false;
+
+    }
 
     renderEvents();
 

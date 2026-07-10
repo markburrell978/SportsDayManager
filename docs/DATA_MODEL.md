@@ -112,3 +112,20 @@ Maps competitors to events.
 |---------|------|----------|-------------|
 | EventID | String | Yes | References Events.ID |
 | CompetitorID | UUID | Yes | References Competitors.ID |
+
+---
+
+# RaceResults
+
+Stores one selected team heat winner for each event and competition category.
+
+| Column | Type | Required | Description |
+|---------|------|----------|-------------|
+| ID | UUID | Yes | Generated automatically |
+| EventID | String | Yes | References Events.ID |
+| CompetitionGender | Enum | Yes | Male or Female race category |
+| TeamID | String | Yes | References Teams.ID |
+| CompetitorID | UUID | Yes | References Competitors.ID |
+| FinalPosition | Number | No | Final position from 1 to 4; blank until recorded |
+
+The combination of `EventID`, `CompetitionGender` and `TeamID` must be unique.

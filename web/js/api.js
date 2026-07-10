@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: api.js
- * Version: 0.5.3
+ * Version: 0.5.4
  *
  * REST API client.
  * ==========================================================
@@ -219,6 +219,81 @@ const Api = {
                 matchId,
 
                 winnerId
+
+            }
+        );
+
+    },
+
+
+    async getRaceResultsForEvent(eventId) {
+
+        return await this.post(
+            "getRaceResultsForEvent",
+            {
+
+                eventId
+
+            }
+        );
+
+    },
+
+
+    async startRaceEvent(eventId) {
+
+        return await this.post(
+            "startRaceEvent",
+            {
+
+                eventId
+
+            }
+        );
+
+    },
+
+
+    async saveRaceHeatWinner(
+        eventId,
+        competitionGender,
+        teamId,
+        competitorId
+    ) {
+
+        return await this.post(
+            "saveRaceHeatWinner",
+            {
+
+                eventId,
+
+                competitionGender,
+
+                teamId,
+
+                competitorId
+
+            }
+        );
+
+    },
+
+
+    async saveRaceFinalPositions(
+        eventId,
+        competitionGender,
+        positions
+    ) {
+
+        return await this.post(
+            "saveRaceFinalPositions",
+            {
+
+                eventId,
+
+                competitionGender,
+
+                positions
 
             }
         );

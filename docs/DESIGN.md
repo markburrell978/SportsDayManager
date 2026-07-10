@@ -166,6 +166,22 @@ Tournament progression is backend business logic. The frontend renders the retur
 
 ---
 
+# 6.2 Heats & Final Race Engine
+
+`HEAT_FINAL` events persist race progress in RaceResults. One row identifies the selected heat winner for an event, Male or Female competition category, and active team. The same row receives a final position from 1 to 4 when that category's final is recorded.
+
+Race business logic belongs to `RaceService`. It validates competitors, categories, teams, optional EventCompetitors restrictions, uniqueness, and final positions before using the generic Database layer.
+
+Competitor availability uses the implemented `Active` field when it is present and nonblank, otherwise it falls back to the data-model `Present` field. A competitor's `CompetitionGender`, rather than gender identity, determines whether they enter the Male or Female category.
+
+When EventCompetitors rows exist for an event, only mapped competitors are eligible. Without mappings, all otherwise-eligible competitors may enter. Male and Female progress is independent. The first saved heat winner moves the event to `IN_PROGRESS`; completing both category finals moves it to `COMPLETE`.
+
+The race interface provides an idempotent Start Event action. It snapshots all currently active/present competitors into missing EventCompetitors mappings. It may be used again to add competitors who became available later without duplicating existing mappings.
+
+RaceResults are event-engine state only. v0.5.4 does not create Results rows, award points, or update the leaderboard.
+
+---
+
 # 7. IDs
 
 Static records use readable IDs.
@@ -187,6 +203,8 @@ Competitors
 Results
 
 Matches
+
+RaceResults
 
 ---
 

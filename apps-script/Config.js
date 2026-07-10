@@ -28,6 +28,10 @@ const TABLES = Object.freeze({
 
     MATCHES: "Matches",
 
+    RACE_RESULTS: "RaceResults",
+
+    EVENT_COMPETITORS: "EventCompetitors",
+
     ATTEMPTS: "Attempts"
 
 });
@@ -73,6 +77,14 @@ const API_ACTIONS = Object.freeze({
     CREATE_TOURNAMENT_FIXTURES: "createTournamentFixtures",
 
     UPDATE_MATCH_WINNER: "updateMatchWinner",
+
+    GET_RACE_RESULTS_FOR_EVENT: "getRaceResultsForEvent",
+
+    START_RACE_EVENT: "startRaceEvent",
+
+    SAVE_RACE_HEAT_WINNER: "saveRaceHeatWinner",
+
+    SAVE_RACE_FINAL_POSITIONS: "saveRaceFinalPositions",
 
     GET_LEADERBOARD: "getLeaderboard",
 
