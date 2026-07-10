@@ -14,6 +14,10 @@
 
 - Competitor event availability consistently supports the current Active field with a Present fallback
 
+## Fixed
+
+- Competitor activation now persists with either an Active-based or Present-based Competitors sheet
+
 ---
 
 # v0.5.3

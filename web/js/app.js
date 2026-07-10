@@ -1775,8 +1775,21 @@ function applyCompetitorFilters() {
 
 function isCompetitorActive(person) {
 
-    return person.Active === true ||
-        person.Active === "TRUE";
+    if (
+        person.hasOwnProperty("Active") &&
+        person.Active !== "" &&
+        person.Active !== null &&
+        person.Active !== undefined
+    ) {
+
+        return person.Active === true ||
+            person.Active === "TRUE";
+
+    }
+
+
+    return person.Present === true ||
+        person.Present === "TRUE";
 
 }
 

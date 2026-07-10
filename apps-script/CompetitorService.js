@@ -208,6 +208,11 @@ const CompetitorService = {
      */
     buildCompetitorRecord(competitor) {
 
+        const isActive =
+            this.toBoolean(
+                competitor.Active
+            );
+
         return {
 
             Name: String(
@@ -231,9 +236,10 @@ const CompetitorService = {
                 ).trim(),
 
             Active:
-                this.toBoolean(
-                    competitor.Active
-                )
+                isActive,
+
+            Present:
+                isActive
 
         };
 
