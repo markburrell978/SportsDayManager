@@ -129,6 +129,37 @@ function handleRequest(request) {
                 break;
 
 
+            case API_ACTIONS.GET_POINT_PROFILES:
+
+                response = Utils.success(
+                    EventService.getPointProfiles()
+                );
+
+                break;
+
+
+            case API_ACTIONS.CREATE_POINT_PROFILE:
+
+                response = Utils.success(
+                    PointProfileService.create(
+                        request.payload
+                    )
+                );
+
+                break;
+
+
+            case API_ACTIONS.UPDATE_POINT_PROFILE:
+
+                response = Utils.success(
+                    PointProfileService.update(
+                        request.payload
+                    )
+                );
+
+                break;
+
+
             case API_ACTIONS.GET_MATCHES_FOR_EVENT:
 
                 response = Utils.success(

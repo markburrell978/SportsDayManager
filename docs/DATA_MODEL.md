@@ -50,19 +50,21 @@ Version: 0.1
 
 | Column | Type | Required | Description |
 |---------|------|----------|-------------|
-| ID | String | Yes | Points profile identifier |
-| Position | Positive Integer | Yes | Finishing position; unique within a profile ID |
-| Points | Integer | Yes | Points awarded; may be positive, zero or negative |
+| ID | String | Yes | Stable unique points profile identifier |
+| Name | String | Yes | Organiser-facing profile name |
+| First | Integer | Yes | Points awarded for first place |
+| Second | Integer | Yes | Points awarded for second place |
+| Third | Integer | Yes | Points awarded for third place |
+| Fourth | Integer | Yes | Points awarded for fourth place |
 
 Example:
 
-| ID | Position | Points |
-|----|----------|--------|
-| PP_STANDARD | 1 | 10 |
-| PP_STANDARD | 2 | 6 |
-| PP_STANDARD | 3 | 3 |
+| ID | Name | First | Second | Third | Fourth |
+|----|------|-------|--------|-------|--------|
+| PP_STANDARD | Standard | 10 | 7 | 5 | 3 |
+| PP_FUN | Fun | 5 | 3 | 1 | 0 |
 
-Undefined positions award zero points. Duplicate Position rows within the same profile ID are invalid because the applicable point value would be ambiguous.
+One row represents one complete point profile. All four point values are required integers and may be positive, zero or negative. Events continue to reference profiles through Events.PointsProfileID. Positions above fourth award zero unless a later release extends the model.
 
 ---
 

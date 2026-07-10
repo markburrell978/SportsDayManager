@@ -24,6 +24,68 @@ const Database = {
 
     },
 
+
+    /**
+     * Returns a sheet's header row.
+     *
+     * @param {string} tableName
+     * @returns {string[]}
+     */
+    getHeaders(tableName) {
+
+        const sheet = this.getSheet(tableName);
+
+
+        if (sheet.getLastColumn() < 1) {
+
+            return [];
+
+        }
+
+
+        return sheet
+            .getRange(1, 1, 1, sheet.getLastColumn())
+            .getValues()[0];
+
+    },
+
+
+    /**
+     * Replaces a table's headers and records.
+     *
+     * @param {string} tableName
+     * @param {string[]} headers
+     * @param {Object[]} records
+     */
+    replaceAll(tableName, headers, records) {
+
+        const sheet = this.getSheet(tableName);
+
+        const values = [
+            headers,
+            ...records.map(record =>
+                headers.map(header =>
+                    record.hasOwnProperty(header)
+                        ? record[header]
+                        : ""
+                )
+            )
+        ];
+
+
+        sheet.clearContents();
+
+        sheet
+            .getRange(
+                1,
+                1,
+                values.length,
+                headers.length
+            )
+            .setValues(values);
+
+    },
+
     /**
      * Returns a sheet by name.
      *

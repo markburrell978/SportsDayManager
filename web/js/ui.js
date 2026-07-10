@@ -112,7 +112,7 @@ const EventUI = {
      * Renders the selected event summary.
      *
      * @param {Object|null} event
-     * @param {Object[]} pointsProfile
+     * @param {Object|null} pointsProfile
      * @param {Object[]} matches
      * @param {Object[]} teams
      * @param {boolean} requestPending
@@ -127,7 +127,7 @@ const EventUI = {
      */
     renderEventDetails(
         event,
-        pointsProfile = [],
+        pointsProfile = null,
         matches = [],
         teams = [],
         requestPending = false,
@@ -297,20 +297,20 @@ ${canConfirm ? `
 
 
     /**
-     * Renders point profile rows for preparation.
+     * Renders a point profile for preparation.
      *
-     * @param {Object[]} pointsProfile
+     * @param {Object|null} pointsProfile
      * @returns {string}
      */
     renderPointsProfile(pointsProfile) {
 
-        if (!pointsProfile.length) {
+        if (!pointsProfile) {
 
             return `
 
 <p>
     <strong>Point Profile:</strong>
-    No point profile rows loaded.
+    No point profile loaded.
 </p>
 
 `;
@@ -321,6 +321,11 @@ ${canConfirm ? `
         let html = `
 
 <h4>Point Profile</h4>
+
+<p>
+    <strong>${this.escapeHtml(pointsProfile.Name)}</strong>
+    (${this.escapeHtml(pointsProfile.ID)})
+</p>
 
 <table>
 
@@ -341,15 +346,20 @@ ${canConfirm ? `
 `;
 
 
-        pointsProfile.forEach(row => {
+        [
+            ["First", 1],
+            ["Second", 2],
+            ["Third", 3],
+            ["Fourth", 4]
+        ].forEach(item => {
 
             html += `
 
 <tr>
 
-<td>${this.escapeHtml(row.Position)}</td>
+<td>${this.escapeHtml(item[1])}</td>
 
-<td>${this.escapeHtml(row.Points)}</td>
+<td>${this.escapeHtml(pointsProfile[item[0]])}</td>
 
 </tr>
 

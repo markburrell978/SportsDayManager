@@ -30,6 +30,8 @@ const ResultService = {
 
     confirm(eventId, eventRunId) {
 
+        PointProfileService.ensureCurrentSchema();
+
         const lock =
             LockService.getScriptLock();
 
@@ -184,77 +186,27 @@ const ResultService = {
         }
 
 
-        const rows =
+        const profile =
             EventService.getPointProfile(
                 event.PointsProfileID
             );
 
 
-        if (!rows.length) {
+        if (!profile) {
 
             throw new Error(
-                "The event's point profile does not contain any rows."
+                "The event's point profile was not found."
             );
 
         }
 
 
-        const positions = [];
-
-        const profile = {};
-
-
-        rows.forEach(row => {
-
-            const position =
-                Number(row.Position);
-
-            const points =
-                Number(row.Points);
-
-
-            if (
-                Utils.isBlank(row.Position) ||
-                !Number.isInteger(position) ||
-                position <= 0
-            ) {
-
-                throw new Error(
-                    "Point profile positions must be positive integers."
-                );
-
-            }
-
-
-            if (
-                Utils.isBlank(row.Points) ||
-                !Number.isInteger(points)
-            ) {
-
-                throw new Error(
-                    "Point profile values must be integers."
-                );
-
-            }
-
-
-            if (positions.includes(position)) {
-
-                throw new Error(
-                    `Point profile position ${position} is duplicated.`
-                );
-
-            }
-
-
-            positions.push(position);
-
-            profile[position] = points;
-
-        });
-
-
-        return profile;
+        return {
+            1: profile.First,
+            2: profile.Second,
+            3: profile.Third,
+            4: profile.Fourth
+        };
 
     },
 

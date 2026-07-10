@@ -30,9 +30,17 @@ const App = {
 
     currentEventRun: null,
 
-    currentPointsProfile: [],
+    currentPointsProfile: null,
 
     pointProfilesById: {},
+
+    pointProfiles: [],
+
+    editingPointProfileId: null,
+
+    pointProfileMessage: "",
+
+    pointProfileMessageIsError: false,
 
     currentMatches: [],
 
@@ -155,6 +163,13 @@ async function showPage(page) {
     if (page === "events") {
 
         await loadEvents();
+
+    }
+
+
+    if (page === "settings") {
+
+        await loadPointProfiles();
 
     }
 
@@ -292,7 +307,7 @@ async function loadEvents() {
 
         App.currentEventRun = null;
 
-        App.currentPointsProfile = [];
+        App.currentPointsProfile = null;
 
         App.currentMatches = [];
 
@@ -411,7 +426,7 @@ async function selectEvent(id) {
 
     clearEventMessage();
 
-    App.currentPointsProfile = [];
+    App.currentPointsProfile = null;
 
     App.currentEventRun = null;
 
@@ -497,7 +512,7 @@ async function loadCurrentPointsProfile() {
         !App.currentEvent.PointsProfileID
     ) {
 
-        App.currentPointsProfile = [];
+        App.currentPointsProfile = null;
 
         return;
 
@@ -1729,6 +1744,285 @@ async function confirmCurrentEventResults() {
         setEventRequestPending(false);
 
     }
+
+}
+
+
+
+async function loadPointProfiles() {
+
+    try {
+
+        App.pointProfiles =
+            await Api.getPointProfiles();
+
+        renderPointProfiles();
+
+    }
+    catch (error) {
+
+        const container =
+            document.getElementById("point-profile-manager");
+
+
+        container.innerHTML = `
+<p class="error">
+    ${escapeHtml(error.message)}
+</p>`;
+
+    }
+
+}
+
+
+
+function renderPointProfiles() {
+
+    const container =
+        document.getElementById("point-profile-manager");
+
+    const editingProfile =
+        App.pointProfiles.find(profile =>
+            profile.ID === App.editingPointProfileId
+        ) || null;
+
+    let html = `
+<div class="point-profile-toolbar">
+<button onclick="startNewPointProfile()">
+    Add Point Profile
+</button>
+</div>`;
+
+
+    if (App.pointProfileMessage) {
+
+        html += `
+<p class="${App.pointProfileMessageIsError ? "error" : "success"}">
+    ${escapeHtml(App.pointProfileMessage)}
+</p>`;
+
+    }
+
+
+    html += `
+<div class="table-scroll">
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>First</th>
+<th>Second</th>
+<th>Third</th>
+<th>Fourth</th>
+<th></th>
+</tr>
+</thead>
+<tbody>`;
+
+
+    App.pointProfiles.forEach(profile => {
+
+        html += `
+<tr>
+<td>${escapeHtml(profile.ID)}</td>
+<td>${escapeHtml(profile.Name)}</td>
+<td>${escapeHtml(profile.First)}</td>
+<td>${escapeHtml(profile.Second)}</td>
+<td>${escapeHtml(profile.Third)}</td>
+<td>${escapeHtml(profile.Fourth)}</td>
+<td>
+<button onclick="editPointProfile('${escapeHtml(profile.ID)}')">
+    Edit
+</button>
+</td>
+</tr>`;
+
+    });
+
+
+    html += `
+</tbody>
+</table>
+</div>
+<div class="point-profile-form">
+<h3>${editingProfile ? "Edit" : "Add"} Point Profile</h3>
+<label>
+    Profile ID
+    <input id="point-profile-id"
+           type="text"
+           value="${escapeHtml(editingProfile ? editingProfile.ID : "")}"
+           ${editingProfile ? "readonly" : ""}>
+</label>
+<label>
+    Name
+    <input id="point-profile-name"
+           type="text"
+           value="${escapeHtml(editingProfile ? editingProfile.Name : "")}">
+</label>
+<div class="point-profile-points">
+${[
+    ["first", "First", editingProfile?.First],
+    ["second", "Second", editingProfile?.Second],
+    ["third", "Third", editingProfile?.Third],
+    ["fourth", "Fourth", editingProfile?.Fourth]
+].map(item => `
+<label>
+    ${item[1]}
+    <input id="point-profile-${item[0]}"
+           type="number"
+           step="1"
+           value="${escapeHtml(item[2] ?? "")}">
+</label>`).join("")}
+</div>
+<div class="point-profile-actions">
+<button id="save-point-profile" onclick="savePointProfile()">
+    Save Profile
+</button>
+${editingProfile ? `
+<button onclick="startNewPointProfile()">
+    Cancel
+</button>` : ""}
+</div>
+</div>`;
+
+
+    container.innerHTML = html;
+
+}
+
+
+
+function startNewPointProfile() {
+
+    App.editingPointProfileId = null;
+
+    App.pointProfileMessage = "";
+
+    renderPointProfiles();
+
+}
+
+
+
+function editPointProfile(id) {
+
+    App.editingPointProfileId = id;
+
+    App.pointProfileMessage = "";
+
+    renderPointProfiles();
+
+}
+
+
+
+async function savePointProfile() {
+
+    const profile = {
+        ID: document.getElementById("point-profile-id").value.trim(),
+        Name: document.getElementById("point-profile-name").value.trim(),
+        First: document.getElementById("point-profile-first").value,
+        Second: document.getElementById("point-profile-second").value,
+        Third: document.getElementById("point-profile-third").value,
+        Fourth: document.getElementById("point-profile-fourth").value
+    };
+
+    const saveButton =
+        document.getElementById("save-point-profile");
+
+
+    try {
+
+        validatePointProfile(profile);
+
+        saveButton.disabled = true;
+
+
+        if (App.editingPointProfileId) {
+
+            await Api.updatePointProfile(profile);
+
+            App.pointProfileMessage =
+                "Point profile updated.";
+
+        }
+        else {
+
+            await Api.createPointProfile(profile);
+
+            App.pointProfileMessage =
+                "Point profile created.";
+
+        }
+
+
+        App.pointProfileMessageIsError = false;
+
+        App.editingPointProfileId = profile.ID;
+
+        delete App.pointProfilesById[profile.ID];
+
+        App.pointProfiles =
+            await Api.getPointProfiles();
+
+    }
+    catch (error) {
+
+        App.pointProfileMessage = error.message;
+
+        App.pointProfileMessageIsError = true;
+
+    }
+    finally {
+
+        renderPointProfiles();
+
+    }
+
+}
+
+
+
+function validatePointProfile(profile) {
+
+    if (!profile.ID) {
+
+        throw new Error(
+            "Point profile ID is required."
+        );
+
+    }
+
+
+    if (!profile.Name) {
+
+        throw new Error(
+            "Point profile name is required."
+        );
+
+    }
+
+
+    [
+        [profile.First, "First-place"],
+        [profile.Second, "Second-place"],
+        [profile.Third, "Third-place"],
+        [profile.Fourth, "Fourth-place"]
+    ].forEach(item => {
+
+        if (
+            item[0] === "" ||
+            !Number.isInteger(Number(item[0]))
+        ) {
+
+            throw new Error(
+                `${item[1]} points must be an integer.`
+            );
+
+        }
+
+    });
 
 }
 

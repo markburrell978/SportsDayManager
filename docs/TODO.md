@@ -5,6 +5,7 @@
 - [x] Initial project planning
 - [x] Define event types
 - [x] Define points model
+- [x] Simplify point profiles to one row (v0.5.9)
 - [x] Create Google Sheet
 - [ ] Create Apps Script project
 - [ ] Implement Database layer

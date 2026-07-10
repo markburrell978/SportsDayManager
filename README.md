@@ -10,6 +10,7 @@ A reusable web application for managing an annual Sports Day.
 - Competitor management
 - Multiple event types
 - Confirmed event placings and points snapshots
+- Reusable one-row point-profile management
 - Google Sheets database
 - Mobile-friendly interface
 

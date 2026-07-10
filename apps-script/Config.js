@@ -76,6 +76,12 @@ const API_ACTIONS = Object.freeze({
 
     GET_POINT_PROFILE: "getPointProfile",
 
+    GET_POINT_PROFILES: "getPointProfiles",
+
+    CREATE_POINT_PROFILE: "createPointProfile",
+
+    UPDATE_POINT_PROFILE: "updatePointProfile",
+
     GET_MATCHES_FOR_EVENT: "getMatchesForEvent",
 
     CREATE_ROUND_ROBIN_FIXTURES: "createRoundRobinFixtures",

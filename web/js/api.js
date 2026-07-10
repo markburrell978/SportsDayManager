@@ -166,6 +166,33 @@ const Api = {
     },
 
 
+    async getPointProfiles() {
+
+        return await this.get("getPointProfiles");
+
+    },
+
+
+    async createPointProfile(profile) {
+
+        return await this.post(
+            "createPointProfile",
+            profile
+        );
+
+    },
+
+
+    async updatePointProfile(profile) {
+
+        return await this.post(
+            "updatePointProfile",
+            profile
+        );
+
+    },
+
+
     async getMatchesForEvent(eventId, eventRunId) {
 
         return await this.post(

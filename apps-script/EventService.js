@@ -55,18 +55,21 @@ const EventService = {
 
 
     /**
-     * Returns point profile rows by profile ID.
+     * Returns one complete point profile by profile ID.
      *
      * @param {string} id
      * @returns {Object[]}
      */
     getPointProfile(id) {
 
-        return Database
-            .get(TABLES.POINT_PROFILES)
-            .filter(profile =>
-                profile.ID === id
-            );
+        return PointProfileService.getById(id);
+
+    },
+
+
+    getPointProfiles() {
+
+        return PointProfileService.getAll();
 
     },
 

@@ -79,6 +79,8 @@ Event execution data belongs to an Event Run. Events are permanent configuration
 
 Completed Event Runs require explicit organiser confirmation before Results rows are generated. Results.Position is authoritative; PointsAwarded is a compatibility snapshot. Reconfirmation replaces only the current run's Results rows.
 
+PointProfiles uses one row per profile with ID, Name, First, Second, Third and Fourth. All point values are required integers; zero and negative values are valid.
+
 ---
 
 # Development Workflow

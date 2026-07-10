@@ -16,6 +16,21 @@
 
 ---
 
+# v0.5.9
+
+## Added
+
+- Automatic migration from multi-row point profiles to one row per profile
+- Point-profile management in Settings
+- Backend create/update validation for all four place values
+
+## Changed
+
+- PointProfiles now uses `ID`, `Name`, `First`, `Second`, `Third`, `Fourth`
+- Event preparation and v0.6.0 confirmation consume a single profile object
+
+---
+
 # v0.5.7
 
 ## Added
@@ -123,7 +138,7 @@
 - Event preparation state
 - Current event selection stored in application state
 - Point profile loading for the selected event
-- Selected event summary includes point profile rows
+- Selected event summary includes point profile details
 
 ---
 

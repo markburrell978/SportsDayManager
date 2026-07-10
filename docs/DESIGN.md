@@ -159,7 +159,7 @@ Reconfirmation is idempotent and correctable: current-run rows are removed and r
 
 Results.Position is the authoritative confirmed placing. PointsAwarded stores an integer compatibility snapshot from the point profile at confirmation time. The v0.7.0 leaderboard will calculate current totals from saved positions and current point profiles so later profile edits can affect totals.
 
-Missing profile positions award zero. Profile positions must be unique positive integers. Point values must be integers and may be positive, zero or negative. Duplicate positions or decimal values reject confirmation.
+Positions above fourth award zero. Profile point fields must be integers and may be positive, zero or negative. Blank or decimal values are rejected when profiles are created or updated.
 
 Round Robin uses wins and competition ranking. Tied teams share a position and each receives the rounded-up average of points for all places occupied by the tie. Male and Female Heat & Final and Distance categories score independently. Each Double Team member receives the full points for its side's placing.
 
@@ -181,6 +181,10 @@ A Points Profile defines:
 - fourth
 
 Future versions may support additional positions.
+
+Each PointProfiles row is one complete reusable profile with `ID`, `Name`, `First`, `Second`, `Third` and `Fourth`. Events retain stable references through PointsProfileID. Runtime code consumes one profile object rather than a position-row array.
+
+Legacy `ID/ProfileID`, `Position`, `Points` rows are migrated automatically on first profile access. Positions 1–4 map to the four named fields and missing positions become zero. Duplicate positions, positions above fourth, decimal points and conflicting names stop migration with a clear error. When legacy data has no Name column, the stable profile ID is used as its initial organiser-facing name.
 
 ---
 

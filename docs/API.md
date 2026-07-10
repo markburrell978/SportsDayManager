@@ -119,7 +119,7 @@ Action: `getEvents`
 
 ## getPointProfile
 
-Returns point profile rows by profile ID.
+Returns one point-profile object by ID using `ID`, `Name`, `First`, `Second`, `Third` and `Fourth`.
 
 Method: `POST`
 
@@ -133,7 +133,54 @@ Payload:
 }
 ```
 
-Response data is an array because point profiles use one row per position.
+Response data is an object, or `null` when the profile does not exist.
+
+---
+
+## getPointProfiles
+
+Returns all one-row point profiles.
+
+Method: `GET`
+
+Action: `getPointProfiles`
+
+---
+
+## createPointProfile
+
+Creates one complete point profile.
+
+Method: `POST`
+
+Action: `createPointProfile`
+
+Payload:
+
+```json
+{
+    "ID": "PP_STANDARD",
+    "Name": "Standard",
+    "First": 10,
+    "Second": 7,
+    "Third": 5,
+    "Fourth": 3
+}
+```
+
+IDs and names are required. All four point values must be integers; negative and zero values are accepted.
+
+---
+
+## updatePointProfile
+
+Updates a profile in one operation while preserving its stable ID.
+
+Method: `POST`
+
+Action: `updatePointProfile`
+
+Payload uses the same shape as `createPointProfile`.
 
 ---
 
@@ -527,7 +574,7 @@ Payload:
 
 The response includes whether existing rows were replaced, the result count, the generated rows and a confirmation message.
 
-Point-profile positions must be unique positive integers. Point values must be integers and may be positive, zero or negative. Undefined placing positions award zero.
+Point-profile values must be integers and may be positive, zero or negative. Placing positions above fourth award zero.
 
 Round-robin ties use competition ranking. Each tied team receives the rounded-up average of the point values for every place occupied by the tied group.
 

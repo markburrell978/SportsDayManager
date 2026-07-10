@@ -921,6 +921,87 @@ Distance Competition Engine
 
 /*
 ==========================================================
+Point Profile Management
+==========================================================
+*/
+
+
+.point-profile-toolbar {
+
+    margin-bottom: 16px;
+
+}
+
+
+.point-profile-form {
+
+    margin-top: 20px;
+
+    padding: 16px;
+
+    border: 1px solid #dddddd;
+
+    border-radius: 6px;
+
+}
+
+
+.point-profile-form > label,
+.point-profile-points label {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+
+    margin-bottom: 12px;
+
+    font-weight: bold;
+
+}
+
+
+.point-profile-form input {
+
+    padding: 8px;
+
+}
+
+
+.point-profile-points {
+
+    display: grid;
+
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+    gap: 12px;
+
+}
+
+
+.point-profile-actions {
+
+    display: flex;
+
+    gap: 10px;
+
+}
+
+
+@media (max-width: 650px) {
+
+    .point-profile-points {
+
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    }
+
+}
+
+
+/*
+==========================================================
 Competitor Modal
 ==========================================================
 */
