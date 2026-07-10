@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: ui.js
- * Version: 0.7.0
+ * Version: 0.8.0
  *
  * Shared UI rendering helpers.
  * ==========================================================
@@ -124,6 +124,10 @@ const EventUI = {
      * @param {Object|null} doubleTeamMatch
      * @param {Object|null} distance
      * @param {string} distanceCategory
+     * @param {string} eventViewMode
+     * @param {Object|null} eventHistory
+     * @param {boolean} historyLoading
+     * @param {string} historyError
      */
     renderEventDetails(
         event,
@@ -138,7 +142,11 @@ const EventUI = {
         raceCategory = "Male",
         doubleTeamMatch = null,
         distance = null,
-        distanceCategory = "Male"
+        distanceCategory = "Male",
+        eventViewMode = "current",
+        eventHistory = null,
+        historyLoading = false,
+        historyError = ""
     ) {
 
         const container =
@@ -180,6 +188,14 @@ const EventUI = {
     ${this.formatBoolean(event.Enabled)}
 </p>
 
+${this.renderEventViewTabs(eventViewMode)}
+
+${eventViewMode === "history" ? `
+${this.renderEventHistory(
+    eventHistory,
+    historyLoading,
+    historyError
+)}` : `
 ${this.renderEventRun(eventRun, requestPending)}
 
 ${this.renderPointsProfile(pointsProfile)}
@@ -213,10 +229,563 @@ ${this.renderDistance(
     distanceCategory,
     requestPending
 )}
+`}
 
 </div>
 
 `;
+
+    },
+
+
+    renderEventViewTabs(eventViewMode) {
+
+        return `
+<div class="event-view-tabs" role="group" aria-label="Event view">
+<button class="${eventViewMode === "current" ? "active" : ""}"
+        onclick="showCurrentEventView()">
+    Current Run
+</button>
+<button class="${eventViewMode === "history" ? "active" : ""}"
+        onclick="openEventHistory()">
+    History
+</button>
+</div>`;
+
+    },
+
+
+    renderEventHistory(history, loading, error) {
+
+        if (loading) {
+
+            return `
+<div class="event-history">
+<p class="loading">Loading event history...</p>
+</div>`;
+
+        }
+
+
+        if (error) {
+
+            return `
+<div class="event-history">
+<p class="error">
+    Event history could not be loaded: ${this.escapeHtml(error)}
+</p>
+<button onclick="openEventHistory()">Try Again</button>
+</div>`;
+
+        }
+
+
+        if (!history) {
+
+            return `
+<div class="event-history">
+<p class="loading">Open History to load event runs.</p>
+</div>`;
+
+        }
+
+
+        let html = `
+<div class="event-history">
+<div class="event-history-toolbar">
+<p>Read-only event runs, newest first.</p>
+<button onclick="openEventHistory()">Refresh History</button>
+</div>`;
+
+
+        (history.Warnings || []).forEach(warning => {
+
+            html += `
+<p class="history-warning">
+    ${this.escapeHtml(warning)}
+</p>`;
+
+        });
+
+
+        if (!history.Runs || !history.Runs.length) {
+
+            return html + `
+<p class="loading">No event runs are available.</p>
+</div>`;
+
+        }
+
+
+        history.Runs.forEach(run => {
+
+            html += this.renderHistoryRun(run);
+
+        });
+
+
+        return html + `</div>`;
+
+    },
+
+
+    renderHistoryRun(run) {
+
+        const resultLabel =
+            run.ResultStatus === "CONFIRMED"
+                ? `Results confirmed (${run.ConfirmedResultCount})`
+                : "Results not confirmed";
+
+        let html = `
+<details class="history-run-card ${run.IsCurrent ? "history-current-run" : ""}"
+         ${run.IsCurrent ? "open" : ""}>
+<summary>
+    <strong>Run ${this.escapeHtml(run.RunNumber)}</strong>
+    <span>${this.escapeHtml(this.formatHistoryStatus(run.Status))}</span>
+    <span>${run.IsCurrent ? "Current" : "Previous"}</span>
+    <span>${this.escapeHtml(resultLabel)}</span>
+</summary>
+<div class="history-run-body">`;
+
+
+        if (run.StartedAt || run.CompletedAt) {
+
+            html += `
+<p class="history-timestamps">
+    ${run.StartedAt
+        ? `Started: ${this.escapeHtml(this.formatHistoryDate(run.StartedAt))}`
+        : ""}
+    ${run.StartedAt && run.CompletedAt ? " · " : ""}
+    ${run.CompletedAt
+        ? `Completed: ${this.escapeHtml(this.formatHistoryDate(run.CompletedAt))}`
+        : ""}
+</p>`;
+
+        }
+
+
+        (run.Warnings || []).forEach(warning => {
+
+            html += `
+<p class="history-warning">
+    ${this.escapeHtml(warning)}
+</p>`;
+
+        });
+
+
+        html += this.renderHistoryOutcomes(
+            run.Outcomes
+        );
+
+
+        if (
+            !run.Outcomes ||
+            !run.Outcomes.ResultsCategorised
+        ) {
+
+            html += this.renderHistoryResults(
+                run.Results
+            );
+
+        }
+
+
+        if (
+            run.ResultStatus !== "CONFIRMED" &&
+            run.Status === "COMPLETE"
+        ) {
+
+            html += `
+<p class="loading">
+    This run was completed, but its results were not confirmed.
+</p>`;
+
+        }
+
+
+        return html + `
+</div>
+</details>`;
+
+    },
+
+
+    renderHistoryOutcomes(outcomes) {
+
+        if (!outcomes || !outcomes.HasData) {
+
+            return `
+<section class="history-outcomes">
+<h4>Recorded outcome</h4>
+<p class="loading">No event data was recorded for this run.</p>
+</section>`;
+
+        }
+
+
+        if (
+            outcomes.Type === "ROUND_ROBIN" ||
+            outcomes.Type === "TOURNAMENT"
+        ) {
+
+            return this.renderHistoryMatches(outcomes);
+
+        }
+
+
+        if (outcomes.Type === "HEAT_FINAL") {
+
+            return this.renderHistoryRace(outcomes);
+
+        }
+
+
+        if (outcomes.Type === "DISTANCE") {
+
+            return this.renderHistoryDistance(outcomes);
+
+        }
+
+
+        if (outcomes.Type === "DOUBLE_TEAM") {
+
+            return this.renderHistoryDoubleTeam(outcomes);
+
+        }
+
+
+        return `
+<section class="history-outcomes">
+<h4>Recorded outcome</h4>
+<p class="loading">This event type has no history summary.</p>
+</section>`;
+
+    },
+
+
+    renderHistoryMatches(outcomes) {
+
+        let html = `
+<section class="history-outcomes">
+<h4>Recorded matches</h4>`;
+
+
+        if (outcomes.ParticipatingTeams.length) {
+
+            html += `
+<p>
+    <strong>Teams:</strong>
+    ${outcomes.ParticipatingTeams
+        .map(team => this.renderHistoryTeam(team))
+        .join(", ")}
+</p>`;
+
+        }
+
+
+        html += `
+<div class="table-scroll">
+<table>
+<thead>
+<tr>
+<th>Match</th>
+<th>Team 1</th>
+<th>Team 2</th>
+<th>Winner</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>`;
+
+
+        outcomes.Matches.forEach(match => {
+
+            html += `
+<tr>
+<td>${this.escapeHtml(match.Label)}</td>
+<td>${this.renderHistoryTeam(match.Team1)}</td>
+<td>${this.renderHistoryTeam(match.Team2)}</td>
+<td>${match.Winner ? this.renderHistoryTeam(match.Winner) : "—"}</td>
+<td>${this.escapeHtml(this.formatHistoryStatus(match.Status))}</td>
+</tr>`;
+
+        });
+
+
+        return html + `
+</tbody>
+</table>
+</div>
+</section>`;
+
+    },
+
+
+    renderHistoryRace(outcomes) {
+
+        let html = `
+<section class="history-outcomes">
+<h4>Recorded heats and finals</h4>`;
+
+
+        outcomes.Categories.forEach(category => {
+
+            html += `
+<div class="history-category">
+<h5>${this.escapeHtml(category.Name)}</h5>`;
+
+
+            if (!category.Entries.length) {
+
+                html += `
+<p class="loading">No finalists were recorded.</p>`;
+
+            }
+            else {
+
+                html += `
+<div class="table-scroll">
+<table>
+<thead>
+<tr><th>Team</th><th>Competitor</th><th>Final position</th></tr>
+</thead>
+<tbody>`;
+
+
+                category.Entries.forEach(entry => {
+
+                    html += `
+<tr>
+<td>${this.renderHistoryTeam(entry.Team)}</td>
+<td>
+    ${entry.CompetitorName
+        ? this.escapeHtml(entry.CompetitorName)
+        : `<span class="history-unavailable">Unavailable (${this.escapeHtml(entry.CompetitorID)})</span>`}
+</td>
+<td>${entry.FinalPosition === null ? "Not recorded" : this.escapeHtml(this.formatOrdinal(entry.FinalPosition))}</td>
+</tr>`;
+
+                });
+
+
+                html += `</tbody></table></div>`;
+
+            }
+
+
+            if (outcomes.ResultsCategorised) {
+
+                html += this.renderHistoryResults(
+                    category.Results,
+                    "Confirmed placings"
+                );
+
+            }
+
+
+            html += `</div>`;
+
+        });
+
+
+        return html + `</section>`;
+
+    },
+
+
+    renderHistoryDistance(outcomes) {
+
+        let html = `
+<section class="history-outcomes">
+<h4>Recorded distance placings</h4>`;
+
+
+        outcomes.Categories.forEach(category => {
+
+            html += `
+<div class="history-category">
+<h5>${this.escapeHtml(category.Name)}</h5>`;
+
+
+            if (!category.Entries.length) {
+
+                html += `<p class="loading">No team placings were recorded.</p>`;
+
+            }
+            else {
+
+                html += `<ol class="history-placings">`;
+
+
+                category.Entries.forEach(entry => {
+
+                    html += `
+<li value="${entry.Position || ""}">
+    ${this.renderHistoryTeam(entry.Team)}
+    ${entry.Position === null ? "— position unavailable" : ""}
+</li>`;
+
+                });
+
+
+                html += `</ol>`;
+
+            }
+
+
+            if (outcomes.ResultsCategorised) {
+
+                html += this.renderHistoryResults(
+                    category.Results,
+                    "Confirmed placings"
+                );
+
+            }
+
+
+            html += `</div>`;
+
+        });
+
+
+        return html + `</section>`;
+
+    },
+
+
+    renderHistoryDoubleTeam(outcomes) {
+
+        let html = `
+<section class="history-outcomes">
+<h4>Recorded double-team fixture</h4>`;
+
+
+        outcomes.Fixtures.forEach((fixture, index) => {
+
+            const side1 = fixture.Side1
+                .map(team => this.renderHistoryTeam(team))
+                .join(" + ");
+
+            const side2 = fixture.Side2
+                .map(team => this.renderHistoryTeam(team))
+                .join(" + ");
+
+
+            html += `
+<div class="history-double-team">
+${outcomes.Fixtures.length > 1 ? `<h5>Fixture ${index + 1}</h5>` : ""}
+<p><strong>Side 1:</strong> ${side1}</p>
+<p><strong>Side 2:</strong> ${side2}</p>
+<p>
+    <strong>Winner:</strong>
+    ${fixture.WinnerSide === 1
+        ? `Side 1 — ${side1}`
+        : fixture.WinnerSide === 2
+            ? `Side 2 — ${side2}`
+            : "Not recorded"}
+</p>
+<p><strong>Status:</strong> ${this.escapeHtml(this.formatHistoryStatus(fixture.Status))}</p>
+</div>`;
+
+        });
+
+
+        return html + `</section>`;
+
+    },
+
+
+    renderHistoryResults(results, heading = "Confirmed results") {
+
+        if (!results || !results.length) {
+
+            return `
+<section class="history-results">
+<h4>${this.escapeHtml(heading)}</h4>
+<p class="loading">Results have not been confirmed.</p>
+</section>`;
+
+        }
+
+
+        let html = `
+<section class="history-results">
+<h4>${this.escapeHtml(heading)}</h4>
+<div class="table-scroll">
+<table>
+<thead>
+<tr><th>Position</th><th>Team</th><th>Points</th></tr>
+</thead>
+<tbody>`;
+
+
+        results.forEach(result => {
+
+            html += `
+<tr>
+<td>${result.Position === null ? "Unavailable" : this.escapeHtml(result.Position)}</td>
+<td>${this.renderHistoryTeam(result)}</td>
+<td>${result.Points === null ? "Unavailable" : this.escapeHtml(result.Points)}</td>
+</tr>`;
+
+        });
+
+
+        return html + `
+</tbody>
+</table>
+</div>
+</section>`;
+
+    },
+
+
+    renderHistoryTeam(team) {
+
+        if (!team || !team.TeamName) {
+
+            return `<span class="history-unavailable">
+                Unavailable${team && team.TeamID ? ` (${this.escapeHtml(team.TeamID)})` : ""}
+            </span>`;
+
+        }
+
+
+        const colour =
+            /^#[0-9a-fA-F]{6}$/.test(team.TeamColour || "")
+                ? team.TeamColour
+                : "#777777";
+
+
+        return `<span class="history-team">
+            <span class="team-colour" style="background-color: ${colour}"></span>
+            ${this.escapeHtml(team.TeamName)}
+        </span>`;
+
+    },
+
+
+    formatHistoryStatus(status) {
+
+        return String(status || "Unknown")
+            .toLowerCase()
+            .replaceAll("_", " ")
+            .replace(/^./, character =>
+                character.toUpperCase()
+            );
+
+    },
+
+
+    formatHistoryDate(value) {
+
+        const date = new Date(value);
+
+
+        return Number.isNaN(date.getTime())
+            ? String(value)
+            : date.toLocaleString();
 
     },
 

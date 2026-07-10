@@ -1,6 +1,6 @@
 # Sports Day Manager
 
-Version: 0.1 (Living Specification)
+Version: 0.8.0 (Living Specification)
 
 ---
 
@@ -147,7 +147,7 @@ When an event without an EventRun is selected, Run 1 is created under an Apps Sc
 
 Reset requires the currently displayed EventRunID. Inside a script lock, the backend rejects stale IDs, marks the previous run non-current and creates the next current run in NOT_STARTED state. Historical engine rows are untouched.
 
-Future scoring must associate Results with EventRunID and explicitly choose which completed run contributes to the leaderboard. Reset itself does not create Results or award points.
+Scoring associates Results with EventRunID. The live leaderboard counts only the current run, while Event History may display every run. Reset itself does not create Results or award points.
 
 ---
 
@@ -182,6 +182,24 @@ Heat & Final Male and Female results and Distance Male and Female results contri
 Rows sort by total points descending and team name ascending for stable display. Equal totals receive the same competition-ranking position, so ranks may appear as `1, 1, 3` or `1, 2, 2, 4`.
 
 The organiser page loads the leaderboard whenever it opens and exposes a manual Refresh button. v0.7.0 does not poll automatically and does not include public or shareable leaderboard functionality; sharing remains deferred to v1.2.
+
+---
+
+# 5.4 Event History
+
+v0.8.0 adds a read-only History view within the selected event. `EventHistoryService` validates the event, loads its EventRuns and run-scoped rows in bulk, and returns frontend-ready summaries in one API response. Runs are ordered newest first and include both the current run and every previous reset run.
+
+History is reconstructed from existing EventRuns, Results and the event's implemented engine table: Matches for Round Robin and Tournament, RaceResults for Heat & Final, DistanceResults for observed distance placings, and DoubleTeamMatches for Double Team. Teams and competitors are loaded once for current display names and colours. No archive or history snapshot table is introduced.
+
+Each run retains its recorded status, current/previous state, reset origin and existing timestamps. Engine outcomes may be shown even when Results were never confirmed; they are not promoted into official placings. Confirmed state is determined only by Results rows scoped to the run's EventRunID.
+
+Historical Results.Position values are scored for display using the event's current point profile. PointsAwarded remains a compatibility snapshot. Round-robin tie groups call the same occupied-place averaging helper used by the live leaderboard, so profile edits affect history after it is reopened or refreshed. Missing or invalid profile configuration produces an explicit points-unavailable warning without hiding raw outcomes or placings.
+
+Heat & Final and Distance engine outcomes remain separated into Male and Female sections. Because Results has no category field, confirmed rows are assigned to categories only when their stored sequence aligns deterministically with the ordered engine rows by team and position. Otherwise the engine sections remain separate and confirmed rows appear in one combined list.
+
+History contains no write controls. Previous and current history cards cannot edit engine data, confirm or reconfirm Results, reset a run, restore a run, make a run current or delete data. Existing current-run controls remain in the separate Current Run view, and backend stale-run validation is unchanged.
+
+Malformed historical references are represented as unavailable where possible. Blank legacy EventRunID rows cannot be assigned to a run and are omitted with a warning. Historical leaderboard reconstruction, global history comparison, exports, sharing, authentication and offline caching are outside v0.8.0. v0.9.0 — Offline Mode is the next planned release; the shareable leaderboard remains deferred to v1.2.
 
 ---
 

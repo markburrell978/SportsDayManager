@@ -12,6 +12,7 @@ A reusable web application for managing an annual Sports Day.
 - Confirmed event placings and points snapshots
 - Reusable one-row point-profile management
 - Organiser-facing live leaderboard using current point profiles
+- Read-only per-event run history
 - Google Sheets database
 - Mobile-friendly interface
 
@@ -41,6 +42,7 @@ sports-day-manager/
 │   ├── TeamService.js
 │   ├── CompetitorService.js
 │   ├── EventService.js
+│   ├── EventHistoryService.js
 │   ├── LeaderboardService.js
 │   ├── ResultService.js
 │   ├── Utils.js
@@ -72,4 +74,4 @@ clasp push
 
 ## Current Version
 
-v0.7.0
+v0.8.0

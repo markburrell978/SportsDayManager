@@ -118,6 +118,8 @@ const API_ACTIONS = Object.freeze({
 
     GET_LEADERBOARD: "getLeaderboard",
 
+    GET_EVENT_HISTORY: "getEventHistory",
+
     CREATE_COMPETITOR: "createCompetitor",
 
     UPDATE_COMPETITOR: "updateCompetitor",

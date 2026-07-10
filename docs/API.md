@@ -1,6 +1,6 @@
 # Sports Day Manager API
 
-Version: 0.7.0
+Version: 0.8.0
 
 ---
 
@@ -611,3 +611,73 @@ Every active team is returned, including teams with zero points. Inactive teams 
 Totals are calculated when requested from confirmed `Results.Position` rows belonging to each event's current Event Run and the event's current point profile. `Results.PointsAwarded` is not the general source of truth. Historical run results remain stored but do not count, and point-profile edits affect the next response without reconfirmation.
 
 For round-robin ties, rows sharing a position occupy that position and the following places. Each tied team receives the rounded-up average of the current profile points for those occupied places.
+
+---
+
+# Event History
+
+## getEventHistory
+
+Returns the complete read-only history for one event in a single response.
+
+Method: `POST`
+
+Action: `getEventHistory`
+
+Payload:
+
+```json
+{
+    "eventId": "EV_EXAMPLE"
+}
+```
+
+Response data is equivalent to:
+
+```json
+{
+    "Event": {
+        "ID": "EV_EXAMPLE",
+        "Name": "Example Event",
+        "EventType": "TOURNAMENT",
+        "PointsProfileID": "PP_STANDARD"
+    },
+    "Warnings": [],
+    "Runs": [
+        {
+            "ID": "run-uuid",
+            "EventID": "EV_EXAMPLE",
+            "RunNumber": 3,
+            "Status": "COMPLETE",
+            "IsCurrent": true,
+            "ResetFromRunID": "previous-run-uuid",
+            "StartedAt": "2026-07-10T09:00:00.000Z",
+            "CompletedAt": "2026-07-10T09:20:00.000Z",
+            "ResultStatus": "CONFIRMED",
+            "ConfirmedResultCount": 4,
+            "Outcomes": {},
+            "Results": [
+                {
+                    "ID": "result-uuid",
+                    "TeamID": "TEAM_RED",
+                    "TeamName": "Red",
+                    "TeamColour": "#ff0000",
+                    "Position": 1,
+                    "Points": 10,
+                    "Category": "",
+                    "Warning": ""
+                }
+            ],
+            "Warnings": []
+        }
+    ]
+}
+```
+
+Runs are ordered by RunNumber descending and include both the current and previous runs. `Outcomes` contains a concise event-type-specific summary assembled from Matches, RaceResults, DistanceResults or DoubleTeamMatches for that EventRunID.
+
+Results are official only when saved Results rows exist. Unconfirmed runs may still contain engine outcomes but use `ResultStatus: "NOT_CONFIRMED"`. Displayed points are recalculated from saved Position and the event's current point profile; the saved PointsAwarded snapshot is not authoritative. Round-robin tied groups reuse the live leaderboard's occupied-place averaging logic.
+
+For Heat & Final and Distance, `Category` is populated only when Results rows align deterministically with the run's ordered engine rows. Otherwise category is blank, engine outcomes remain separated into Male and Female sections, and confirmed Results remain one combined list.
+
+This action does not expose write, restore, confirmation, deletion or current-run selection operations.

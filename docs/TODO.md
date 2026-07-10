@@ -48,8 +48,8 @@
 
 ## Phase 5 - Future
 
+- [x] Historical events (v0.8.0)
+- [ ] Offline mode — v0.9.0 next milestone
 - [ ] Dynamic events
-- [ ] Offline mode
-- [ ] Historical events
 - [ ] Authentication
 - [ ] Shareable leaderboard (v1.2 stretch)

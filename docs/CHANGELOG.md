@@ -1,3 +1,26 @@
+# v0.8.0
+
+## Added
+
+- Read-only History view within each selected event
+- Single-request event-history API covering current and previous Event Runs
+- Event-type summaries for matches, races, distance placings and double-team fixtures
+- Dynamic historical point display using the event's current point profile
+- Defensive warnings for unavailable teams, competitors and point profiles
+
+## Changed
+
+- Event Runs are presented newest first with current, previous, status and confirmation labels
+- Round-robin historical tie awards reuse current occupied-place averaging
+- Reset-preserved engine and Results rows are now visible to the organiser
+
+## Deferred
+
+- v0.9.0 — Offline Mode
+- Historical leaderboard reconstruction, restore/edit/delete actions and shareable history
+
+---
+
 # v0.7.0
 
 ## Added

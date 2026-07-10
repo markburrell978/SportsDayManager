@@ -333,6 +333,33 @@ const LeaderboardService = {
 
     addRoundRobinPoints(totals, results, profile) {
 
+        const pointsByPosition =
+            this.getRoundRobinPointsByPosition(
+                results,
+                profile
+            );
+
+
+        results.forEach(result => {
+
+            const position =
+                this.normalisePosition(result.Position);
+
+            const key = position === null
+                ? "invalid"
+                : String(position);
+
+
+            totals[result.TeamID] +=
+                pointsByPosition[key];
+
+        });
+
+    },
+
+
+    getRoundRobinPointsByPosition(results, profile) {
+
         const resultsByPosition = {};
 
 
@@ -358,8 +385,8 @@ const LeaderboardService = {
         });
 
 
-        Object.keys(resultsByPosition)
-            .forEach(key => {
+        return Object.keys(resultsByPosition)
+            .reduce((pointsByPosition, key) => {
 
                 const group =
                     resultsByPosition[key];
@@ -393,13 +420,12 @@ const LeaderboardService = {
                 }
 
 
-                group.forEach(result => {
+                pointsByPosition[key] = points;
 
-                    totals[result.TeamID] += points;
 
-                });
+                return pointsByPosition;
 
-            });
+            }, {});
 
     },
 

@@ -2,7 +2,7 @@
 
 # Data Model
 
-Version: 0.7.0
+Version: 0.8.0
 
 ---
 
@@ -85,6 +85,8 @@ Represents one execution of a permanent configured event.
 
 Exactly one row per EventID must have `IsCurrent = TRUE`. `RunNumber` must be unique within an EventID. EventRuns.Status is authoritative; Events.Status mirrors the current run for backward compatibility.
 
+Event History uses these rows directly and orders them by RunNumber descending. Current and previous runs remain in the same table; there is no separate history or snapshot table. Previous runs are read-only and cannot be restored or made current by v0.8.0.
+
 ---
 
 # Results
@@ -103,6 +105,10 @@ Results are created only through explicit organiser confirmation of a completed 
 Only Results whose EventRunID matches the event's current Event Run contribute to leaderboard totals. Historical rows remain stored after reset but no longer count. Heat & Final and Distance Male and Female rows contribute independently; valid repeated TeamID/EventID/EventRunID combinations are not deduplicated.
 
 Round-robin rows use shared competition-ranking positions for tied standings. The leaderboard groups current-run round-robin rows by Position and dynamically awards the rounded-up average of the current profile points for all places occupied by the tie.
+
+Event History also groups Results by EventRunID. Historical displayed points are recalculated from Position and the event's current point profile, so profile edits can change history displays without changing Results rows. Historical leaderboard reconstruction is not included.
+
+Results has no competition-category column. Heat & Final and Distance categories are associated in history only when Results and ordered engine rows align deterministically by team and position. Otherwise confirmed rows are shown as one combined list while the engine outcome remains separated by Male and Female category.
 
 ---
 

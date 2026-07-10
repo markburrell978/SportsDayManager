@@ -2,7 +2,7 @@
 
 Project: Sports Day Manager
 
-Version: v0.7.0
+Version: v0.8.0
 
 ---
 
@@ -82,6 +82,8 @@ Completed Event Runs require explicit organiser confirmation before Results rows
 PointProfiles uses one row per profile with ID, Name, First, Second, Third and Fourth. All point values are required integers; zero and negative values are valid.
 
 The organiser-facing live leaderboard includes every active team and dynamically scores confirmed Results from each event's current run using the event's current point profile. Historical runs remain stored but do not count. Equal totals use competition ranking, and round-robin tie groups average the current points for their occupied places and round upward. The page reloads on navigation and by manual Refresh; automatic polling and the shareable leaderboard are not included.
+
+Event History is a read-only per-event view reconstructed from EventRuns, run-scoped engine rows and Results. It shows current and previous runs newest first. Historical points use the event's current point profile, including dynamic round-robin tie averaging. History cannot edit, restore, confirm, reset or delete runs. No snapshot table is used. Offline Mode is planned for v0.9.0.
 
 ---
 

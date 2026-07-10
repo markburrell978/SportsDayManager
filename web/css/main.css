@@ -3,7 +3,7 @@
 Sports Day Manager
 
 File: main.css
-Version: 0.7.0
+Version: 0.8.0
 
 Purpose:
 Application styling.
@@ -359,6 +359,193 @@ Event Browser
     padding: 10px;
 
     border-radius: 6px;
+
+}
+
+
+.event-view-tabs {
+
+    display: flex;
+
+    gap: 10px;
+
+    margin: 18px 0;
+
+    padding-bottom: 12px;
+
+    border-bottom: 1px solid #dddddd;
+
+}
+
+
+.event-view-tabs button {
+
+    padding: 9px 16px;
+
+}
+
+
+.event-view-tabs button.active {
+
+    background: #1e3a5f;
+
+    color: white;
+
+}
+
+
+.event-history-toolbar {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 12px;
+
+    margin-bottom: 14px;
+
+}
+
+
+.event-history-toolbar p {
+
+    margin: 0;
+
+}
+
+
+.history-run-card {
+
+    margin-bottom: 12px;
+
+    border: 1px solid #cccccc;
+
+    border-radius: 7px;
+
+    overflow: hidden;
+
+}
+
+
+.history-run-card > summary {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 8px 14px;
+
+    padding: 13px;
+
+    background: #f7f7f7;
+
+    cursor: pointer;
+
+}
+
+
+.history-run-card > summary span {
+
+    color: #555555;
+
+}
+
+
+.history-current-run {
+
+    border-color: #1e3a5f;
+
+}
+
+
+.history-current-run > summary {
+
+    background: #eef5ff;
+
+}
+
+
+.history-run-body {
+
+    padding: 14px;
+
+}
+
+
+.history-timestamps {
+
+    color: #666666;
+
+    font-size: 14px;
+
+}
+
+
+.history-warning {
+
+    padding: 10px;
+
+    color: #7a4b00;
+
+    background: #fff4d6;
+
+    border-radius: 5px;
+
+}
+
+
+.history-outcomes,
+.history-results {
+
+    margin-top: 16px;
+
+}
+
+
+.history-category,
+.history-double-team {
+
+    margin: 12px 0;
+
+    padding: 12px;
+
+    background: #fafafa;
+
+    border-radius: 6px;
+
+}
+
+
+.history-category h5 {
+
+    margin-top: 0;
+
+}
+
+
+.history-team {
+
+    white-space: nowrap;
+
+}
+
+
+.history-unavailable {
+
+    color: #777777;
+
+    font-style: italic;
+
+}
+
+
+.history-placings {
+
+    margin-bottom: 0;
 
 }
 

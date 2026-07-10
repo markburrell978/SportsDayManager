@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: app.js
- * Version: 0.7.0
+ * Version: 0.8.0
  *
  * Main application controller.
  * ==========================================================
@@ -33,6 +33,14 @@ const App = {
     currentEvent: null,
 
     currentEventRun: null,
+
+    eventViewMode: "current",
+
+    currentEventHistory: null,
+
+    eventHistoryLoading: false,
+
+    eventHistoryError: "",
 
     currentPointsProfile: null,
 
@@ -409,6 +417,10 @@ async function loadEvents() {
 
         App.currentEventRun = null;
 
+        App.eventViewMode = "current";
+
+        App.currentEventHistory = null;
+
         App.currentPointsProfile = null;
 
         App.currentMatches = [];
@@ -478,6 +490,13 @@ async function loadEvents() {
 
     renderEvents();
 
+
+    if (App.eventViewMode === "history") {
+
+        await openEventHistory();
+
+    }
+
 }
 
 
@@ -502,7 +521,11 @@ function renderEvents() {
         App.raceCategory,
         App.currentDoubleTeamMatch,
         App.currentDistance,
-        App.distanceCategory
+        App.distanceCategory,
+        App.eventViewMode,
+        App.currentEventHistory,
+        App.eventHistoryLoading,
+        App.eventHistoryError
     );
 
 }
@@ -525,6 +548,12 @@ async function selectEvent(id) {
 
 
     App.currentEvent = event;
+
+    App.eventViewMode = "current";
+
+    App.currentEventHistory = null;
+
+    App.eventHistoryError = "";
 
     clearEventMessage();
 
@@ -575,6 +604,63 @@ async function selectEvent(id) {
     finally {
 
         App.eventRequestPending = false;
+
+        renderEvents();
+
+    }
+
+}
+
+
+
+function showCurrentEventView() {
+
+    App.eventViewMode = "current";
+
+    renderEvents();
+
+}
+
+
+
+async function openEventHistory() {
+
+    if (!App.currentEvent) {
+
+        return;
+
+    }
+
+
+    App.eventViewMode = "history";
+
+    App.eventHistoryLoading = true;
+
+    App.eventHistoryError = "";
+
+    App.currentEventHistory = null;
+
+
+    renderEvents();
+
+
+    try {
+
+        App.currentEventHistory =
+            await Api.getEventHistory(
+                App.currentEvent.ID
+            );
+
+    }
+    catch (error) {
+
+        App.eventHistoryError =
+            error.message;
+
+    }
+    finally {
+
+        App.eventHistoryLoading = false;
 
         renderEvents();
 

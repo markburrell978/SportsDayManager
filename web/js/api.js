@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: api.js
- * Version: 0.7.0
+ * Version: 0.8.0
  *
  * REST API client.
  * ==========================================================
@@ -485,6 +485,19 @@ const Api = {
     async getLeaderboard() {
 
         return await this.get("getLeaderboard");
+
+    },
+
+
+    /**
+     * Event History
+     */
+    async getEventHistory(eventId) {
+
+        return await this.post(
+            "getEventHistory",
+            { eventId }
+        );
 
     }
 

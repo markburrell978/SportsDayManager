@@ -431,6 +431,19 @@ function handleRequest(request) {
 
                 break;
 
+
+            case API_ACTIONS.GET_EVENT_HISTORY:
+
+                response = Utils.success(
+                    EventHistoryService.get(
+                        request.payload.eventId ||
+                        request.payload.EventID
+                    )
+                );
+
+                break;
+
+
             case API_ACTIONS.CREATE_COMPETITOR:
 
                 response = Utils.success(
