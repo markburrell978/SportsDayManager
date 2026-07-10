@@ -1,8 +1,8 @@
 Here's the roadmap I want to follow
 
-Current implementation is v0.6.0. Completed Event Runs require explicit result confirmation. Live leaderboard work is planned for v0.7.0, while the shareable leaderboard is a v1.2 stretch item.
+Current implementation is v0.7.0. Completed Event Runs require explicit result confirmation. The organiser live leaderboard dynamically scores current-run Results.Position values with current point profiles and uses competition ranking. Historical runs do not count, and round-robin tie groups use rounded-up average points for occupied places. The page loads on navigation and manual refresh; automatic polling is not included. The shareable leaderboard remains a v1.2 stretch item.
 
-Point Profile Simplification v0.5.9 is incorporated beneath v0.6.0. PointProfiles uses exactly ID, Name, First, Second, Third and Fourth; runtime code must not expect Position/Points row arrays.
+Point Profile Simplification v0.5.9 and Points Calculation v0.6.0 are incorporated beneath v0.7.0. PointProfiles uses exactly ID, Name, First, Second, Third and Fourth; runtime code must not expect Position/Points row arrays.
 
 Now that the tooling is sorted, the next milestones are very clear:
 

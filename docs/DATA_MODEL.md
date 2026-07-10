@@ -2,7 +2,7 @@
 
 # Data Model
 
-Version: 0.1
+Version: 0.7.0
 
 ---
 
@@ -98,9 +98,11 @@ Exactly one row per EventID must have `IsCurrent = TRUE`. `RunNumber` must be un
 | Position | Number | Yes | Final placing |
 | PointsAwarded | Integer | Yes | Compatibility snapshot of points awarded at confirmation time |
 
-Results are created only through explicit organiser confirmation of a completed current Event Run. Reconfirmation replaces that run's Results rows. `Position` is the authoritative saved placing. `PointsAwarded` is a compatibility snapshot; future live leaderboard totals will use saved positions and the event's current point profile.
+Results are created only through explicit organiser confirmation of a completed current Event Run. Reconfirmation replaces that run's Results rows. `Position` is the authoritative saved placing. `PointsAwarded` is a compatibility snapshot; live leaderboard totals use saved positions and the event's current point profile.
 
-Only Results belonging to the intended current Event Run should contribute to future leaderboard totals.
+Only Results whose EventRunID matches the event's current Event Run contribute to leaderboard totals. Historical rows remain stored after reset but no longer count. Heat & Final and Distance Male and Female rows contribute independently; valid repeated TeamID/EventID/EventRunID combinations are not deduplicated.
+
+Round-robin rows use shared competition-ranking positions for tied standings. The leaderboard groups current-run round-robin rows by Position and dynamically awards the rounded-up average of the current profile points for all places occupied by the tie.
 
 ---
 

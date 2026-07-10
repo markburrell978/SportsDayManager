@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: ui.js
- * Version: 0.6.0
+ * Version: 0.7.0
  *
  * Shared UI rendering helpers.
  * ==========================================================

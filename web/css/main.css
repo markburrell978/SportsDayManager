@@ -3,7 +3,7 @@
 Sports Day Manager
 
 File: main.css
-Version: 0.6.0
+Version: 0.7.0
 
 Purpose:
 Application styling.
@@ -272,6 +272,56 @@ tr.selected-row {
     color: darkred;
 
     font-weight: bold;
+
+}
+
+
+/*
+==========================================================
+Leaderboard
+==========================================================
+*/
+
+
+.leaderboard-toolbar {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 12px;
+
+    margin-bottom: 16px;
+
+}
+
+
+.leaderboard-toolbar button {
+
+    padding: 10px 16px;
+
+    cursor: pointer;
+
+}
+
+
+.team-colour {
+
+    display: inline-block;
+
+    width: 14px;
+
+    height: 14px;
+
+    margin-right: 8px;
+
+    border: 1px solid rgba(0,0,0,0.2);
+
+    border-radius: 50%;
+
+    vertical-align: -1px;
 
 }
 

@@ -42,7 +42,7 @@
 ## Phase 4 - Leaderboard
 
 - [x] Points calculation
-- [ ] Live leaderboard
+- [x] Live leaderboard
 
 ---
 

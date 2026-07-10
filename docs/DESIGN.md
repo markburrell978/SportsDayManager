@@ -157,13 +157,31 @@ Completing an event engine does not write Results. Once the current Event Run is
 
 Reconfirmation is idempotent and correctable: current-run rows are removed and regenerated, while historical runs remain untouched. A reset creates a new unconfirmed run because confirmation state is detected only from Results with the current EventRunID.
 
-Results.Position is the authoritative confirmed placing. PointsAwarded stores an integer compatibility snapshot from the point profile at confirmation time. The v0.7.0 leaderboard will calculate current totals from saved positions and current point profiles so later profile edits can affect totals.
+Results.Position is the authoritative confirmed placing. PointsAwarded stores an integer compatibility snapshot from the point profile at confirmation time. The v0.7.0 leaderboard calculates current totals from saved positions and current point profiles so later profile edits affect totals on refresh.
 
 Positions above fourth award zero. Profile point fields must be integers and may be positive, zero or negative. Blank or decimal values are rejected when profiles are created or updated.
 
 Round Robin uses wins and competition ranking. Tied teams share a position and each receives the rounded-up average of points for all places occupied by the tie. Male and Female Heat & Final and Distance categories score independently. Each Double Team member receives the full points for its side's placing.
 
-Only results from the intended current Event Run should contribute to the future live leaderboard. v0.6.0 persists confirmed placings but does not implement the v0.7.0 leaderboard redesign.
+Only results whose EventRunID matches the event's current Event Run contribute to the live leaderboard. Historical rows remain stored after reset but do not count.
+
+---
+
+# 5.3 Organiser Live Leaderboard
+
+`LeaderboardService` calculates frontend-ready rows on every request. It loads teams, events, Event Runs, Results and point profiles once, builds in-memory lookup maps, and never reads sheets inside a result loop.
+
+Every active team appears, including teams with zero or negative totals. Inactive teams and their Results are excluded. The service ignores stale rows that reference missing teams, missing events, missing EventRunID values, non-current runs or events without a valid current run. A current event with confirmed rows and a missing or invalid point profile produces a clear API error instead of a misleading total.
+
+Ordinary rows dynamically map Results.Position to the current profile's First, Second, Third or Fourth value; positions above fourth and missing or invalid positions award zero. PointsAwarded remains a compatibility snapshot and is not summed. This means profile edits affect the next leaderboard load without rewriting Results.
+
+Round-robin current-run rows are grouped by shared Position. A group of `n` teams starting at position `p` occupies places `p` through `p + n - 1`; each team receives the ceiling of the average current profile points for those places. Single-row groups receive ordinary position points.
+
+Heat & Final Male and Female results and Distance Male and Female results contribute independently. Double Team creates one contribution for each individual team, with each member receiving its side's full placing points. Tournament rows contribute individually.
+
+Rows sort by total points descending and team name ascending for stable display. Equal totals receive the same competition-ranking position, so ranks may appear as `1, 1, 3` or `1, 2, 2, 4`.
+
+The organiser page loads the leaderboard whenever it opens and exposes a manual Refresh button. v0.7.0 does not poll automatically and does not include public or shareable leaderboard functionality; sharing remains deferred to v1.2.
 
 ---
 

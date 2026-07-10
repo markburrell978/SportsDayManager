@@ -3,7 +3,7 @@
  * Sports Day Manager
  *
  * File: app.js
- * Version: 0.6.0
+ * Version: 0.7.0
  *
  * Main application controller.
  * ==========================================================
@@ -23,6 +23,10 @@ const App = {
     teams: [],
 
     leaderboard: [],
+
+    leaderboardLoading: false,
+
+    leaderboardError: "",
 
     events: [],
 
@@ -204,11 +208,52 @@ function updateNavigation(page) {
  */
 async function loadLeaderboard() {
 
-    App.leaderboard =
-        await Api.getLeaderboard();
+    const refreshButton =
+        document.getElementById("btn-refresh-leaderboard");
+
+
+    App.leaderboardLoading = true;
+
+    App.leaderboardError = "";
+
+
+    if (refreshButton) {
+
+        refreshButton.disabled = true;
+
+    }
 
 
     renderLeaderboard();
+
+
+    try {
+
+        App.leaderboard =
+            await Api.getLeaderboard();
+
+    }
+    catch (error) {
+
+        App.leaderboardError =
+            error.message;
+
+    }
+    finally {
+
+        App.leaderboardLoading = false;
+
+
+        if (refreshButton) {
+
+            refreshButton.disabled = false;
+
+        }
+
+        renderLeaderboard();
+
+    }
+
 
 }
 
@@ -218,6 +263,40 @@ function renderLeaderboard() {
 
     const container =
         document.getElementById("leaderboard");
+
+
+    if (App.leaderboardLoading) {
+
+        container.innerHTML = `
+<p class="loading">Loading leaderboard...</p>`;
+
+        return;
+
+    }
+
+
+    if (App.leaderboardError) {
+
+        container.innerHTML = `
+<p class="error">
+    Leaderboard could not be loaded: ${escapeHtml(App.leaderboardError)}
+</p>`;
+
+        return;
+
+    }
+
+
+    if (!App.leaderboard.length) {
+
+        container.innerHTML = `
+<p class="loading">
+    No active teams are available.
+</p>`;
+
+        return;
+
+    }
 
 
     let html = `
@@ -244,17 +323,26 @@ function renderLeaderboard() {
 
 
     App.leaderboard.forEach(
-        (team, index) => {
+        team => {
+
+            const teamColour =
+                normaliseTeamColour(
+                    team.TeamColour
+                );
 
             html += `
 
 <tr>
 
-<td>${index + 1}</td>
+<td>${escapeHtml(team.Position)}</td>
 
-<td>${team.TeamName}</td>
+<td>
+    <span class="team-colour"
+          style="background-color: ${teamColour}"></span>
+    ${escapeHtml(team.TeamName)}
+</td>
 
-<td>${team.Points}</td>
+<td>${escapeHtml(team.Points)}</td>
 
 </tr>
 
@@ -274,6 +362,20 @@ function renderLeaderboard() {
 
 
     container.innerHTML = html;
+
+}
+
+
+
+function normaliseTeamColour(colour) {
+
+    const value =
+        String(colour || "").trim();
+
+
+    return /^#[0-9a-fA-F]{6}$/.test(value)
+        ? value
+        : "#777777";
 
 }
 

@@ -1,3 +1,20 @@
+# v0.7.0
+
+## Added
+
+- Organiser-facing live leaderboard with manual refresh
+- Team colour, competition-ranking position, team name and total-points display
+- Dynamic round-robin tie-group scoring from occupied places
+
+## Changed
+
+- Leaderboard totals now use confirmed current-run positions and current point profiles
+- Active teams with zero points are included and inactive teams are excluded
+- Event resets remove old-run contributions without deleting historical Results
+- Point-profile edits affect leaderboard totals on the next load or refresh
+
+---
+
 # v0.6.0
 
 ## Added

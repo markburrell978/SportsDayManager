@@ -1,6 +1,6 @@
 # Sports Day Manager API
 
-Version: 0.6.0
+Version: 0.7.0
 
 ---
 
@@ -579,3 +579,35 @@ Point-profile values must be integers and may be positive, zero or negative. Pla
 Round-robin ties use competition ranking. Each tied team receives the rounded-up average of the point values for every place occupied by the tied group.
 
 Male and Female Heat & Final and Distance categories are confirmed independently and may create two rows for the same team. Double-team members each receive the full points for their side's placing.
+
+---
+
+# Leaderboard
+
+## getLeaderboard
+
+Returns the organiser-facing live leaderboard.
+
+Method: `GET`
+
+Action: `getLeaderboard`
+
+Response data:
+
+```json
+[
+    {
+        "Position": 1,
+        "TeamID": "TEAM_RED",
+        "TeamName": "Red",
+        "TeamColour": "#ff0000",
+        "Points": 28
+    }
+]
+```
+
+Every active team is returned, including teams with zero points. Inactive teams are excluded. Rows are sorted by points descending and then team name ascending; equal totals share a competition-ranking position.
+
+Totals are calculated when requested from confirmed `Results.Position` rows belonging to each event's current Event Run and the event's current point profile. `Results.PointsAwarded` is not the general source of truth. Historical run results remain stored but do not count, and point-profile edits affect the next response without reconfirmation.
+
+For round-robin ties, rows sharing a position occupy that position and the following places. Each tied team receives the rounded-up average of the current profile points for those occupied places.
