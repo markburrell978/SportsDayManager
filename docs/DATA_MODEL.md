@@ -1,208 +1,188 @@
-# Sports Day Manager
+# Sports Day Manager Data Model
 
-# Data Model
+Production source: v1.0.0 Google Sheets
 
-Version: 0.8.0
+Target schema milestone: v1.2.0 PostgreSQL with local API transaction support
 
----
+The authoritative Sheet mapping is in `docs/migration/SHEET_TO_POSTGRES_MAPPING.md`. Every existing application ID is preserved as PostgreSQL `text`. New `created_at`/`updated_at` fields are database metadata, not historical Sheet values.
 
-# Teams
+## Shared conventions
 
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| ID | String | Yes | Permanent team identifier (e.g. TEAM_RED) |
-| Name | String | Yes | Display name |
-| Colour | String | Yes | Hex colour |
-| Active | Boolean | Yes | Whether the team is active |
+- PostgreSQL identifiers use `snake_case`.
+- Timestamps use `timestamptz`.
+- Flags use `boolean`.
+- Positions, run numbers, ordering and points use `integer`.
+- Optional blanks become `null`; zero and `false` remain values.
+- All run-owned tables retain both `event_id` and `event_run_id` for API compatibility.
+- Composite foreign keys ensure each `event_run_id` belongs to the supplied `event_id`.
+- `sequence_number` explicitly preserves per-run Sheet row order where current History behavior depends on it.
 
----
+## Core tables
 
-# Competitors
+### `teams`
 
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| ID | UUID | Yes | Generated automatically |
-| Name | String | Yes | Full name |
-| Age | Number | Yes | Competitor age |
-| Gender | Enum | Yes | Competitor's gender identity |
-| CompetitionGender | Enum | Yes | Competition category entered |
-| TeamID | String | Yes | References Teams.ID |
-| Present | Boolean | Yes | Whether the competitor is present |
-| Notes | String | No | Optional notes |
+| Column | Type | Required | Rule |
+|---|---|---:|---|
+| `id` | text | yes | Primary key; nonblank stable ID |
+| `name` | text | yes | Nonblank display name; duplicates remain allowed |
+| `colour` | text | yes | Six-digit `#RRGGBB` value |
+| `is_active` | boolean | yes | Defaults true |
+| `created_at` | timestamptz | yes | Database maintained |
+| `updated_at` | timestamptz | yes | Database maintained |
 
----
+There is no stored team-points field. Leaderboard totals are derived.
 
-# Events
+### `competitors`
 
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| ID | String | Yes | Permanent event identifier |
-| Name | String | Yes | Display name |
-| EventType | Enum | Yes | ROUND_ROBIN, TOURNAMENT, HEAT_FINAL, DISTANCE, DOUBLE_TEAM |
-| PointsProfileID | String | Yes | References PointProfiles.ID |
-| Status | Enum | Yes | NOT_STARTED, IN_PROGRESS, COMPLETE |
-| DisplayOrder | Number | Yes | Order shown in UI |
-| Enabled | Boolean | Yes | Whether event is available |
+| Column | Type | Required | Rule |
+|---|---|---:|---|
+| `id` | text | yes | Primary key; preserves UUID-shaped source ID |
+| `name` | text | yes | Nonblank |
+| `age` | integer | yes | Greater than zero |
+| `gender` | text | yes | Current display value; backend historically permits blank |
+| `competition_gender` | text | yes | Nonblank competition category |
+| `team_id` | text | yes | References `teams.id` |
+| `is_active` | boolean | yes | Event availability |
+| `created_at` | timestamptz | yes | Database maintained |
+| `updated_at` | timestamptz | yes | Database maintained |
 
----
+The production row shape uses `Active`. `Present` is a legacy fallback only and is not duplicated in PostgreSQL. The production row shape has no `Notes` column.
 
-# PointProfiles
+### `point_profiles`
 
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| ID | String | Yes | Stable unique points profile identifier |
-| Name | String | Yes | Organiser-facing profile name |
-| First | Integer | Yes | Points awarded for first place |
-| Second | Integer | Yes | Points awarded for second place |
-| Third | Integer | Yes | Points awarded for third place |
-| Fourth | Integer | Yes | Points awarded for fourth place |
+| Column | Type | Required | Rule |
+|---|---|---:|---|
+| `id` | text | yes | Primary key; stable profile ID |
+| `name` | text | yes | Nonblank organiser-facing name |
+| `first` | integer | yes | Signed integer |
+| `second` | integer | yes | Signed integer |
+| `third` | integer | yes | Signed integer |
+| `fourth` | integer | yes | Signed integer |
+| `created_at` | timestamptz | yes | Database maintained |
+| `updated_at` | timestamptz | yes | Database maintained |
 
-Example:
+Positive, zero and negative values are valid. Decimals are rejected. Undefined positions award zero in service logic.
 
-| ID | Name | First | Second | Third | Fourth |
-|----|------|-------|--------|-------|--------|
-| PP_STANDARD | Standard | 10 | 7 | 5 | 3 |
-| PP_FUN | Fun | 5 | 3 | 1 | 0 |
+### `events`
 
-One row represents one complete point profile. All four point values are required integers and may be positive, zero or negative. Events continue to reference profiles through Events.PointsProfileID. Positions above fourth award zero unless a later release extends the model.
+| Column | Type | Required | Rule |
+|---|---|---:|---|
+| `id` | text | yes | Primary key; stable event ID |
+| `name` | text | yes | Nonblank |
+| `event_type` | text | yes | `ROUND_ROBIN`, `TOURNAMENT`, `HEAT_FINAL`, `DISTANCE` or `DOUBLE_TEAM` |
+| `point_profile_id` | text | yes | References `point_profiles.id` |
+| `status` | text | yes | Current-run compatibility mirror |
+| `display_order` | integer | yes | Non-negative |
+| `enabled` | boolean | yes | Whether returned by the event browser |
+| `created_at` | timestamptz | yes | Database maintained |
+| `updated_at` | timestamptz | yes | Database maintained |
 
----
+No JSON configuration is required by v1.0.0. There is no second `current_run_id` pointer: current ownership is represented only by `event_runs.is_current`.
 
-# EventRuns
+### `event_runs`
 
-Represents one execution of a permanent configured event.
+| Column | Type | Required | Rule |
+|---|---|---:|---|
+| `id` | text | yes | Primary key; preserves UUID-shaped source ID |
+| `event_id` | text | yes | References `events.id` |
+| `run_number` | integer | yes | Positive; unique within Event |
+| `status` | text | yes | `NOT_STARTED`, `IN_PROGRESS` or `COMPLETE` |
+| `is_current` | boolean | yes | Exactly one true row per Event at transaction commit |
+| `started_at` | timestamptz | no | Source start time when available |
+| `completed_at` | timestamptz | no | Source completion time when available |
+| `reset_from_run_id` | text | no | Same-Event self-reference; cannot reference itself |
+| `results_revision` | bigint | yes | Nonnegative saved-engine revision; defaults zero |
+| `confirmed_revision` | bigint | no | Last acknowledged revision; null before confirmation |
+| `created_at` | timestamptz | yes | Database maintained |
+| `updated_at` | timestamptz | yes | Database maintained |
 
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| ID | UUID | Yes | Generated automatically |
-| EventID | String | Yes | References Events.ID |
-| RunNumber | Number | Yes | Sequential run number beginning at 1 per event |
-| Status | Enum | Yes | NOT_STARTED, IN_PROGRESS, COMPLETE |
-| IsCurrent | Boolean | Yes | Whether this is the event's current run |
-| StartedAt | DateTime | No | Set when the run first enters progress |
-| CompletedAt | DateTime | No | Set when the run completes |
-| ResetFromRunID | UUID | No | References the EventRuns.ID replaced by reset |
+Uniqueness on `(event_id, run_number)`, a partial unique current-run index and deferred exact-one triggers preserve run ownership. Event creation and reset must therefore complete in one transaction.
 
-Exactly one row per EventID must have `IsCurrent = TRUE`. `RunNumber` must be unique within an EventID. EventRuns.Status is authoritative; Events.Status mirrors the current run for backward compatibility.
+Migration `202609230001_confirmation_revisions.sql` tracks meaningful current-run engine edits with triggers. It ignores empty fixtures/pairings, timestamp-only/no-op saves and entrant registration. Confirmation atomically sets `confirmed_revision = results_revision` after official Results are saved. Revision metadata is exposed through `getConfirmationStatus`, not the legacy Event Run mapping. Existing runs are backfilled from engine/Results timestamps; the fictional seed explicitly acknowledges its confirmed runs.
 
-Event History uses these rows directly and orders them by RunNumber descending. Current and previous runs remain in the same table; there is no separate history or snapshot table. Previous runs are read-only and cannot be restored or made current by v0.8.0.
+### `results`
 
----
+| Column | Type | Required | Rule |
+|---|---|---:|---|
+| `id` | text | yes | Primary key |
+| `event_id` | text | yes | References `events.id` |
+| `event_run_id` | text | yes | Same-Event run reference |
+| `team_id` | text | yes | References `teams.id` |
+| `position` | integer | yes | Positive authoritative placing |
+| `points_awarded` | integer | yes | Compatibility snapshot only |
+| `sequence_number` | integer | yes | Positive and unique per run |
+| `created_at` | timestamptz | yes | Database maintained |
+| `updated_at` | timestamptz | yes | Database maintained |
 
-# Results
+Repeated `(event_run_id, team_id)` rows are deliberately valid for Male/Female categories and Double Team. Confirmed state is derived from whether a run has Results rows. Reconfirmation transactionally replaces all Results rows for only the current run.
 
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| ID | UUID | Yes | Generated automatically |
-| EventID | String | Yes | References Events.ID |
-| EventRunID | UUID | Yes | References EventRuns.ID |
-| TeamID | String | Yes | References Teams.ID |
-| Position | Number | Yes | Final placing |
-| PointsAwarded | Integer | Yes | Compatibility snapshot of points awarded at confirmation time |
+## Engine tables
 
-Results are created only through explicit organiser confirmation of a completed current Event Run. Reconfirmation replaces that run's Results rows. `Position` is the authoritative saved placing. `PointsAwarded` is a compatibility snapshot; live leaderboard totals use saved positions and the event's current point profile.
+### `matches`
 
-Only Results whose EventRunID matches the event's current Event Run contribute to leaderboard totals. Historical rows remain stored after reset but no longer count. Heat & Final and Distance Male and Female rows contribute independently; valid repeated TeamID/EventID/EventRunID combinations are not deduplicated.
+One table continues to serve Round Robin and Tournament.
 
-Round-robin rows use shared competition-ranking positions for tied standings. The leaderboard groups current-run round-robin rows by Position and dynamically awards the rounded-up average of the current profile points for all places occupied by the tie.
+| Important columns | Rules |
+|---|---|
+| `id`, `event_id`, `event_run_id` | Primary and same-Event run keys |
+| `round` | Positive; Round Robin uses fixture sequence while Tournament uses 1/2/3 stages |
+| `sequence_number` | Positive and unique per run |
+| `team_1_id`, `team_2_id` | Distinct team references |
+| `winner_id` | Null or one of the two teams |
+| `complete` | True exactly when a winner exists |
 
-Event History also groups Results by EventRunID. Historical displayed points are recalculated from Position and the event's current point profile, so profile edits can change history displays without changing Results rows. Historical leaderboard reconstruction is not included.
+Tournament Round 1 has two matches, so `(event_run_id, round)` is not unique.
 
-Results has no competition-category column. Heat & Final and Distance categories are associated in history only when Results and ordered engine rows align deterministically by team and position. Otherwise confirmed rows are shown as one combined list while the engine outcome remains separated by Male and Female category.
+### `race_results`
 
----
+One selected heat winner per team and category, with an optional final position.
 
-# Matches
+- Category is `Male` or `Female`.
+- `(event_run_id, competition_gender, team_id)` is unique.
+- `(event_run_id, competition_gender, competitor_id)` is unique.
+- Non-null positions 1–4 are unique within run/category.
+- `sequence_number` is unique per run and preserves History association order.
+- `team_id` and `competitor_id` are foreign keys; competitor team/category eligibility remains service validation.
 
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| ID | UUID | Yes | Generated automatically |
-| EventID | String | Yes | References Events.ID |
-| EventRunID | UUID | Yes | References EventRuns.ID |
-| Round | Number | Yes | Round number |
-| Team1ID | String | Yes | References Teams.ID |
-| Team2ID | String | Yes | References Teams.ID |
-| WinnerID | String | No | References Teams.ID |
-| Complete | Boolean | Yes | Match completed |
+### `event_competitors`
 
----
+Explicit race entrants with composite primary key `(event_run_id, competitor_id)`. It has no synthetic ID because the Sheet has none. Blank legacy EventRun ownership must be resolved to Run 1 before import.
 
-# Attempts
+### `distance_results`
 
-Used by distance-based events.
+Observed team positions, not measurements.
 
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| ID | UUID | Yes | Generated automatically |
-| EventID | String | Yes | References Events.ID |
-| EventRunID | UUID | Yes | References EventRuns.ID |
-| CompetitorID | UUID | Yes | References Competitors.ID |
-| AttemptNumber | Number | Yes | Attempt 1 or 2 |
-| Value | Number | Yes | Distance achieved |
+- Category is `Male` or `Female`.
+- Position is 1–4.
+- Team and position are independently unique within run/category.
+- `sequence_number` is unique per run.
+- A complete category containing every active team remains a service/transaction rule because active membership changes over time.
 
----
+### `double_team_matches`
 
-# EventCompetitors
+Exactly one fixture per Event Run. Four team references must be pairwise distinct. `winner_side` is null, 1 or 2 and is present exactly when `complete` is true.
 
-Maps competitors to a specific event execution.
+### `attempts`
 
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| EventID | String | Yes | References Events.ID |
-| EventRunID | UUID | Yes | References EventRuns.ID |
-| CompetitorID | UUID | Yes | References Competitors.ID |
+Reserved compatibility table for the optional unused Attempts sheet. It preserves numeric decimal measurements and enforces one `(event_run_id, competitor_id, attempt_number)` row. The field-tested Distance engine uses `distance_results`, not Attempts.
 
----
+## Derived behavior, not tables
 
-# DistanceResults
+### Leaderboard
 
-Stores observed team placings for Male and Female distance categories.
+Totals join active teams to confirmed Results from each Event's current run and the Event's current point profile. Ordinary placing points are dynamic. Round-robin tied rows use the ceiling of the mean points across occupied places. Competition ranking is assigned after totals; alphabetical ordering only stabilizes display.
 
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| ID | UUID | Yes | Generated automatically |
-| EventID | String | Yes | References Events.ID |
-| EventRunID | UUID | Yes | References EventRuns.ID |
-| CompetitionGender | Enum | Yes | Male or Female category |
-| TeamID | String | Yes | References Teams.ID |
-| Position | Number | Yes | Observed finishing position from 1 to 4 |
+### Event History
 
-The combination of `EventRunID`, `CompetitionGender` and `TeamID` must be unique. Within each EventRunID and CompetitionGender, every active team and each position from 1 to 4 must appear exactly once.
+History joins every Event Run to its engine rows and Results, newest first. It is not a snapshot table. Historical displayed points use the Event's current point profile. It exposes no restore/edit/delete action.
 
----
+### Transactions required in later API stages
 
-# RaceResults
+- create Event and initial current run;
+- reset current run and update Event status mirror;
+- create/progress Tournament matches;
+- save a complete Distance category;
+- replace confirmed Results;
+- reconfirm Results without affecting historical runs.
 
-Stores one selected team heat winner for each event and competition category.
-
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| ID | UUID | Yes | Generated automatically |
-| EventID | String | Yes | References Events.ID |
-| EventRunID | UUID | Yes | References EventRuns.ID |
-| CompetitionGender | Enum | Yes | Male or Female race category |
-| TeamID | String | Yes | References Teams.ID |
-| CompetitorID | UUID | Yes | References Competitors.ID |
-| FinalPosition | Number | No | Final position from 1 to 4; blank until recorded |
-
-The combination of `EventRunID`, `CompetitionGender` and `TeamID` must be unique.
-
----
-
-# DoubleTeamMatches
-
-Stores the one combined-team fixture for a double-team event.
-
-| Column | Type | Required | Description |
-|---------|------|----------|-------------|
-| ID | UUID | Yes | Generated automatically |
-| EventID | String | Yes | References Events.ID |
-| EventRunID | UUID | Yes | References EventRuns.ID |
-| Side1Team1ID | String | Yes | First team on Side 1; references Teams.ID |
-| Side1Team2ID | String | Yes | Second team on Side 1; references Teams.ID |
-| Side2Team1ID | String | Yes | First team on Side 2; references Teams.ID |
-| Side2Team2ID | String | Yes | Second team on Side 2; references Teams.ID |
-| WinnerSide | Number | No | Blank until complete, then 1 or 2 |
-| Complete | Boolean | Yes | Whether the event fixture is complete |
-
-`EventRunID` must be unique because each double-team event run has one fixture.
+These workflows now execute in request-wide PostgreSQL transactions in the local Edge Function. Migration `202609220001_api_transactions.sql` adds insertion ordering and deferred race/distance position uniqueness for safe position swaps. See `docs/migration/STAGE_4_API.md`.

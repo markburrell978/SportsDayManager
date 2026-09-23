@@ -1,3 +1,97 @@
+# Merge-readiness review — 2026-09-23
+
+- Adopted a documented Google-inspired JavaScript/TypeScript standard and Google/PEP 8-inspired Python standard
+- Added pinned Prettier/ESLint tooling, full-word binding checks, purpose-comment checks and pull-request quality automation
+- Expanded abbreviated internal names while preserving all external API and Sheet field names
+- Reused maintained Apps Script utilities in generated Supabase adapters and extracted shared repository translation/persistence helpers
+- Moved record identifiers out of executable inline-handler strings into escaped data attributes and added regression coverage
+- Passed formatting, linting, Python style, Deno type checking, 14 frontend tests, all 28 API parity workflows, five-engine confirmation tests, rollback/concurrency tests and real practice integration
+- Added `docs/CODE_REVIEW.md` with findings, validation, remaining gates and a file-by-file purpose guide
+- Preserved practice results and production configuration; no commit or deployment performed
+
+---
+
+# Clearer result confirmation — 2026-09-23
+
+- Added a larger red confirmation button with a soft, non-flashing glow when saved results await confirmation
+- Added Events and Leaderboard notices listing affected events, with Review event navigation and guidance for incomplete events
+- Added persistent current-run revision tracking and a Supabase-only status endpoint; official leaderboard scoring is unchanged
+- Confirming clears the warning atomically; no-op saves and empty fixtures do not create warnings; resets start clean
+- Applied the migration without resetting existing practice data; tested all five engines, UI rendering and fresh/upgrade database paths
+- Owner visual check of the new styling remains outstanding; no remote deployment or production changes
+
+---
+
+# Local practice frontend — 2026-09-23
+
+- Connected the existing screens to the local Supabase API with a visible Practice banner
+- Added organiser sign-in/sign-out, tab-scoped token storage, session renewal and clear access/error states
+- Preserved the published Apps Script default and production endpoint; missing practice settings fail closed
+- Added a loopback-only practice launcher and reusable fictional organiser with private ignored credentials outside the website
+- Passed eleven automated frontend checks, including actual local Auth/API integration and queued-request/sign-out race protection
+- No remote deployment, production data changes or Git commit performed; browser/user walkthrough remains outstanding
+
+---
+
+# v1.2.0 — Local Supabase API milestone (2026-09-22)
+
+- Implemented all 28 existing API actions with generated compatibility service modules and a transactional PostgreSQL repository
+- Added verified Supabase Auth users, an organiser UUID allow-list, explicit CORS origins and safe database error mapping
+- Added insertion-order metadata and deferred position uniqueness to support valid race/distance corrections
+- Passed v1 parity tests across all five event workflows, rollback and concurrency checks, and real local Edge Function HTTP/Auth tests
+- Kept the production frontend and Apps Script backend unchanged; staging, frontend sign-in/provider selection and production migration remain outstanding
+
+---
+
+# v1.1.0 — Supabase schema milestone
+
+## Local validation — 2026-09-22
+
+- Started the full Docker-backed Supabase stack and completed a clean local database reset
+- Passed schema smoke tests with the fictional seed data
+- Added repeatable local acceptance checks for current-run transactions and default browser-role access
+- Verified anonymous Data API reads expose no application data and team insertion is rejected
+- Updated local setup instructions and removed the resolved Docker prerequisite from outstanding tasks
+- No production changes, remote project linking or application API port performed
+
+## Added
+
+- Verified v1.0.0 recovery references and documented restricted backup/restore procedures
+- Complete Google Sheet-to-PostgreSQL mapping, including optional Attempts and derived concepts
+- Supabase local configuration and three ordered PostgreSQL migrations
+- Relational core and event-engine tables with stable text IDs
+- Composite Event/Event Run foreign keys and explicit sequence fields for Sheet-order compatibility
+- Exact-one current-run enforcement using a partial unique index and deferred constraint triggers
+- Query indexes, updated-at triggers and RLS enabled on all application tables
+- Fictional seed data covering all event types, historical reset state, ties, negative points and unconfirmed completion
+- Database smoke tests for key foreign-key, uniqueness, current-run and RLS invariants
+- Local setup, cutover and rollback documentation
+
+## Changed
+
+- Project documentation now identifies v1.0.0 as the field-tested production release
+- Architecture documentation distinguishes current Apps Script production from the staged Supabase target
+- PostgreSQL row ordering is explicit where Event History previously relied on implicit Sheet order
+
+## Not started
+
+- Supabase Edge Function/API port
+- Authentication and organiser authorization
+- Production data export/import
+- Staging, parallel-mode testing and production cutover
+
+---
+
+# v1.0.0 — Field-tested Google Sheets release
+
+## Preserved
+
+- Git tag and commit recovery point
+- Existing GitHub Pages workflow and Apps Script production endpoint
+- Apps Script/Google Sheets backend for rollback during the v2 migration programme
+
+---
+
 # v0.8.0
 
 ## Added

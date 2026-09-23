@@ -1,6 +1,10 @@
 # Node
 node_modules/
 
+# Python bytecode
+__pycache__/
+*.pyc
+
 # Logs
 npm-debug.log*
 
@@ -13,3 +17,13 @@ Thumbs.db
 
 # Environment
 .env
+.env.*
+
+# Supabase local state and generated branches
+supabase/.temp/
+supabase/.branches/
+
+# Production data and private recovery records
+backups/
+exports/
+docs/migration/PRIVATE_PRODUCTION_INVENTORY.md

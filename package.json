@@ -1,0 +1,25 @@
+{
+  "name": "sports-day-manager",
+  "private": true,
+  "description": "Development checks for the existing browser, Apps Script and Supabase application.",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "format": "prettier --write \"web/**/*.{html,css,js}\" \"apps-script/*.{js,json}\" \"supabase/functions/**/*.{js,ts,json}\" \"supabase/tests/*.{js,mjs}\" \".github/**/*.{yml,yaml}\" \"*.{js,mjs,json}\"",
+    "format:check": "prettier --check \"web/**/*.{html,css,js}\" \"apps-script/*.{js,json}\" \"supabase/functions/**/*.{js,ts,json}\" \"supabase/tests/*.{js,mjs}\" \".github/**/*.{yml,yaml}\" \"*.{js,mjs,json}\"",
+    "lint": "eslint . --max-warnings 0",
+    "python:check": "python3 supabase/scripts/check_python_style.py",
+    "services:generate": "python3 supabase/scripts/sync_legacy_services.py",
+    "services:check": "python3 supabase/scripts/sync_legacy_services.py --check",
+    "test": "node --test supabase/tests/*_test.mjs",
+    "check": "npm run format:check && npm run lint && npm run python:check && npm run services:check && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.11.0",
+    "globals": "17.12.0",
+    "prettier": "3.9.9",
+    "typescript-eslint": "8.70.1"
+  }
+}

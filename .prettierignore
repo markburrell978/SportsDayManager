@@ -1,0 +1,11 @@
+# Local state, private information and externally generated files.
+.env*
+node_modules/
+supabase/.temp/
+supabase/.branches/
+supabase/functions/sports-day-api/deno.lock
+backups/
+exports/
+docs/migration/PRIVATE_PRODUCTION_INVENTORY.md
+# Existing historical documentation is outside the formatting migration.
+docs/SPECS/

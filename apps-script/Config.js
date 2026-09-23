@@ -8,122 +8,112 @@
  * ==========================================================
  */
 
-const CONFIG = Object.freeze({
-
-    SPREADSHEET_ID: "13KUy3-OjBfj7TxuEHxPeOKxhkqObvznh0DtKUOF4dRw"
-
+const CONFIGURATION = Object.freeze({
+  SPREADSHEET_ID: '13KUy3-OjBfj7TxuEHxPeOKxhkqObvznh0DtKUOF4dRw',
 });
 
 const TABLES = Object.freeze({
+  TEAMS: 'Teams',
 
-    TEAMS: "Teams",
+  COMPETITORS: 'Competitors',
 
-    COMPETITORS: "Competitors",
+  EVENTS: 'Events',
 
-    EVENTS: "Events",
+  POINT_PROFILES: 'PointProfiles',
 
-    POINT_PROFILES: "PointProfiles",
+  RESULTS: 'Results',
 
-    RESULTS: "Results",
+  MATCHES: 'Matches',
 
-    MATCHES: "Matches",
+  RACE_RESULTS: 'RaceResults',
 
-    RACE_RESULTS: "RaceResults",
+  EVENT_COMPETITORS: 'EventCompetitors',
 
-    EVENT_COMPETITORS: "EventCompetitors",
+  DOUBLE_TEAM_MATCHES: 'DoubleTeamMatches',
 
-    DOUBLE_TEAM_MATCHES: "DoubleTeamMatches",
+  EVENT_RUNS: 'EventRuns',
 
-    EVENT_RUNS: "EventRuns",
+  DISTANCE_RESULTS: 'DistanceResults',
 
-    DISTANCE_RESULTS: "DistanceResults",
-
-    ATTEMPTS: "Attempts"
-
+  ATTEMPTS: 'Attempts',
 });
 
 const EVENT_TYPES = Object.freeze({
+  ROUND_ROBIN: 'ROUND_ROBIN',
 
-    ROUND_ROBIN: "ROUND_ROBIN",
+  TOURNAMENT: 'TOURNAMENT',
 
-    TOURNAMENT: "TOURNAMENT",
+  HEAT_FINAL: 'HEAT_FINAL',
 
-    HEAT_FINAL: "HEAT_FINAL",
+  DISTANCE: 'DISTANCE',
 
-    DISTANCE: "DISTANCE",
-
-    DOUBLE_TEAM: "DOUBLE_TEAM"
-
+  DOUBLE_TEAM: 'DOUBLE_TEAM',
 });
 
 const EVENT_STATUS = Object.freeze({
+  NOT_STARTED: 'NOT_STARTED',
 
-    NOT_STARTED: "NOT_STARTED",
+  IN_PROGRESS: 'IN_PROGRESS',
 
-    IN_PROGRESS: "IN_PROGRESS",
-
-    COMPLETE: "COMPLETE"
-
+  COMPLETE: 'COMPLETE',
 });
 
-const API_ACTIONS = Object.freeze({
+const APPLICATION_ACTIONS = Object.freeze({
+  GET_TEAMS: 'getTeams',
 
-    GET_TEAMS: "getTeams",
+  GET_COMPETITORS: 'getCompetitors',
 
-    GET_COMPETITORS: "getCompetitors",
+  GET_EVENTS: 'getEvents',
 
-    GET_EVENTS: "getEvents",
+  GET_POINT_PROFILE: 'getPointProfile',
 
-    GET_POINT_PROFILE: "getPointProfile",
+  GET_POINT_PROFILES: 'getPointProfiles',
 
-    GET_POINT_PROFILES: "getPointProfiles",
+  CREATE_POINT_PROFILE: 'createPointProfile',
 
-    CREATE_POINT_PROFILE: "createPointProfile",
+  UPDATE_POINT_PROFILE: 'updatePointProfile',
 
-    UPDATE_POINT_PROFILE: "updatePointProfile",
+  GET_MATCHES_FOR_EVENT: 'getMatchesForEvent',
 
-    GET_MATCHES_FOR_EVENT: "getMatchesForEvent",
+  CREATE_ROUND_ROBIN_FIXTURES: 'createRoundRobinFixtures',
 
-    CREATE_ROUND_ROBIN_FIXTURES: "createRoundRobinFixtures",
+  CREATE_TOURNAMENT_FIXTURES: 'createTournamentFixtures',
 
-    CREATE_TOURNAMENT_FIXTURES: "createTournamentFixtures",
+  UPDATE_MATCH_WINNER: 'updateMatchWinner',
 
-    UPDATE_MATCH_WINNER: "updateMatchWinner",
+  GET_RACE_RESULTS_FOR_EVENT: 'getRaceResultsForEvent',
 
-    GET_RACE_RESULTS_FOR_EVENT: "getRaceResultsForEvent",
+  START_RACE_EVENT: 'startRaceEvent',
 
-    START_RACE_EVENT: "startRaceEvent",
+  SAVE_RACE_HEAT_WINNER: 'saveRaceHeatWinner',
 
-    SAVE_RACE_HEAT_WINNER: "saveRaceHeatWinner",
+  SAVE_RACE_FINAL_POSITIONS: 'saveRaceFinalPositions',
 
-    SAVE_RACE_FINAL_POSITIONS: "saveRaceFinalPositions",
+  GET_DOUBLE_TEAM_MATCH_FOR_EVENT: 'getDoubleTeamMatchForEvent',
 
-    GET_DOUBLE_TEAM_MATCH_FOR_EVENT: "getDoubleTeamMatchForEvent",
+  SAVE_DOUBLE_TEAM_PAIRING: 'saveDoubleTeamPairing',
 
-    SAVE_DOUBLE_TEAM_PAIRING: "saveDoubleTeamPairing",
+  SAVE_DOUBLE_TEAM_WINNER: 'saveDoubleTeamWinner',
 
-    SAVE_DOUBLE_TEAM_WINNER: "saveDoubleTeamWinner",
+  GET_CURRENT_EVENT_RUN: 'getCurrentEventRun',
 
-    GET_CURRENT_EVENT_RUN: "getCurrentEventRun",
+  RESET_EVENT: 'resetEvent',
 
-    RESET_EVENT: "resetEvent",
+  GET_DISTANCE_RESULTS_FOR_EVENT_RUN: 'getDistanceResultsForEventRun',
 
-    GET_DISTANCE_RESULTS_FOR_EVENT_RUN: "getDistanceResultsForEventRun",
+  SAVE_DISTANCE_CATEGORY_POSITIONS: 'saveDistanceCategoryPositions',
 
-    SAVE_DISTANCE_CATEGORY_POSITIONS: "saveDistanceCategoryPositions",
+  COMPLETE_DISTANCE_EVENT_RUN: 'completeDistanceEventRun',
 
-    COMPLETE_DISTANCE_EVENT_RUN: "completeDistanceEventRun",
+  CONFIRM_EVENT_RESULTS: 'confirmEventResults',
 
-    CONFIRM_EVENT_RESULTS: "confirmEventResults",
+  GET_LEADERBOARD: 'getLeaderboard',
 
-    GET_LEADERBOARD: "getLeaderboard",
+  GET_EVENT_HISTORY: 'getEventHistory',
 
-    GET_EVENT_HISTORY: "getEventHistory",
+  CREATE_COMPETITOR: 'createCompetitor',
 
-    CREATE_COMPETITOR: "createCompetitor",
-
-    UPDATE_COMPETITOR: "updateCompetitor",
-
+  UPDATE_COMPETITOR: 'updateCompetitor',
 });
 
 /**
@@ -132,7 +122,5 @@ const API_ACTIONS = Object.freeze({
  * @returns {GoogleAppsScript.Spreadsheet.Spreadsheet}
  */
 function getSpreadsheet() {
-
-    return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-
+  return SpreadsheetApp.openById(CONFIGURATION.SPREADSHEET_ID);
 }
