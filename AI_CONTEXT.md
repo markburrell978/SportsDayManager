@@ -4,11 +4,16 @@ Project: Sports Day Manager
 
 Production version: v1.0.0
 
-Development milestone: v1.2.0 — local Supabase API compatibility (Stage 4 implementation; online Stage 3 staging remains pending)
+Development status: Supabase schema, transactional API, organiser sign-in and
+initial hosted staging validation complete. Production data migration,
+production-shaped acceptance and cutover remain pending.
 
 ## Purpose
 
-The application runs an annual Sports Day. One organiser manages competitors, events, results, scores, a live leaderboard and read-only Event History. Reliability and preservation of the successful v1.0.0 behaviour take priority over redesign.
+One organiser uses the application for an annual Sports Day. It manages teams,
+competitors, five event formats, confirmations, a live leaderboard and
+read-only event history. Reliability and preservation of the field-tested
+v1.0.0 behavior take priority over redesign.
 
 ## Architecture status
 
@@ -22,124 +27,160 @@ apps-script/ API and services
 Google Sheets
 ```
 
-The staged target is:
+The staging target is operational:
 
 ```text
-web/ on GitHub Pages
+web/ served by a loopback-only staging launcher
         ↓
-authenticated Supabase Edge Function
+authenticated hosted Supabase Edge Function
         ↓
-Supabase PostgreSQL
+hosted Supabase PostgreSQL
 ```
 
-The local schema and all 28 original Supabase API actions are implemented and tested, with an additional Supabase-only `getConfirmationStatus` read action for pending-result notices. The Edge Function verifies Supabase Auth users and an organiser UUID allow-list. The local practice frontend now supports organiser sign-in and centralized provider selection. There is no remote project link, production provider switch or production import. `web/js/config.js` still selects the production Apps Script URL. See `docs/migration/STAGE_4_API.md` for architecture, repeatable tests and outstanding gates.
+`web/js/config.js` and the published runtime configuration still select the
+production Apps Script address. No production endpoint or production data was
+changed.
+
+The isolated staging project reference is `jnzyedbrkxxaqxgsaavc`. All five
+migrations, fictional seed data and the `sports-day-api` function are deployed.
+An allow-listed organiser can sign in from the local staging launcher. See
+`docs/STAGING_REPORT.md` for validation, incident response and next steps.
 
 ## Source layout
 
 - `apps-script/`: field-tested production backend retained for rollback.
-- `web/`: plain HTML/CSS/JavaScript frontend; do not move it.
+- `web/`: plain HTML/CSS/JavaScript frontend; keep it here.
 - `supabase/migrations/`: ordered PostgreSQL schema changes.
-- `supabase/seed.sql`: fictional development-only dataset.
-- `supabase/functions/sports-day-api/`: HTTP/auth boundary, generated compatibility services and transactional repository.
-- `supabase/scripts/sync_legacy_services.py`: reproduces/checks the mechanical v1 service port without modifying Apps Script.
-- `supabase/tests/`: database smoke checks.
-- `docs/migration/`: staged migration mapping, preservation and runbooks.
+- `supabase/seed.sql`: fictional local/staging data only.
+- `supabase/functions/sports-day-api/`: HTTP/auth boundary, generated compatible
+  services and transactional SQL repository.
+- `supabase/scripts/practice.py`: local Supabase website/function launcher.
+- `supabase/scripts/staging.py`: local website launcher for hosted staging.
+- `supabase/scripts/sync_legacy_services.py`: regenerates/checks compatible
+  Supabase services from maintained Apps Script behavior.
+- `supabase/tests/`: database, API, frontend and integration checks.
+- `docs/migration/`: mapping, preservation and cutover/rollback runbooks.
 
-## Field-tested business rules
+## Business rules that must remain compatible
 
 ### Event Runs
 
 - Events are permanent configuration; Event Runs are resettable executions.
 - Every Event has exactly one current run.
 - Reset makes the old run historical and creates the next numbered current run.
-- Old-run writes are rejected and historical engine/results rows are retained.
+- Old-run writes are rejected; historical engine/results rows are retained.
 - EventRun status is authoritative; Event status is a compatibility mirror.
 
 ### Results and confirmation
 
-- Completing an engine does not create official Results.
+- Completing an event engine does not create official Results.
 - The organiser explicitly confirms completed current-run results.
 - Reconfirmation replaces only Results for that current run.
 - `Results.Position` is authoritative.
 - `Results.PointsAwarded` is a compatibility snapshot.
 - Positions above fourth award zero.
-- Heat & Final and Distance Male/Female categories may produce repeated team rows.
+- Heat & Final and Distance categories may produce repeated team rows.
 - Each Double Team member receives the full points for its side's placing.
+- Saved engine revisions and confirmed revisions drive pending-result notices.
 
-### Point profiles
+### Point profiles and leaderboard
 
-- One row per profile: `ID`, `Name`, `First`, `Second`, `Third`, `Fourth`.
-- All point values are required integers; positive, zero and negative values are valid.
-- Runtime code must not expect the legacy Position/Points row model.
-
-### Leaderboard
-
-- Includes every active team, including zero or negative totals.
-- Excludes inactive teams and historical runs.
-- Recalculates from saved positions and the event's current point profile.
-- Uses competition ranking; alphabetical order is display-only.
-- Round-robin ties receive the ceiling of the average points across occupied places.
+- A point profile is one row with `ID`, `Name`, `First`, `Second`, `Third` and
+  `Fourth`; all four points are required signed integers.
+- The leaderboard includes active teams, including zero/negative totals, and
+  excludes inactive teams and historical runs.
+- Scores recalculate from confirmed positions and the current point profile.
+- Competition ranking determines positions; alphabetic order is display-only.
+- Round Robin ties receive the ceiling of the average points for their occupied
+  positions.
 
 ### Event History
 
-- Read-only, per event, newest run first.
-- Reconstructed from Event Runs, engine rows and Results; no snapshot table.
-- Includes current and previous runs and confirmed/unconfirmed state.
-- Historical displayed points use the event's current point profile.
+- History is read-only and newest-run-first.
+- It is reconstructed from Event Runs, engine rows and Results.
+- It includes current/previous runs and confirmation state.
+- Displayed historical points use the event's current point profile.
 - Historical runs cannot be edited, restored, confirmed, reset or deleted.
 
-## PostgreSQL design decisions
+## PostgreSQL and API decisions
 
 - Existing IDs remain `text`, including UUID-shaped dynamic IDs.
-- The core tables are `teams`, `competitors`, `point_profiles`, `events`, `event_runs` and `results`.
-- Engine tables are `matches`, `race_results`, `event_competitors`, `distance_results`, `double_team_matches` and reserved `attempts`.
-- One `matches` table continues to serve Round Robin and Tournament.
-- Composite event/run foreign keys prevent rows from pairing an Event with another Event's run.
-- A partial unique index and deferred constraint triggers enforce exactly one current run per Event at transaction commit.
-- Explicit `sequence_number` fields replace Sheet row order wherever History compatibility depends on it.
-- RLS is enabled on all application tables with no direct browser policies. The API validates signed-in users against an organiser allow-list; local frontend login is implemented; least-privilege production policies and staging organiser configuration remain future work.
-- Every API request takes a PostgreSQL transaction advisory lock, loads the application tables, and flushes journaled changes atomically. This initial implementation targets a small single-organiser dataset; staging scale/latency tests are outstanding.
-- Core insertion order is preserved with `source_order`; race/distance position uniqueness is deferred to transaction completion so positions can be swapped safely.
-- Leaderboard and Event History remain derived concepts, not stored summary tables. Results existence still indicates prior confirmation; `event_runs.results_revision` and `confirmed_revision` track saved changes since that confirmation without changing legacy response shapes.
+- The 12 application tables use foreign keys, checks, indexes and RLS.
+- Composite event/run foreign keys prevent cross-event engine rows.
+- Deferred triggers enforce exactly one current run at transaction commit.
+- `sequence_number` and `source_order` replace implicit Sheet order.
+- Race/distance position uniqueness is deferred for valid multi-row swaps.
+- All application writes go through the Edge Function transaction boundary.
+- Each request currently takes an advisory lock and loads all application
+  tables. This suits the small single-organiser dataset but must be measured
+  with production-shaped data.
+- The original 28 API actions and PascalCase response fields remain compatible.
+  `getConfirmationStatus` is additional Supabase-only metadata.
+- The handler verifies Supabase Auth and a server-side organiser UUID allow-list.
+  Direct browser table access remains blocked by RLS defaults.
+- Hosted Auth verification uses a public publishable key. The local stack may
+  use its generated legacy anonymous key. Privileged database settings remain
+  server-only.
+
+## Validation status
+
+Local checks passed for all 28 Apps Script-compatible actions, all five event
+engines, transaction rollback, concurrency, Auth/CORS boundaries, confirmation
+tracking, frontend session races and clean/upgrade database paths.
+
+The code-quality baseline uses Google-inspired JavaScript/TypeScript plus
+Google/PEP 8-inspired Python rules. `npm run check` runs formatting, ESLint,
+full-word naming, purpose comments, Python checks, generated-service drift and
+15 frontend tests. Deno type checking passes separately. See
+`docs/CODE_REVIEW.md`.
+
+Hosted staging passed sign-in, all main read surfaces and a reversible Round
+Robin correction. Pending notices appeared before confirmation, the leaderboard
+updated only after confirmation, and the original winner/scores were restored
+and confirmed. The final leaderboard was Alpha 40, Beta 35, Gamma 35, Delta 31.
+On 2026-09-24, the current-run and history views for all five event formats were
+checked again without writes; both category views loaded for race and distance,
+all confirmed row counts matched, and the same clean leaderboard remained. A
+full hosted fictional Sports Day was then completed: all five events were
+reset, progressed, completed and confirmed, and all superseded runs remained in
+history. The final reconciled leaderboard was Alpha 40, Gamma 40, Delta 31 and
+Beta 30, with no pending results.
+
+During initial staging setup, a CLI command unexpectedly printed a legacy
+service-role key. It was never written to the repository. The code was moved to
+publishable keys, legacy hosted API keys were disabled, the legacy HS256 signing
+key was revoked, and hosted validation passed afterwards. Never place any
+credential from terminal/session history into a file. See the incident section
+of `docs/STAGING_REPORT.md`.
 
 ## Development rules
 
 - Keep production working while migration proceeds.
-- Do not modify or delete Apps Script during schema stages.
-- Do not change the production frontend endpoint before the cutover gate.
-- Do not commit secrets, production participant data or completed private inventories.
-- Use SQL migrations, constraints and transactions.
-- The owner authorized the local API port after Stage 2 validation. Keep subsequent frontend/security work isolated from production.
-- Do not create a Git commit unless explicitly instructed.
+- Preserve `apps-script/` until rollback retirement is explicitly approved.
+- Do not change the production frontend endpoint before cutover approval.
+- Never commit secrets, private inventory details or real participant exports.
+- Represent schema changes as ordered SQL migrations.
+- Use transactions for multi-row event workflows.
+- Do not create a Git commit, push, deploy production, import production data or
+  switch endpoints unless the owner explicitly instructs it.
+- Do not reset staging or the owner's local practice database merely to rerun
+  seed tests.
 - Offline mode, dynamic events and public sharing remain deferred.
 
-## Latest local validation — 2026-09-22
+## Current working state and next actions
 
-Docker Desktop is installed and running. Supabase CLI 2.117.0 successfully started the local stack and completed `db reset --local`. Both `schema_smoke.sql` and `local_acceptance.sql` passed against Docker-backed PostgreSQL. The fictional dataset contains 5 teams, 5 events, 6 runs and 22 results. Anonymous Data API reads were blocked for all 12 tables, and a test anonymous team insertion was rejected. Local Studio is available at `http://127.0.0.1:54323` while the stack runs.
+The owner committed the earlier SQL transition as `3dd6f0f`. Hosted staging and
+publishable-key changes made afterwards are intentionally uncommitted. The
+ignored `.env.staging.json` contains public staging browser configuration and
+must remain untracked.
 
-The local API subsequently passed parity checks for all 28 actions, full fictional workflows for all five event types, rollback and concurrency tests, and real Edge Function HTTP/Auth tests. Temporary test users and records were removed. The live app still uses Apps Script. The local practice frontend and sign-in were completed on 2026-09-23. Next work is a practice walkthrough/full rehearsal and online staging setup when account access is available. Private production backups remain outstanding. See `docs/migration/STAGE_4_API.md`.
+Next actions:
 
-## Local practice frontend — 2026-09-23
-
-`python3 supabase/scripts/practice.py` serves the practice website at `http://127.0.0.1:8080`, supplies only public local connection settings and starts the Edge Function. A reusable fictional organiser's credentials are in ignored `.env.practice.json`, outside `web/`; no credentials should be copied into documentation. The frontend has sign-in/sign-out, tab-scoped sessions, refresh and a Practice banner. The production default remains Apps Script and its configured URL is unchanged.
-
-Eleven frontend checks passed, including real local sign-in, all main data reads/history, reversible profile editing, token refresh/sign-out and protection against a queued request being sent after sign-out. No browser walkthrough was performed because browser control was unavailable. See `docs/PRACTICE.md` for startup, validation and next steps. Do not run `edge_smoke.py` while the practice launcher's own function server is running.
-
-## Current manual blockers
-
-- The successful field-event date must be supplied by the owner.
-- The owner must create and restore-test the restricted production Sheet backup.
-- Owner account access is needed before creating an online staging Supabase project.
-- Remote staging/production projects and full production authorization policies remain future work.
-
-## Pending-result notices — 2026-09-23
-
-The owner confirmed the practice app is responsive and that explicit confirmation updates the leaderboard. Added a larger confirmation button with a soft red glow for pending changes, plus banners on Events and Leaderboard listing affected events with a Review event action. Warnings refresh after result writes and tab loads and survive reloads; no-op saves do not mark results dirty. Incomplete events explain that completion is required first. Only the local Supabase backend supplies pending metadata; Apps Script is unchanged.
-
-Migration `202609230001_confirmation_revisions.sql` is applied locally without resetting practice data. Engine triggers increment revision metadata and the API acknowledges it atomically with official Results. Tests cover all five engines, first confirmation, corrections, no-op saves and reset; fourteen frontend checks passed. Fresh/upgrade migration checks passed in disposable local databases. The latest styling awaits an owner visual check; a full rehearsal and online staging remain outstanding. Do not reset the owner's practice database merely to restart the app or run seed-specific tests.
-
-## Merge-readiness review — 2026-09-23
-
-The code now follows `docs/CODING_STANDARDS.md`: Google-inspired JavaScript/TypeScript with Prettier and ESLint, plus Google/PEP 8-inspired Python checks. Local bindings use full words, named functions have brief purpose comments, generated Supabase services reuse Apps Script utilities, and `npm run check` is enforced by a pull-request workflow. Identifiers in inline UI actions now travel through escaped data attributes rather than executable strings. See `docs/CODE_REVIEW.md` for validation evidence and the complete file guide.
-
-All quality checks, Deno type checking, all 28 API parity workflows, rollback/concurrency tests, confirmation tests and real practice client integration passed. The isolated review database was removed and the reversible practice profile edit was restored. No commit, deployment or production change was made.
+1. owner reviews `docs/STAGING_REPORT.md` and the uncommitted changes;
+2. create the next commit, push `v1.1_ChangeToSQL` and open a draft GitHub pull
+   request;
+3. pass `quality.yml` and resolve review findings;
+4. build and verify private export/import and backup/restore tooling;
+5. reconcile a restricted production-shaped copy;
+6. measure performance and complete least-privilege production security;
+7. rehearse cutover/rollback before any explicit production approval.

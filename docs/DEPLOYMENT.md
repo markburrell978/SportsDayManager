@@ -5,42 +5,72 @@
 Production v1.0.0 consists of:
 
 - static `web/` files deployed by `.github/workflows/pages.yml` to GitHub Pages;
-- the Apps Script `/exec` URL selected by `web/js/config.js`;
+- the Apps Script `/exec` address selected by `web/js/config.js`;
 - the Google Sheet selected privately by Apps Script configuration.
 
-Stages 1–2 do not change any of those three references. Do not run `clasp push`, create/replace an Apps Script deployment or edit `web/js/config.js` during schema-only work.
+The Pages workflow runs on pushes to `main` and uploads only `web/`. The
+Supabase project, migration documents and private settings do not enter the
+Pages artifact. The live endpoint has not changed.
 
-The Pages workflow runs on pushes to `main` and uploads only `./web`. Migration documentation and `supabase/` files do not enter the Pages artifact.
+Do not run `clasp push`, replace an Apps Script deployment, edit the production
+Google Sheet or change `web/js/config.js` during staging work.
 
-## Local Supabase
+## Local Supabase practice
 
-Follow `docs/SUPABASE_LOCAL_SETUP.md`. Local migrations and seed data are safe to recreate only in the local disposable database.
+Follow `docs/SUPABASE_LOCAL_SETUP.md` to run the local database, then use
+`docs/PRACTICE.md` to open the website. Local reset and seed commands are safe
+only for the disposable local database.
 
-## Staging and production Supabase
+## Hosted Supabase staging
 
-Remote environment creation/linking is Stage 3 and requires owner-supplied project references. Store database credentials and service-role keys only in Supabase project secrets or approved CI secrets. Public frontend configuration may later contain only public project/API values.
+The isolated hosted staging project was created and validated on 2026-09-23.
+It contains only fictional seed data. All five migrations and the
+`sports-day-api` Edge Function are deployed, and an allow-listed organiser can
+sign in through the local staging launcher.
 
-Before any remote push:
+See `docs/STAGING_REPORT.md` for the project reference, validation evidence,
+credential-remediation record, restart command and remaining work.
+
+The staging launcher reads the ignored `.env.staging.json` file, validates that
+it contains an HTTPS Supabase project address and a public publishable key, and
+serves `web/` only on `127.0.0.1:8080`:
 
 ```bash
-npx supabase db push --dry-run
+python3 supabase/scripts/staging.py
 ```
 
-Do not apply the fictional seed to production. Do not run a linked reset against production.
+Only public browser configuration may be placed in that file. Database
+passwords, secret keys, organiser passwords and privileged connection strings
+must remain in Supabase-managed secrets or another approved private store.
 
-## Future frontend provider configuration
+Before applying any later staging schema change, inspect the plan:
 
-Stage 4/8 will centralise provider selection in the frontend API abstraction. Production remains `apps-script` until every compatibility, security, migration, rehearsal and cutover gate passes. The static Pages deployment must never contain the service-role key, a database password or a privileged connection string.
+```bash
+npx supabase db push --dry-run --linked
+```
 
-## Cutover and rollback
+Never apply the fictional seed to production and never run a linked database
+reset against staging or production.
 
-Use `docs/migration/CUTOVER_RUNBOOK.md` only after Stages 3–8. Use `docs/migration/ROLLBACK.md` during the defined rollback window. Preserve the Apps Script deployment and Sheet backup until explicit retirement approval.
+## Edge Function access boundary
 
+The Edge Function verifies each bearer token with Supabase Auth and checks the
+verified user ID against `SPORTS_DAY_ORGANISER_IDS`. It permits only origins in
+`SPORTS_DAY_ALLOWED_ORIGINS`. Direct browser table access remains blocked by
+RLS defaults.
 
-## Local Edge Function
+Hosted deployments use Supabase's current publishable-key configuration for
+Auth verification. The local stack retains its legacy anonymous-key fallback
+because current local Supabase output still supplies that key. Neither value is
+a privileged database credential.
 
-The replacement API is implemented locally. Follow `docs/migration/STAGE_4_API.md` to serve/test it. It requires a verified Supabase Auth user and a configured organiser UUID allow-list; there is no anonymous development bypass. No function has been deployed remotely. Before deployment, configure server-only credentials, organiser IDs and allowed origins and complete the remaining security/staging gates.
+## Future production Supabase
 
-## Practice frontend
+Production remains `apps-script` until data migration, reconciliation,
+realistic performance, least-privilege security, full rehearsal and rollback
+gates pass. The future static Pages configuration may contain a public project
+address and publishable key only.
 
-Use `docs/PRACTICE.md` for the local website. Its launcher overrides `/js/runtime-config.js` with public-only local settings. The file shipped by GitHub Pages defaults to Apps Script, and `web/js/config.js` retains the existing production URL. Private practice credentials and function settings are stored outside `web/` in ignored `.env.practice*` files. No deployment was performed for this milestone.
+Use `docs/migration/CUTOVER_RUNBOOK.md` only after those gates pass. Use
+`docs/migration/ROLLBACK.md` during the defined rollback window. Preserve the
+Apps Script deployment and Sheet backup until explicit retirement approval.

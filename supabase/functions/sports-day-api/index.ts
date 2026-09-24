@@ -2,10 +2,33 @@ import postgres from 'postgres';
 import { execute } from './application.js';
 import { createHandler } from './http.js';
 
+/** Read the hosted publishable key, retaining legacy local-stack compatibility. */
+function getPublishableKey() {
+  const publishableKeysConfiguration = Deno.env.get(
+    'SUPABASE_PUBLISHABLE_KEYS',
+  );
+  if (publishableKeysConfiguration) {
+    try {
+      const publishableKeys = JSON.parse(publishableKeysConfiguration);
+      if (typeof publishableKeys.default === 'string') {
+        return publishableKeys.default;
+      }
+    } catch {
+      throw new Error('Publishable key configuration is invalid.');
+    }
+  }
+  const localLegacyKey = Deno.env.get('SUPABASE_ANON_KEY');
+  if (localLegacyKey) {
+    return localLegacyKey;
+  }
+  throw new Error('Publishable key configuration is missing.');
+}
+
 const databaseAddress = Deno.env.get('SUPABASE_DB_URL');
 if (!databaseAddress) {
   throw new Error('Database configuration is missing.');
 }
+const publishableKey = getPublishableKey();
 const databaseConnection = postgres(databaseAddress, {
   prepare: false,
   max: 2,
@@ -40,7 +63,7 @@ Deno.serve(
         {
           headers: {
             Authorization: authorization,
-            apikey: Deno.env.get('SUPABASE_ANON_KEY') || '',
+            apikey: publishableKey,
           },
           signal: AbortSignal.timeout(10000),
         },

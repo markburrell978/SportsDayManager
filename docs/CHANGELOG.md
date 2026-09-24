@@ -1,3 +1,20 @@
+# Hosted Supabase staging — 2026-09-23
+
+- Linked an isolated London-region Supabase project and applied all five migrations plus fictional seed data
+- Configured an allow-listed organiser, loopback-only staging origins and the deployed `sports-day-api` Edge Function
+- Added a loopback-only Staging launcher and visible fictional-data environment label without changing the published Apps Script configuration
+- Replaced hosted legacy API-key use with Supabase publishable-key configuration while retaining the local-stack fallback
+- Disabled legacy staging API keys and revoked the legacy HS256 signing key after a CLI command unexpectedly exposed the old service-role key; no credential was committed and post-revocation validation passed
+- Passed hosted sign-in, main-screen reads and a reversible result correction/confirmation/restoration test; restored the original Alpha 40, Beta 35, Gamma 35, Delta 31 leaderboard
+- Checked the current-run and history views for all five event formats on hosted staging without changing data
+- Completed a full hosted fictional Sports Day across all five formats, including resets, progression, pending-result notices, completion, confirmation and retained history
+- Reconciled the completed rehearsal leaderboard exactly: Alpha 40, Gamma 40, Delta 31 and Beta 30, with no unconfirmed results left
+- Confirmed that the remote database has no pending migrations and the Edge Function is active
+- Added `docs/STAGING_REPORT.md` with evidence, incident response, restart instructions and remaining release gates
+- Production data, the production endpoint, Apps Script and Google Sheets were unchanged
+
+---
+
 # Merge-readiness review — 2026-09-23
 
 - Adopted a documented Google-inspired JavaScript/TypeScript standard and Google/PEP 8-inspired Python standard

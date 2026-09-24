@@ -61,7 +61,7 @@ or service-role credentials remain outside `web/`.
 The following checks passed after the review:
 
 - `npm run check`: formatting, ESLint, descriptive binding names, named-function
-  comments, Python names/docstrings, generated-service drift and 14 frontend/UI
+  comments, Python names/docstrings, generated-service drift and 15 frontend/UI
   tests;
 - Deno type checking for the Edge Function entry point;
 - clean migrations, fictional seed, schema smoke test and browser-role access
@@ -80,12 +80,11 @@ were not reset or replaced.
 
 ## Remaining gates
 
-The local code is ready for a normal merge-request review. These product and
-deployment gates remain deliberately open:
+The local code and initial hosted staging deployment are ready for a normal
+pull-request review. These product and deployment gates remain deliberately
+open:
 
-- visually check the reformatted frontend and the new confirmation styling;
-- run a full simulated Sports Day in practice;
-- create and validate an isolated online Supabase staging project;
+- complete all five event workflows and a full simulated Sports Day on staging;
 - build and rehearse production export/import and backup restoration;
 - test realistic data volume, latency and lock contention;
 - complete least-privilege production database access and owner-approved
@@ -213,7 +212,8 @@ transition, practice frontend, confirmation warnings and this review.
 | File | Purpose |
 | --- | --- |
 | `supabase/scripts/check_python_style.py` | Enforces full-word Python bindings, line length and function/class docstrings. |
-| `supabase/scripts/practice.py` | Starts the loopback-only practice website/API and manages its private fictional organiser. |
+| `supabase/scripts/practice.py` | Starts the loopback-only local Practice website/API and manages its private fictional organiser. |
+| `supabase/scripts/staging.py` | Serves the frontend on loopback against hosted staging using validated public-only ignored settings. |
 | `supabase/scripts/sync_legacy_services.py` | Generates and drift-checks Supabase adapters from maintained Apps Script business rules. |
 | `supabase/tests/frontend_test.mjs` | Tests provider routing, auth/session races, screen reads and reversible real-practice integration. |
 | `supabase/tests/confirmation_ui_test.mjs` | Tests pending-confirmation UI states, escaping and safe identifier handlers. |
@@ -235,6 +235,7 @@ transition, practice frontend, confirmation warnings and this review.
 | `docs/DESIGN.md` | Explains production/target architecture and key application rules. |
 | `docs/DEPLOYMENT.md` | Separates current GitHub Pages/Apps Script deployment from future Supabase environments. |
 | `docs/PRACTICE.md` | Explains how to use, restart and validate the local signed-in practice website. |
+| `docs/STAGING_REPORT.md` | Records the hosted staging deployment, validation, credential remediation, restart command and next steps. |
 | `docs/SUPABASE_LOCAL_SETUP.md` | Documents Docker/Supabase startup, migrations, reset safety and database checks. |
 | `docs/TODO.md` | Tracks completed migration work and the remaining staging/cutover gates. |
 | `docs/CHANGELOG.md` | Records milestones, visible behavior and local validation history. |

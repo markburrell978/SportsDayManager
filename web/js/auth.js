@@ -60,7 +60,7 @@ window.Authentication = (() => {
         {
           method: 'POST',
           headers: {
-            apikey: settings.anonKey,
+            apikey: settings.publishableKey,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(body),
@@ -189,7 +189,7 @@ window.Authentication = (() => {
           await fetch(`${settings.url}/auth/v1/logout?scope=local`, {
             method: 'POST',
             headers: {
-              apikey: settings.anonKey,
+              apikey: settings.publishableKey,
               Authorization: `Bearer ${token}`,
             },
             signal: AbortSignal.timeout(10000),

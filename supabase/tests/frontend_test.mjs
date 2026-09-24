@@ -36,12 +36,12 @@ async function client(fetcher, { practice = true, storage = new Map() } = {}) {
     );
   }
   if (practice) {
-    context.SPORTS_DAY_PRACTICE = true;
+    context.SPORTS_DAY_TEST_ENVIRONMENT = true;
     context.SPORTS_DAY_RUNTIME = {
       provider: 'supabase',
       environment: 'practice',
       url: 'http://127.0.0.1:54321',
-      anonKey: 'public-anon-key',
+      publishableKey: 'public-browser-key',
     };
   }
   context.ApplicationInterface.initialise();
@@ -83,14 +83,41 @@ test('practice fails closed when its runtime configuration is missing or remote'
     throw new Error('Must not call a backend');
   });
   context.SPORTS_DAY_RUNTIME = { provider: 'apps-script' };
-  assert.throws(() => ApplicationInterface.initialise(), /Practice settings/);
+  assert.throws(
+    () => ApplicationInterface.initialise(),
+    /Test environment settings/,
+  );
   context.SPORTS_DAY_RUNTIME = {
     provider: 'supabase',
     environment: 'practice',
     url: 'https://example.com',
-    anonKey: 'key',
+    publishableKey: 'key',
   };
   assert.throws(() => ApplicationInterface.initialise(), /on this computer/);
+});
+
+test('hosted staging configuration is accepted only from the local launcher', async () => {
+  const { context, ApplicationInterface } = await client(() => {
+    throw new Error('Must not call a backend');
+  });
+  context.SPORTS_DAY_RUNTIME = {
+    provider: 'supabase',
+    environment: 'staging',
+    url: 'https://project.supabase.co',
+    publishableKey: 'sb_publishable_public-browser-key',
+  };
+  ApplicationInterface.initialise();
+  assert.equal(ApplicationInterface.isTestEnvironment, true);
+  assert.equal(ApplicationInterface.environment, 'staging');
+  assert.equal(
+    ApplicationInterface.settings.endpoint,
+    'https://project.supabase.co/functions/v1/sports-day-api',
+  );
+  context.location.hostname = 'published.example.test';
+  assert.throws(
+    () => ApplicationInterface.initialise(),
+    /must run on this computer/,
+  );
 });
 
 test('sign-in persists tokens only within the tab, supports reload, and never stores passwords', async () => {

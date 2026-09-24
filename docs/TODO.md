@@ -13,7 +13,7 @@
 - [ ] Owner completes private production inventory and field-event date
 - [ ] Owner creates and restore-tests restricted production backups
 
-## v1.1.0 — Supabase schema and local environment
+## v1.1.0 — Supabase schema and environments
 
 - [x] Map every current/optional Sheet to PostgreSQL
 - [x] Preserve stable IDs as text
@@ -27,9 +27,10 @@
 - [x] Validate migrations, seed and smoke tests in an empty PostgreSQL-compatible runtime
 - [x] Install/start Docker Desktop and run `supabase db reset --local` (2026-09-22)
 - [x] Pass Docker-backed schema/transaction/role checks and verify anonymous Data API access is blocked
-- [ ] Create an isolated staging Supabase project (Stage 3)
+- [x] Create and link an isolated staging Supabase project (2026-09-23)
+- [x] Apply all migrations and fictional seed data to staging
 
-## v1.2.0 — Supabase API compatibility (local milestone)
+## v1.2.0 — Supabase API compatibility
 
 - [x] Inventory all 28 existing API actions and compatibility shapes
 - [x] Build modular Edge Function routing and PostgreSQL repository
@@ -37,41 +38,53 @@
 - [x] Implement request transactions for reset, progression and Results replacement
 - [x] Compare all actions and persisted state with unchanged v1 services on fictional fixtures
 - [x] Test rollback, concurrent reset/confirmation, transport and real Edge Function authentication
-- [ ] Validate performance and copied-data compatibility on online staging
+- [x] Deploy the API to staging and verify authenticated reads/writes
+- [ ] Validate performance and copied-production-data compatibility on staging
 
-## v1.3.0 — Data migration and staging validation
+## v1.3.0 — Data migration and reconciliation
 
 - [ ] Build repeatable Sheet export tooling
 - [ ] Validate headers, row counts, checksums and foreign keys
 - [ ] Transform copied data without silent ambiguous repair
-- [ ] Create complete fictional golden dataset
-- [ ] Compare Apps Script and Supabase read responses
-- [ ] Reconcile leaderboard and Event History
+- [x] Create a fictional dataset covering all five event formats
+- [ ] Compare Apps Script and Supabase read responses using a production-shaped copy
+- [ ] Reconcile leaderboard and Event History against the copied data
 
 ## v1.4.0 — Authentication and production security
 
-- [x] Add Supabase Auth organiser sign-in/sign-out for the local practice frontend
-- [ ] Configure and validate real organiser access on online staging
-- [x] Add server-side organiser UUID allow-list (local API)
-- [ ] Configure real organiser accounts on staging
-- [ ] Implement least-privilege RLS policies
-- [x] Restrict local API CORS to configured origins
-- [ ] Configure and validate production/staging origins
-- [ ] Verify anonymous writes fail and no privileged secrets reach the frontend
+- [x] Add Supabase Auth organiser sign-in/sign-out
+- [x] Add a server-side organiser UUID allow-list
+- [x] Configure and validate organiser access on staging
+- [x] Restrict staging API CORS to its local launcher origins
+- [x] Replace legacy hosted API-key use with a publishable key
+- [x] Disable staging legacy API keys and revoke the legacy signing key
+- [x] Verify anonymous API access fails and no privileged secret reaches the frontend
+- [ ] Implement and test the least-privilege production database role/policy design
+- [ ] Configure production accounts, secrets and website origins during an approved rehearsal
 
-## v1.5.0 — Parallel staging and rehearsal
+## v1.5.0 — Staging and rehearsal
 
 - [x] Centralise Apps Script/Supabase provider selection in the API client
-- [x] Add a local practice launcher, visible Practice banner and private fictional organiser credentials
-- [x] Test local frontend sign-in, data access, reversible writes, session refresh and sign-out
-- [x] Owner tried the practice frontend and verified confirmation updates the leaderboard
-- [x] Add persistent pending-result tracking, prominent confirmation button and notices on Events/Leaderboard
-- [x] Complete a merge-readiness code review with enforced formatting, linting, full-word naming and file guide
-- [ ] Visually check the new warning/button styling and complete a full practice walkthrough
-- [ ] Keep production on Apps Script and staging on Supabase
-- [ ] Complete every end-to-end workflow on staging
-- [ ] Run a full simulated Sports Day
-- [ ] Complete and time at least one clean cutover rehearsal
+- [x] Add local Practice and Staging launchers with visible fictional-data banners
+- [x] Test frontend sign-in, reads, reversible writes, session refresh and sign-out
+- [x] Add persistent pending-result tracking, prominent confirmation button and notices
+- [x] Complete a merge-readiness code review with formatting, linting, full-word naming and a file guide
+- [x] Keep production on Apps Script while staging uses Supabase
+- [x] Run a hosted correction/confirmation/restoration test and restore the original fictional scores
+- [x] Check current-run and history views for all five event formats on hosted staging
+- [x] Complete every end-to-end workflow for all five event formats on staging
+- [x] Run a full simulated Sports Day and reconcile its final leaderboard and histories (2026-09-24)
+- [ ] Complete realistic-data security and performance checks
+- [ ] Complete and time at least one clean cutover and rollback rehearsal
+
+## Version control and review
+
+- [x] Owner created the initial SQL-transition commit
+- [ ] Review and commit the subsequent staging/publishable-key changes
+- [ ] Push `v1.1_ChangeToSQL` to GitHub
+- [ ] Open a draft pull request
+- [ ] Pass `.github/workflows/quality.yml` on GitHub
+- [ ] Resolve pull-request findings before merge
 
 ## v2.0.0 — Production cutover
 

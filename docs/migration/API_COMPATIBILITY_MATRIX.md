@@ -1,6 +1,6 @@
 # API Compatibility Matrix
 
-Status: all 28 actions implemented and compatibility-tested locally on 2026-09-22. Online staging and production acceptance remain pending. See `STAGE_4_API.md`.
+Status: all 28 actions implemented and compatibility-tested locally on 2026-09-22. The API and an authenticated reversible workflow were validated on hosted staging on 2026-09-23. Production-shaped data and production acceptance remain pending. See `STAGE_4_API.md` and `../STAGING_REPORT.md`.
 
 The frontend success/error envelope remains `{ success, message, data }`. Production currently has no authentication; the target column records the minimum planned production gate. “Current-run check” means the supplied run must belong to the Event and be the unique current run.
 
@@ -42,7 +42,7 @@ No production provider switch may occur until every row above has an implemented
 
 ## Local evidence and scope
 
-`supabase/tests/api_test.js` exercises every row above against PostgreSQL and compares responses and persisted state with the unchanged Apps Script services running on an independent in-memory Sheet fixture. Additional tests cover transactional result-replacement failure and concurrent reset/confirmation. `http_test.js` covers transport and access boundaries; `edge_smoke.py` exercises the actual local Edge runtime with temporary Supabase Auth users. These are synthetic local compatibility checks, not live production or online staging acceptance.
+`supabase/tests/api_test.js` exercises every row above against PostgreSQL and compares responses and persisted state with the unchanged Apps Script services running on an independent in-memory Sheet fixture. Additional tests cover transactional result-replacement failure and concurrent reset/confirmation. `http_test.js` covers transport and access boundaries; `edge_smoke.py` exercises the actual local Edge runtime with temporary Supabase Auth users. Hosted staging additionally passed organiser sign-in, every main read surface and a reversible result correction/confirmation/restoration check. Production-shaped data acceptance remains outstanding.
 
 ## Additional Supabase metadata action
 

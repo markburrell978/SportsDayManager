@@ -17,9 +17,12 @@ const ApplicationInterface = {
   /** Configure the backend and enforce local practice connection boundaries. */
   initialise() {
     const runtime = window.SPORTS_DAY_RUNTIME;
-    if (window.SPORTS_DAY_PRACTICE && runtime?.provider !== 'supabase') {
+    if (
+      window.SPORTS_DAY_TEST_ENVIRONMENT &&
+      runtime?.provider !== 'supabase'
+    ) {
       throw new Error(
-        'Practice settings could not be loaded. Restart the practice system and refresh this page.',
+        'Test environment settings could not be loaded. Restart the test system and refresh this page.',
       );
     }
     if (!runtime || runtime.provider === 'apps-script') {
@@ -51,18 +54,24 @@ const ApplicationInterface = {
       throw new Error('The practice connection must run on this computer.');
     }
     if (
+      runtime.environment === 'staging' &&
+      !['127.0.0.1', 'localhost'].includes(location.hostname)
+    ) {
+      throw new Error('The staging website must run on this computer.');
+    }
+    if (
       requestAddress.protocol !== 'https:' &&
       !['127.0.0.1', 'localhost'].includes(requestAddress.hostname)
     ) {
       throw new Error('Sign-in requires a secure connection.');
     }
-    if (typeof runtime.anonKey !== 'string' || !runtime.anonKey) {
+    if (typeof runtime.publishableKey !== 'string' || !runtime.publishableKey) {
       throw new Error('The app connection is missing its public key.');
     }
     this.settings = {
       provider: 'supabase',
       url: requestAddress.origin,
-      anonKey: runtime.anonKey,
+      publishableKey: runtime.publishableKey,
       environment: runtime.environment,
       endpoint: `${requestAddress.origin}/functions/v1/sports-day-api`,
     };
@@ -73,9 +82,13 @@ const ApplicationInterface = {
   get requiresSignIn() {
     return this.settings?.provider === 'supabase';
   },
-  /** Report whether the configured connection is the local practice environment. */
-  get isPractice() {
-    return this.settings?.environment === 'practice';
+  /** Report whether the configured connection uses a non-production test system. */
+  get isTestEnvironment() {
+    return ['practice', 'staging'].includes(this.settings?.environment);
+  },
+  /** Return the configured environment name for clear test-environment labels. */
+  get environment() {
+    return this.settings?.environment || 'production';
   },
 
   /** Send one authenticated request without automatically replaying failed writes. */
@@ -93,7 +106,7 @@ const ApplicationInterface = {
         throw new Error('Your session changed. Please sign in again.');
       }
       options.headers = {
-        apikey: this.settings.anonKey,
+        apikey: this.settings.publishableKey,
         Authorization: `Bearer ${token}`,
       };
     }

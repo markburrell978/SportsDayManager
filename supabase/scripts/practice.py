@@ -181,7 +181,8 @@ class PracticeRequestHandler(SimpleHTTPRequestHandler):
                 .read_text()
                 .replace(
                     "</head>",
-                    "<script>window.SPORTS_DAY_PRACTICE = true;</script>\n</head>",
+                    "<script>window.SPORTS_DAY_TEST_ENVIRONMENT = true;"
+                    "</script>\n</head>",
                 )
                 .encode()
             )
@@ -218,7 +219,9 @@ PUBLIC_BROWSER_CONFIGURATION = {
     "provider": "supabase",
     "environment": "practice",
     "url": LOCAL_API_ADDRESS,
-    "anonKey": LOCAL_CONFIGURATION["ANON_KEY"],
+    "publishableKey": LOCAL_CONFIGURATION.get(
+        "PUBLISHABLE_KEY", LOCAL_CONFIGURATION["ANON_KEY"]
+    ),
 }
 
 WEBSITE_SERVER = ThreadingHTTPServer(

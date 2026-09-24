@@ -26,7 +26,7 @@ window.Session = {
       await onReady();
     };
     document.getElementById('practice-banner').hidden =
-      !window.SPORTS_DAY_PRACTICE;
+      !window.SPORTS_DAY_TEST_ENVIRONMENT;
     try {
       ApplicationInterface.initialise();
     } catch (error) {
@@ -40,10 +40,15 @@ window.Session = {
       return;
     }
     document.getElementById('practice-banner').hidden =
-      !ApplicationInterface.isPractice;
-    if (ApplicationInterface.isPractice) {
+      !ApplicationInterface.isTestEnvironment;
+    if (ApplicationInterface.isTestEnvironment) {
+      const environmentName =
+        ApplicationInterface.environment === 'staging' ? 'Staging' : 'Practice';
+      document.getElementById('test-environment-name').textContent =
+        environmentName;
       document.getElementById('sign-in-description').textContent =
-        'Use your practice organiser account. All teams and results here are fictional.';
+        `Use your ${environmentName.toLowerCase()} organiser account. ` +
+        'All teams and results here are fictional.';
     }
     Authentication.onEnded((text) => {
       // A reload clears cached data, open modals and pending screen state.
