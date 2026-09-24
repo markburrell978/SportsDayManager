@@ -172,10 +172,12 @@ of `docs/STAGING_REPORT.md`.
 The SQL transition is committed on `v1.1_ChangeToSQL`. The branch is pushed and
 draft GitHub pull request #2 is open. GitHub's `quality.yml` workflow passes.
 The Cloudflare Workers preview failure was traced to its dashboard version
-command omitting the static asset directory; the command is now
-`npx wrangler versions upload --assets ./web/`. The ignored
-`.env.staging.json` contains public staging browser configuration and must
-remain untracked.
+command omitting the static asset directory and to an unmerged Cloudflare
+autoconfiguration branch. The command is now
+`npx wrangler versions upload --assets ./web/`, and `wrangler.jsonc` records
+the Worker name, compatibility date and asset directory in the repository.
+The ignored `.env.staging.json` contains public staging browser configuration
+and must remain untracked.
 
 Next actions:
 

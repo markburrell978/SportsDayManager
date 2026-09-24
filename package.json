@@ -6,8 +6,8 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "format": "prettier --write \"web/**/*.{html,css,js}\" \"apps-script/*.{js,json}\" \"supabase/functions/**/*.{js,ts,json}\" \"supabase/tests/*.{js,mjs}\" \".github/**/*.{yml,yaml}\" \"*.{js,mjs,json}\"",
-    "format:check": "prettier --check \"web/**/*.{html,css,js}\" \"apps-script/*.{js,json}\" \"supabase/functions/**/*.{js,ts,json}\" \"supabase/tests/*.{js,mjs}\" \".github/**/*.{yml,yaml}\" \"*.{js,mjs,json}\"",
+    "format": "prettier --write \"web/**/*.{html,css,js}\" \"apps-script/*.{js,json}\" \"supabase/functions/**/*.{js,ts,json}\" \"supabase/tests/*.{js,mjs}\" \".github/**/*.{yml,yaml}\" \"*.{js,mjs,json,jsonc}\"",
+    "format:check": "prettier --check \"web/**/*.{html,css,js}\" \"apps-script/*.{js,json}\" \"supabase/functions/**/*.{js,ts,json}\" \"supabase/tests/*.{js,mjs}\" \".github/**/*.{yml,yaml}\" \"*.{js,mjs,json,jsonc}\"",
     "lint": "eslint . --max-warnings 0",
     "python:check": "python3 supabase/scripts/check_python_style.py",
     "services:generate": "python3 supabase/scripts/sync_legacy_services.py",

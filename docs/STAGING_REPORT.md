@@ -184,9 +184,10 @@ was created in Supabase. The launcher must remain running. The ignored
 ## What we will do next
 
 1. Verify the retriggered Cloudflare Workers preview check on draft pull
-   request #2. Its original failure was caused by an omitted static asset
-   directory; the dashboard version command is now
-   `npx wrangler versions upload --assets ./web/`.
+   request #2. Its failures were caused by an omitted static asset directory
+   and required Worker metadata existing only on an unmerged Cloudflare setup
+   branch. The dashboard version command now includes `--assets ./web/`, and
+   `wrangler.jsonc` records the Worker metadata in the repository.
 2. Resolve any reviewer findings before the pull request is made ready.
 3. Build repeatable Google Sheet export and Supabase import tooling with row
    counts, checksums and foreign-key validation.
