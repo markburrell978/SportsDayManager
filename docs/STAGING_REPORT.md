@@ -183,16 +183,16 @@ was created in Supabase. The launcher must remain running. The ignored
 
 ## What we will do next
 
-1. Review the uncommitted staging/key changes, then create a second commit.
-2. Push `v1.1_ChangeToSQL` to GitHub and open a draft pull request.
-3. Let the `quality.yml` workflow run and resolve any reviewer or CI findings.
-4. Build repeatable Google Sheet export and Supabase import tooling with row
+1. Diagnose the separate Cloudflare Workers build check on draft pull request
+   #2; GitHub's `quality.yml` workflow has passed.
+2. Resolve any reviewer findings before the pull request is made ready.
+3. Build repeatable Google Sheet export and Supabase import tooling with row
    counts, checksums and foreign-key validation.
-5. Copy real data into a restricted rehearsal environment only after private
+4. Copy real data into a restricted rehearsal environment only after private
    backups have been created and restore-tested.
-6. Measure realistic latency, memory and transaction-lock behavior, then
+5. Measure realistic latency, memory and transaction-lock behavior, then
    complete the least-privilege production database design.
-7. Rehearse cutover and rollback. Change the public website only after every
+6. Rehearse cutover and rollback. Change the public website only after every
    acceptance gate passes and the owner explicitly approves production
    cutover.
 

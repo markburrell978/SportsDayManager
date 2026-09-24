@@ -80,10 +80,11 @@
 ## Version control and review
 
 - [x] Owner created the initial SQL-transition commit
-- [ ] Review and commit the subsequent staging/publishable-key changes
-- [ ] Push `v1.1_ChangeToSQL` to GitHub
-- [ ] Open a draft pull request
-- [ ] Pass `.github/workflows/quality.yml` on GitHub
+- [x] Review and commit the subsequent staging/publishable-key changes
+- [x] Push `v1.1_ChangeToSQL` to GitHub
+- [x] Open draft pull request #2
+- [x] Pass `.github/workflows/quality.yml` on GitHub
+- [ ] Diagnose the separate Cloudflare Workers build check on pull request #2
 - [ ] Resolve pull-request findings before merge
 
 ## v2.0.0 — Production cutover

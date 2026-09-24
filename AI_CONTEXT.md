@@ -169,18 +169,17 @@ of `docs/STAGING_REPORT.md`.
 
 ## Current working state and next actions
 
-The owner committed the earlier SQL transition as `3dd6f0f`. Hosted staging and
-publishable-key changes made afterwards are intentionally uncommitted. The
-ignored `.env.staging.json` contains public staging browser configuration and
-must remain untracked.
+The SQL transition is committed as `3dd6f0f` and `c51f381` on
+`v1.1_ChangeToSQL`. The branch is pushed and draft GitHub pull request #2 is
+open. GitHub's `quality.yml` workflow passed. A separate Cloudflare Workers
+build check failed without exposing its log through GitHub and remains to be
+diagnosed. The ignored `.env.staging.json` contains public staging browser
+configuration and must remain untracked.
 
 Next actions:
 
-1. owner reviews `docs/STAGING_REPORT.md` and the uncommitted changes;
-2. create the next commit, push `v1.1_ChangeToSQL` and open a draft GitHub pull
-   request;
-3. pass `quality.yml` and resolve review findings;
-4. build and verify private export/import and backup/restore tooling;
-5. reconcile a restricted production-shaped copy;
-6. measure performance and complete least-privilege production security;
-7. rehearse cutover/rollback before any explicit production approval.
+1. diagnose the Cloudflare Workers check and resolve pull-request findings;
+2. build and verify private export/import and backup/restore tooling;
+3. reconcile a restricted production-shaped copy;
+4. measure performance and complete least-privilege production security;
+5. rehearse cutover/rollback before any explicit production approval.
