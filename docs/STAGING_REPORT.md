@@ -183,19 +183,20 @@ was created in Supabase. The launcher must remain running. The ignored
 
 ## What we will do next
 
-1. Verify the retriggered Cloudflare Workers preview check on draft pull
-   request #2. Its failures were caused by an omitted static asset directory
-   and required Worker metadata existing only on an unmerged Cloudflare setup
-   branch. The dashboard version command now includes `--assets ./web/`, and
-   `wrangler.jsonc` records the Worker metadata in the repository.
-2. Resolve any reviewer findings before the pull request is made ready.
-3. Build repeatable Google Sheet export and Supabase import tooling with row
+The Cloudflare Workers preview check on draft pull request #2 now passes. Its
+earlier failures were caused by an omitted static asset directory and required
+Worker metadata existing only on an unmerged Cloudflare setup branch. The
+dashboard version command now includes `--assets ./web/`, and `wrangler.jsonc`
+records the Worker metadata in the repository.
+
+1. Resolve any reviewer findings before the pull request is made ready.
+2. Build repeatable Google Sheet export and Supabase import tooling with row
    counts, checksums and foreign-key validation.
-4. Copy real data into a restricted rehearsal environment only after private
+3. Copy real data into a restricted rehearsal environment only after private
    backups have been created and restore-tested.
-5. Measure realistic latency, memory and transaction-lock behavior, then
+4. Measure realistic latency, memory and transaction-lock behavior, then
    complete the least-privilege production database design.
-6. Rehearse cutover and rollback. Change the public website only after every
+5. Rehearse cutover and rollback. Change the public website only after every
    acceptance gate passes and the owner explicitly approves production
    cutover.
 

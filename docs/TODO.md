@@ -85,7 +85,7 @@
 - [x] Open draft pull request #2
 - [x] Pass `.github/workflows/quality.yml` on GitHub
 - [x] Diagnose the separate Cloudflare Workers build check on pull request #2
-- [ ] Pass the Cloudflare Workers preview check with the corrected static-asset command
+- [x] Pass the Cloudflare Workers preview check with the corrected static-asset command
 - [ ] Resolve pull-request findings before merge
 
 ## v2.0.0 — Production cutover

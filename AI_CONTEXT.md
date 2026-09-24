@@ -176,13 +176,13 @@ command omitting the static asset directory and to an unmerged Cloudflare
 autoconfiguration branch. The command is now
 `npx wrangler versions upload --assets ./web/`, and `wrangler.jsonc` records
 the Worker name, compatibility date and asset directory in the repository.
-The ignored `.env.staging.json` contains public staging browser configuration
-and must remain untracked.
+The resulting Cloudflare branch preview and GitHub `quality.yml` check both
+pass. The ignored `.env.staging.json` contains public staging browser
+configuration and must remain untracked.
 
 Next actions:
 
-1. verify the corrected Cloudflare Workers check and resolve pull-request
-   findings;
+1. resolve pull-request findings;
 2. build and verify private export/import and backup/restore tooling;
 3. reconcile a restricted production-shaped copy;
 4. measure performance and complete least-privilege production security;
