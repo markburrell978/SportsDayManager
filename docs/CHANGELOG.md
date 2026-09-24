@@ -11,6 +11,7 @@
 - Reconciled the completed rehearsal leaderboard exactly: Alpha 40, Gamma 40, Delta 31 and Beta 30, with no unconfirmed results left
 - Confirmed that the remote database has no pending migrations and the Edge Function is active
 - Added `docs/STAGING_REPORT.md` with evidence, incident response, restart instructions and remaining release gates
+- Corrected the Cloudflare preview version command to upload the static website from `web/`
 - Production data, the production endpoint, Apps Script and Google Sheets were unchanged
 
 ---

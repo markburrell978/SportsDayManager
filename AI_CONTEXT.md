@@ -169,16 +169,18 @@ of `docs/STAGING_REPORT.md`.
 
 ## Current working state and next actions
 
-The SQL transition is committed as `3dd6f0f` and `c51f381` on
-`v1.1_ChangeToSQL`. The branch is pushed and draft GitHub pull request #2 is
-open. GitHub's `quality.yml` workflow passed. A separate Cloudflare Workers
-build check failed without exposing its log through GitHub and remains to be
-diagnosed. The ignored `.env.staging.json` contains public staging browser
-configuration and must remain untracked.
+The SQL transition is committed on `v1.1_ChangeToSQL`. The branch is pushed and
+draft GitHub pull request #2 is open. GitHub's `quality.yml` workflow passes.
+The Cloudflare Workers preview failure was traced to its dashboard version
+command omitting the static asset directory; the command is now
+`npx wrangler versions upload --assets ./web/`. The ignored
+`.env.staging.json` contains public staging browser configuration and must
+remain untracked.
 
 Next actions:
 
-1. diagnose the Cloudflare Workers check and resolve pull-request findings;
+1. verify the corrected Cloudflare Workers check and resolve pull-request
+   findings;
 2. build and verify private export/import and backup/restore tooling;
 3. reconcile a restricted production-shaped copy;
 4. measure performance and complete least-privilege production security;

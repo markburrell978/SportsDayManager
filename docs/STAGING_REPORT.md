@@ -152,9 +152,9 @@ The exposed credential is now unusable. This affected an isolated project with
 fictional data and did not expose the live Google Sheet or production Apps
 Script system.
 
-## Code changed after the owner's commit
+## Code committed after the owner's initial transition commit
 
-The following work is intentionally uncommitted for review:
+The following work is included in the draft pull request for review:
 
 - the Edge Function reads the hosted publishable-key configuration and retains
   the local Supabase legacy-anon-key fallback;
@@ -183,8 +183,10 @@ was created in Supabase. The launcher must remain running. The ignored
 
 ## What we will do next
 
-1. Diagnose the separate Cloudflare Workers build check on draft pull request
-   #2; GitHub's `quality.yml` workflow has passed.
+1. Verify the retriggered Cloudflare Workers preview check on draft pull
+   request #2. Its original failure was caused by an omitted static asset
+   directory; the dashboard version command is now
+   `npx wrangler versions upload --assets ./web/`.
 2. Resolve any reviewer findings before the pull request is made ready.
 3. Build repeatable Google Sheet export and Supabase import tooling with row
    counts, checksums and foreign-key validation.
