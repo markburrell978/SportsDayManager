@@ -43,10 +43,11 @@
 
 ## v1.3.0 — Data migration and reconciliation
 
-- [ ] Build repeatable Sheet export tooling
-- [ ] Validate headers, row counts, checksums and foreign keys
-- [ ] Transform copied data without silent ambiguous repair
+- [x] Build repeatable Sheet export, restore-tested backup and transactional import tooling
+- [x] Validate headers, row counts, checksums, primary keys and foreign keys
+- [x] Transform copied data without silent ambiguous repair
 - [x] Create a fictional dataset covering all five event formats
+- [x] Rehearse the complete fictional import against a disposable Supabase PostgreSQL database
 - [ ] Compare Apps Script and Supabase read responses using a production-shaped copy
 - [ ] Reconcile leaderboard and Event History against the copied data
 

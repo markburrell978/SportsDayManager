@@ -1,3 +1,19 @@
+# Repeatable data migration tooling — 2026-09-24
+
+- Added a read-only Google Sheets exporter for every required and optional migration tab
+- Added immutable CSV manifests with exact headers, row counts and SHA-256 checksums
+- Added private backup archives with adjacent checksums and automatic clean-directory restore tests
+- Added deterministic transformation for stable IDs, source order, types and documented legacy shapes
+- Added pre-import primary-key, foreign-key, event/run and engine consistency validation
+- Added independent expected leaderboard and Event History summaries for post-import comparison
+- Added tamper-evident migration bundles and transactional PostgreSQL imports with empty-target protection and exact reconciliation
+- Added an explicit replacement mode protected at both preparation and load time
+- Added 24 Python tests and connected them to the normal pull-request quality command
+- Passed a real disposable-database rehearsal using all migrations and fictional data for all five event formats
+- Production Google Sheets, hosted staging and production Supabase data were unchanged
+
+---
+
 # Hosted Supabase staging — 2026-09-23
 
 - Linked an isolated London-region Supabase project and applied all five migrations plus fictional seed data

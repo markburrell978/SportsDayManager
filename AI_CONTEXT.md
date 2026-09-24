@@ -4,9 +4,9 @@ Project: Sports Day Manager
 
 Production version: v1.0.0
 
-Development status: Supabase schema, transactional API, organiser sign-in and
-initial hosted staging validation complete. Production data migration,
-production-shaped acceptance and cutover remain pending.
+Development status: Supabase schema, transactional API, organiser sign-in,
+hosted fictional validation and repeatable data-migration tooling complete.
+Production-shaped acceptance and cutover remain pending.
 
 ## Purpose
 
@@ -58,6 +58,8 @@ An allow-listed organiser can sign in from the local staging launcher. See
 - `supabase/scripts/staging.py`: local website launcher for hosted staging.
 - `supabase/scripts/sync_legacy_services.py`: regenerates/checks compatible
   Supabase services from maintained Apps Script behavior.
+- `supabase/scripts/migration_*.py`: read-only Sheet export, snapshot/backup
+  verification, deterministic transformation and transactional SQL import.
 - `supabase/tests/`: database, API, frontend and integration checks.
 - `docs/migration/`: mapping, preservation and cutover/rollback runbooks.
 
@@ -130,9 +132,17 @@ tracking, frontend session races and clean/upgrade database paths.
 
 The code-quality baseline uses Google-inspired JavaScript/TypeScript plus
 Google/PEP 8-inspired Python rules. `npm run check` runs formatting, ESLint,
-full-word naming, purpose comments, Python checks, generated-service drift and
-15 frontend tests. Deno type checking passes separately. See
-`docs/CODE_REVIEW.md`.
+full-word naming, purpose comments, 24 Python migration tests,
+generated-service drift and frontend tests. Deno type checking passes
+separately. See `docs/CODE_REVIEW.md`.
+
+The migration workflow exports through the read-only Google Sheets API, records
+headers/counts/checksums, restore-tests a private backup, rejects undocumented
+or relationally invalid data, creates expected leaderboard/history evidence and
+loads one self-reconciling PostgreSQL transaction. Its five-engine fictional
+bundle passed against a disposable local database and a repeated default load
+was safely rejected. See `docs/migration/DATA_MIGRATION.md`. Real participant
+data has not been exported or imported.
 
 Hosted staging passed sign-in, all main read surfaces and a reversible Round
 Robin correction. Pending notices appeared before confirmation, the leaderboard
@@ -183,7 +193,7 @@ configuration and must remain untracked.
 Next actions:
 
 1. resolve pull-request findings;
-2. build and verify private export/import and backup/restore tooling;
-3. reconcile a restricted production-shaped copy;
+2. use the completed tooling on a restricted production-shaped copy;
+3. reconcile its leaderboard and Event History against Supabase staging;
 4. measure performance and complete least-privilege production security;
 5. rehearse cutover/rollback before any explicit production approval.

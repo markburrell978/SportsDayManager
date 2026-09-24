@@ -78,6 +78,13 @@ The disposable review database was dropped after testing. The integration write
 restored the original fictional point profile. Existing practice event results
 were not reset or replaced.
 
+The data-migration addition also passed 24 Python tests for read-only export,
+tamper detection, restore-tested backups, deterministic transformation,
+relationship validation, reconciliation reports, transactional SQL and CLI
+safeguards. An opt-in integration test applied all five real migrations and a
+five-engine fictional import bundle to a fresh disposable PostgreSQL database,
+verified its state, rejected a repeat import and dropped the database.
+
 ## Remaining gates
 
 The local code and initial hosted staging deployment are ready for a normal
@@ -85,7 +92,8 @@ pull-request review. These product and deployment gates remain deliberately
 open:
 
 - complete all five event workflows and a full simulated Sports Day on staging;
-- build and rehearse production export/import and backup restoration;
+- rehearse the implemented export/import and backup workflow with a restricted
+  production-shaped copy;
 - test realistic data volume, latency and lock contention;
 - complete least-privilege production database access and owner-approved
   cutover.
@@ -215,6 +223,11 @@ transition, practice frontend, confirmation warnings and this review.
 | `supabase/scripts/practice.py` | Starts the loopback-only local Practice website/API and manages its private fictional organiser. |
 | `supabase/scripts/staging.py` | Serves the frontend on loopback against hosted staging using validated public-only ignored settings. |
 | `supabase/scripts/sync_legacy_services.py` | Generates and drift-checks Supabase adapters from maintained Apps Script business rules. |
+| `supabase/scripts/migration_schema.py` | Defines the single authoritative Sheet, column, type, key and import-order mapping. |
+| `supabase/scripts/migration_export.py` | Exports read-only Google Sheets snapshots, verifies manifests and creates restore-tested private backups. |
+| `supabase/scripts/migration_transform.py` | Converts snapshots into typed rows, applies documented legacy rules and builds reconciliation expectations. |
+| `supabase/scripts/migration_import.py` | Builds tamper-evident transactional SQL bundles and executes them without exposing database passwords in arguments. |
+| `supabase/scripts/migration_cli.py` | Provides operator commands for export, verification, backup, preparation and guarded loading. |
 | `supabase/tests/frontend_test.mjs` | Tests provider routing, auth/session races, screen reads and reversible real-practice integration. |
 | `supabase/tests/confirmation_ui_test.mjs` | Tests pending-confirmation UI states, escaping and safe identifier handlers. |
 | `supabase/tests/api_test.js` | Compares all 28 actions and persisted state with an independent Apps Script oracle; tests rollback/concurrency. |
@@ -223,6 +236,12 @@ transition, practice frontend, confirmation warnings and this review.
 | `supabase/tests/edge_smoke.py` | Exercises the real local Edge/Auth boundary with temporary users and cleans up its records. |
 | `supabase/tests/schema_smoke.sql` | Checks seeded schema, relational invariants, RLS and expected fictional counts. |
 | `supabase/tests/local_acceptance.sql` | Checks reset transactions and denied direct access for browser roles, rolling back test writes. |
+| `supabase/tests/migration_test_data.py` | Supplies one shared fictional Google Sheets workbook covering every event engine. |
+| `supabase/tests/migration_export_test.py` | Tests read-only Google access, immutable snapshots, tamper detection and backup restoration. |
+| `supabase/tests/migration_transform_test.py` | Tests types, ordering, documented legacy conversion, relationship errors and expected application results. |
+| `supabase/tests/migration_import_test.py` | Tests SQL safety, exact reconciliation, bundle integrity and protected database credentials. |
+| `supabase/tests/migration_cli_test.py` | Tests private secret files and destructive replacement safeguards at the operator boundary. |
+| `supabase/tests/migration_database_test.py` | Applies a fictional bundle to a disposable local PostgreSQL database and verifies safe repeat rejection. |
 
 ### Documentation
 
@@ -243,6 +262,7 @@ transition, practice frontend, confirmation warnings and this review.
 | `docs/migration/STAGE_1_PRESERVATION.md` | Records production preservation and backup prerequisites. |
 | `docs/migration/STAGE_2_SCHEMA.md` | Records the PostgreSQL schema design and acceptance boundary. |
 | `docs/migration/STAGE_4_API.md` | Records API architecture, access boundary, tests and limitations. |
+| `docs/migration/DATA_MIGRATION.md` | Gives the exact private export, backup, review, transactional import and reconciliation workflow. |
 | `docs/migration/SHEET_TO_POSTGRES_MAPPING.md` | Maps every Sheet and legacy field to its PostgreSQL table/column. |
 | `docs/migration/API_COMPATIBILITY_MATRIX.md` | Tracks all API actions, read/write sets, transactions and parity status. |
 | `docs/migration/CUTOVER_RUNBOOK.md` | Defines staged import, reconciliation, switch and acceptance steps. |

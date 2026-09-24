@@ -10,10 +10,11 @@
     "format:check": "prettier --check \"web/**/*.{html,css,js}\" \"apps-script/*.{js,json}\" \"supabase/functions/**/*.{js,ts,json}\" \"supabase/tests/*.{js,mjs}\" \".github/**/*.{yml,yaml}\" \"*.{js,mjs,json,jsonc}\"",
     "lint": "eslint . --max-warnings 0",
     "python:check": "python3 supabase/scripts/check_python_style.py",
+    "python:test": "python3 -m unittest discover -s supabase/tests -p '*_test.py'",
     "services:generate": "python3 supabase/scripts/sync_legacy_services.py",
     "services:check": "python3 supabase/scripts/sync_legacy_services.py --check",
     "test": "node --test supabase/tests/*_test.mjs",
-    "check": "npm run format:check && npm run lint && npm run python:check && npm run services:check && npm test"
+    "check": "npm run format:check && npm run lint && npm run python:check && npm run services:check && npm run python:test && npm test"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
