@@ -2,236 +2,210 @@
 
 Project: Sports Day Manager
 
-Version: v0.8.0
+Production version: v1.0.0
 
----
+Development status: Supabase schema, transactional API, organiser sign-in,
+hosted fictional validation, repeatable data-migration tooling and a restricted
+hosted production-data rehearsal complete. Cutover/rollback rehearsal remains
+pending.
 
 ## Purpose
 
-This application is used to run an annual Sports Day event.
+One organiser uses the application for an annual Sports Day. It manages teams,
+competitors, five event formats, confirmations, a live leaderboard and
+read-only event history. Reliability and preservation of the field-tested
+v1.0.0 behavior take priority over redesign.
 
-The organiser uses the application throughout the day to:
+## Architecture status
 
-- manage competitors
-- manage events
-- record results
-- calculate team scores
-- display a live leaderboard
+Production remains:
 
-The application is intentionally designed to be reusable for future years.
-
----
-
-# Architecture
-
-The project is split into two completely separate applications.
-
-```
-apps-script/
+```text
+web/ on GitHub Pages
+        ↓
+apps-script/ API and services
+        ↓
+Google Sheets
 ```
 
-Google Apps Script backend.
+The staging target is operational:
 
-Responsibilities:
-
-- REST API
-- Google Sheets access
-- Business logic
-- UUID generation
-- Data validation
-
-Google Sheets should ONLY be accessed through Database.js.
-
----
-
-```
-web/
+```text
+web/ served by a loopback-only staging launcher
+        ↓
+authenticated hosted Supabase Edge Function
+        ↓
+hosted Supabase PostgreSQL
 ```
 
-Static frontend.
-
-Responsibilities:
-
-- UI
-- API calls
-- Rendering
-- User interaction
-
-The frontend never communicates directly with Google Sheets.
-
----
-
-# Design Principles
-
-Keep the architecture simple.
-
-Avoid unnecessary frameworks.
-
-Prefer plain JavaScript.
-
-Business logic belongs in Services.
-
-Database.js is the only place allowed to access Google Sheets.
-
-API endpoints should be thin.
-
-Event execution data belongs to an Event Run. Events are permanent configuration; EventRuns are resettable executions. Every engine record is scoped by EventRunID, and reset creates a new current run without deleting historical rows.
-
-Completed Event Runs require explicit organiser confirmation before Results rows are generated. Results.Position is authoritative; PointsAwarded is a compatibility snapshot. Reconfirmation replaces only the current run's Results rows.
-
-PointProfiles uses one row per profile with ID, Name, First, Second, Third and Fourth. All point values are required integers; zero and negative values are valid.
-
-The organiser-facing live leaderboard includes every active team and dynamically scores confirmed Results from each event's current run using the event's current point profile. Historical runs remain stored but do not count. Equal totals use competition ranking, and round-robin tie groups average the current points for their occupied places and round upward. The page reloads on navigation and by manual Refresh; automatic polling and the shareable leaderboard are not included.
-
-Event History is a read-only per-event view reconstructed from EventRuns, run-scoped engine rows and Results. It shows current and previous runs newest first. Historical points use the event's current point profile, including dynamic round-robin tie averaging. History cannot edit, restore, confirm, reset or delete runs. No snapshot table is used. Offline Mode is planned for v0.9.0.
-
----
-
-# Development Workflow
-
-The AI acts as Technical Lead.
-
-Each release should:
-
-- have a version number
-- have a clear objective
-- modify as few files as possible
-- provide complete replacement files (not snippets)
-
-Never provide partial patches if a whole file has changed.
-
----
-
-# Current Development Style
-
-The user prefers:
-
-- complete files
-- minimal boilerplate
-- clean architecture
-- readable code over clever code
-
-Avoid introducing unnecessary abstractions.
-
-Do not redesign working code without a good reason.
-
----
-
-# Backend
-
-Apps Script.
-
-Google Sheets datastore.
-
-Uses clasp.
-
-Uses VS Code.
-
----
-
-# Frontend
-
-Plain HTML.
-
-Plain CSS.
-
-Plain JavaScript.
-
-No frameworks.
-
----
-
-# Data
-
-Competitors
-
-- ID
-- Name
-- Age
-- Gender
-- CompetitionGender
-- TeamID
-- Active
-
-Teams
-
-- ID
-- Name
-- Colour
-- Points
-
-Events
-
-Support multiple event formats.
-
-Event formats are separate from point allocation.
-
-This allows different events of the same type to award different points.
-
----
-
-# Coding Standards
-
-Prefer early returns.
-
-Prefer descriptive function names.
-
-Prefer constants.
-
-Avoid duplicated logic.
-
-One responsibility per function.
-
-Keep files organised.
-
----
-
-# Documentation
-
-Update when necessary:
-
-- CHANGELOG.md
-- TODO.md
-- DESIGN.md
-- DATA_MODEL.md
-- API.md
-
----
-
-# Long-term Roadmap
-
-Competitors
-
-↓
-
-Events
-
-↓
-
-Scoring
-
-↓
-
-Leaderboard
-
-↓
-
-Settings
-
-↓
-
-Historical Sports Days
-
----
-
-# Important Decisions
-
-This application is designed for one organiser.
-
-Accessibility improvements are postponed until after this year's Sports Day.
-
-Optimise for reliability over polish.
-
-Working software is preferred over perfect architecture.
-
-Optimise for less than 5 hours more work
+`web/js/config.js` and the published runtime configuration still select the
+production Apps Script address. No production endpoint or production data was
+changed.
+
+The isolated staging project reference is `jnzyedbrkxxaqxgsaavc`. All five
+migrations and the `sports-day-api` function are deployed. Staging contains a
+restricted production-data copy imported on 2026-09-25, so it must be treated
+as private. An allow-listed organiser can sign in from the local staging
+launcher. See `docs/STAGING_REPORT.md` for validation, incident response and
+next steps.
+
+## Source layout
+
+- `apps-script/`: field-tested production backend retained for rollback.
+- `web/`: plain HTML/CSS/JavaScript frontend; keep it here.
+- `supabase/migrations/`: ordered PostgreSQL schema changes.
+- `supabase/seed.sql`: fictional local/staging data only.
+- `supabase/functions/sports-day-api/`: HTTP/auth boundary, generated compatible
+  services and transactional SQL repository.
+- `supabase/scripts/practice.py`: local Supabase website/function launcher.
+- `supabase/scripts/staging.py`: local website launcher for hosted staging.
+- `supabase/scripts/sync_legacy_services.py`: regenerates/checks compatible
+  Supabase services from maintained Apps Script behavior.
+- `supabase/scripts/migration_*.py`: read-only Sheet export, snapshot/backup
+  verification, deterministic transformation and transactional SQL import.
+- `supabase/tests/`: database, API, frontend and integration checks.
+- `docs/migration/`: mapping, preservation and cutover/rollback runbooks.
+
+## Business rules that must remain compatible
+
+### Event Runs
+
+- Events are permanent configuration; Event Runs are resettable executions.
+- Every Event has exactly one current run.
+- Reset makes the old run historical and creates the next numbered current run.
+- Old-run writes are rejected; historical engine/results rows are retained.
+- EventRun status is authoritative; Event status is a compatibility mirror.
+
+### Results and confirmation
+
+- Completing an event engine does not create official Results.
+- The organiser explicitly confirms completed current-run results.
+- Reconfirmation replaces only Results for that current run.
+- `Results.Position` is authoritative.
+- `Results.PointsAwarded` is a compatibility snapshot.
+- Positions above fourth award zero.
+- Heat & Final and Distance categories may produce repeated team rows.
+- Each Double Team member receives the full points for its side's placing.
+- Saved engine revisions and confirmed revisions drive pending-result notices.
+
+### Point profiles and leaderboard
+
+- A point profile is one row with `ID`, `Name`, `First`, `Second`, `Third` and
+  `Fourth`; all four points are required signed integers.
+- The leaderboard includes active teams, including zero/negative totals, and
+  excludes inactive teams and historical runs.
+- Scores recalculate from confirmed positions and the current point profile.
+- Competition ranking determines positions; alphabetic order is display-only.
+- Round Robin ties receive the ceiling of the average points for their occupied
+  positions.
+
+### Event History
+
+- History is read-only and newest-run-first.
+- It is reconstructed from Event Runs, engine rows and Results.
+- It includes current/previous runs and confirmation state.
+- Displayed historical points use the event's current point profile.
+- Historical runs cannot be edited, restored, confirmed, reset or deleted.
+
+## PostgreSQL and API decisions
+
+- Existing IDs remain `text`, including UUID-shaped dynamic IDs.
+- The 12 application tables use foreign keys, checks, indexes and RLS.
+- Composite event/run foreign keys prevent cross-event engine rows.
+- Deferred triggers enforce exactly one current run at transaction commit.
+- `sequence_number` and `source_order` replace implicit Sheet order.
+- Race/distance position uniqueness is deferred for valid multi-row swaps.
+- All application writes go through the Edge Function transaction boundary.
+- Each request currently takes an advisory lock and loads all application
+  tables. This suits the small single-organiser dataset but must be measured
+  with production-shaped data.
+- The original 28 API actions and PascalCase response fields remain compatible.
+  `getConfirmationStatus` is additional Supabase-only metadata.
+- The handler verifies Supabase Auth and a server-side organiser UUID allow-list.
+  Direct browser table access remains blocked by RLS defaults.
+- Hosted Auth verification uses a public publishable key. The local stack may
+  use its generated legacy anonymous key. Privileged database settings remain
+  server-only.
+
+## Validation status
+
+Local checks passed for all 28 Apps Script-compatible actions, all five event
+engines, transaction rollback, concurrency, Auth/CORS boundaries, confirmation
+tracking, frontend session races and clean/upgrade database paths.
+
+The code-quality baseline uses Google-inspired JavaScript/TypeScript plus
+Google/PEP 8-inspired Python rules. `npm run check` runs formatting, ESLint,
+full-word naming, purpose comments, 30 Python migration tests,
+generated-service drift and frontend tests. Deno type checking passes
+separately. See `docs/CODE_REVIEW.md`.
+
+The migration workflow exports through the read-only Google Sheets API, records
+headers/counts/checksums, restore-tests a private backup, rejects undocumented
+or relationally invalid data, creates expected leaderboard/history evidence and
+loads one self-reconciling PostgreSQL transaction. Its five-engine fictional
+bundle passed against a disposable local database and a repeated default load
+was safely rejected. See `docs/migration/DATA_MIGRATION.md`. Real participant
+data was exported privately on 2026-09-25, reconciled in a disposable local
+database and imported into restricted hosted staging. No private export is
+tracked by Git. See
+`docs/migration/PRODUCTION_REHEARSAL_2026-09-25.md`.
+
+Hosted staging passed sign-in, all main read surfaces and a reversible Round
+Robin correction. Pending notices appeared before confirmation, the leaderboard
+updated only after confirmation, and the original winner/scores were restored
+and confirmed. The final leaderboard was Alpha 40, Beta 35, Gamma 35, Delta 31.
+On 2026-09-24, the current-run and history views for all five event formats were
+checked again without writes; both category views loaded for race and distance,
+all confirmed row counts matched, and the same clean leaderboard remained. A
+full hosted fictional Sports Day was then completed: all five events were
+reset, progressed, completed and confirmed, and all superseded runs remained in
+history. The final reconciled leaderboard was Alpha 40, Gamma 40, Delta 31 and
+Beta 30, with no pending results.
+
+On 2026-09-25, the fictional staging data was privately backed up and replaced
+with the reconciled production-data copy. The transactional hosted import took
+1.109 seconds and all 12 table counts matched the migration report. The owner
+confirmed authenticated teams/events loaded. Anonymous reads exposed zero
+application rows and an unauthenticated Edge request returned HTTP 401.
+
+During initial staging setup, a CLI command unexpectedly printed a legacy
+service-role key. It was never written to the repository. The code was moved to
+publishable keys, legacy hosted API keys were disabled, the legacy HS256 signing
+key was revoked, and hosted validation passed afterwards. Never place any
+credential from terminal/session history into a file. See the incident section
+of `docs/STAGING_REPORT.md`.
+
+## Development rules
+
+- Keep production working while migration proceeds.
+- Preserve `apps-script/` until rollback retirement is explicitly approved.
+- Do not change the production frontend endpoint before cutover approval.
+- Never commit secrets, private inventory details or real participant exports.
+- Represent schema changes as ordered SQL migrations.
+- Use transactions for multi-row event workflows.
+- Do not create a Git commit, push, deploy production, import production data or
+  switch endpoints unless the owner explicitly instructs it.
+- Do not reset staging or the owner's local practice database merely to rerun
+  seed tests.
+- Offline mode, dynamic events and public sharing remain deferred.
+
+## Current working state and next actions
+
+The SQL transition is committed on `v1.1_ChangeToSQL`. The branch is pushed and
+draft GitHub pull request #2 is open. GitHub's `quality.yml` workflow passes.
+The Cloudflare Workers preview failure was traced to its dashboard version
+command omitting the static asset directory and to an unmerged Cloudflare
+autoconfiguration branch. The command is now
+`npx wrangler versions upload --assets ./web/`, and `wrangler.jsonc` records
+the Worker name, compatibility date and asset directory in the repository.
+The resulting Cloudflare branch preview and GitHub `quality.yml` check both
+pass. The ignored `.env.staging.json` contains public staging browser
+configuration and must remain untracked.
+
+Next actions:
+
+1. resolve pull-request findings;
+2. complete least-privilege production database security;
+3. rehearse and time rollback before any explicit production approval;
+4. agree the maintenance window and final private backup locations;
+5. retain Apps Script and Sheets through the agreed rollback period.

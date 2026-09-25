@@ -1,372 +1,210 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
 
-<head>
-
-    <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Sports Day Manager</title>
 
-    <link rel="stylesheet"
-          href="css/main.css">
+    <link rel="stylesheet" href="css/main.css" />
+  </head>
 
-</head>
+  <body class="auth-pending">
+    <header>
+      <h1>🏆 Sports Day Manager</h1>
 
+      <div id="account-controls" class="account-controls" hidden>
+        <span id="account-email"></span>
+        <button id="btn-sign-out" type="button">Sign out</button>
+      </div>
+    </header>
 
-<body>
+    <div id="practice-banner" class="practice-banner" hidden>
+      <strong id="test-environment-name">Practice</strong> · Non-production data
+      — changes here do not affect your live Sports Day.
+    </div>
 
-<header>
+    <section
+      id="sign-in-panel"
+      class="sign-in-card"
+      aria-labelledby="sign-in-title"
+      hidden
+    >
+      <h2 id="sign-in-title">Organiser sign-in</h2>
+      <p id="sign-in-description">
+        Sign in to manage teams, events and results.
+      </p>
+      <form id="sign-in-form">
+        <label for="sign-in-email">Email</label>
+        <input
+          id="sign-in-email"
+          type="email"
+          autocomplete="username"
+          required
+        />
+        <label for="sign-in-password">Password</label>
+        <input
+          id="sign-in-password"
+          type="password"
+          autocomplete="current-password"
+          required
+        />
+        <button id="btn-sign-in" type="submit">Sign in</button>
+      </form>
+      <p id="sign-in-message" role="status" aria-live="polite"></p>
+    </section>
 
-    <h1>🏆 Sports Day Manager</h1>
+    <nav>
+      <button id="nav-leaderboard">🏆 Leaderboard</button>
 
-</header>
+      <button id="nav-competitors">👥 Competitors</button>
 
+      <button id="nav-events">🎯 Events</button>
 
-<nav>
+      <button id="nav-settings">⚙️ Settings</button>
+    </nav>
 
-    <button id="nav-leaderboard">
-        🏆 Leaderboard
-    </button>
+    <main>
+      <!-- ================================================= -->
+      <!-- Leaderboard                                       -->
+      <!-- ================================================= -->
 
-    <button id="nav-competitors">
-        👥 Competitors
-    </button>
+      <section id="page-leaderboard" class="page">
+        <h2>Leaderboard</h2>
 
-    <button id="nav-events">
-        🎯 Events
-    </button>
+        <div id="leaderboard-confirmation-notice" aria-live="polite"></div>
 
-    <button id="nav-settings">
-        ⚙️ Settings
-    </button>
+        <div class="leaderboard-toolbar">
+          <span>Current confirmed scores</span>
 
-</nav>
-
-
-<main>
-
-
-<!-- ================================================= -->
-<!-- Leaderboard                                       -->
-<!-- ================================================= -->
-
-<section id="page-leaderboard"
-         class="page">
-
-    <h2>
-        Leaderboard
-    </h2>
-
-    <div class="leaderboard-toolbar">
-
-        <span>Current confirmed scores</span>
-
-        <button id="btn-refresh-leaderboard"
-                onclick="loadLeaderboard()">
+          <button id="btn-refresh-leaderboard" onclick="loadLeaderboard()">
             Refresh
-        </button>
-
-    </div>
-
-    <div id="leaderboard">
-
-        Loading leaderboard...
-
-    </div>
-
-</section>
-
-
-
-<!-- ================================================= -->
-<!-- Competitors                                       -->
-<!-- ================================================= -->
-
-<section id="page-competitors"
-         class="page hidden">
-
-
-    <h2>
-        Competitors
-    </h2>
-
-
-    <div class="toolbar">
-
-
-        <button id="btn-add-competitor">
-
-            ➕ Add Competitor
-
-        </button>
-
-
-        <input
-            id="search-competitors"
-            type="text"
-            placeholder="Search competitors...">
-
-
-        <select id="competitor-team-filter">
-
-            <option value="">
-                All Teams
-            </option>
-
-        </select>
-
-
-        <select id="competitor-status">
-
-            <option value="active">
-                Active
-            </option>
-
-            <option value="inactive">
-                Inactive
-            </option>
-
-            <option value="all">
-                All statuses
-            </option>
-
-        </select>
-
-
-    </div>
-
-
-    <div id="competitor-message"
-         class="hidden">
-
-    </div>
-
-
-    <div id="competitors">
-
-        Loading competitors...
-
-    </div>
-
-
-</section>
-
-
-
-<!-- ================================================= -->
-<!-- Events                                            -->
-<!-- ================================================= -->
-
-<section id="page-events"
-         class="page hidden">
-
-
-    <h2>
-        Events
-    </h2>
-
-
-    <div id="events">
-
-        Loading events...
-
-    </div>
-
-
-    <div id="event-details">
-
-    </div>
-
-
-</section>
-
-
-
-<!-- ================================================= -->
-<!-- Settings                                          -->
-<!-- ================================================= -->
-
-<section id="page-settings"
-         class="page hidden">
-
-
-    <h2>
-        Settings
-    </h2>
-
-
-    <p>
-
-        Manage reusable point profiles.
-
-    </p>
-
-
-    <div id="point-profile-manager">
-
-        Loading point profiles...
-
-    </div>
-
-
-</section>
-
-
-</main>
-
-
-
-<!-- ================================================= -->
-<!-- Competitor Modal                                  -->
-<!-- ================================================= -->
-
-<div id="competitor-modal"
-     class="modal hidden">
-
-
-    <div class="modal-content">
-
-
-        <h2 id="modal-title">
-
-            Add Competitor
-
-        </h2>
-
-
-        <input type="hidden"
-               id="competitor-id">
-
-
-        <label>
-
-            Name
-
-        </label>
-
-        <input
-            id="competitor-name"
-            type="text">
-
-
-
-        <label>
-
-            Age
-
-        </label>
-
-        <input
-            id="competitor-age"
-            type="number">
-
-
-
-        <label>
-
-            Gender
-
-        </label>
-
-        <select id="competitor-gender">
-
-            <option value="Male">
-                Male
-            </option>
-
-            <option value="Female">
-                Female
-            </option>
-
-            <option value="Non-binary">
-                Non-binary
-            </option>
-
-        </select>
-
-
-
-        <label>
-
-            Competition Gender
-
-        </label>
-
-        <select id="competition-gender">
-
-            <option value="Male">
-                Male
-            </option>
-
-            <option value="Female">
-                Female
-            </option>
-
-        </select>
-
-
-
-        <label>
-
-            Team
-
-        </label>
-
-        <select id="competitor-team">
-
-        </select>
-
-
-
-        <label>
-
-            Active
-
-        </label>
-
-        <input
-            id="competitor-active"
-            type="checkbox"
-            checked>
-
-
-
-        <div class="modal-buttons">
-
-
-            <button id="btn-cancel-competitor">
-
-                Cancel
-
-            </button>
-
-
-            <button id="btn-save-competitor">
-
-                Save
-
-            </button>
-
-
+          </button>
         </div>
 
+        <div id="leaderboard">Loading leaderboard...</div>
+      </section>
 
+      <!-- ================================================= -->
+      <!-- Competitors                                       -->
+      <!-- ================================================= -->
+
+      <section id="page-competitors" class="page hidden">
+        <h2>Competitors</h2>
+
+        <div class="toolbar">
+          <button id="btn-add-competitor">➕ Add Competitor</button>
+
+          <input
+            id="search-competitors"
+            type="text"
+            placeholder="Search competitors..."
+          />
+
+          <select id="competitor-team-filter">
+            <option value="">All Teams</option>
+          </select>
+
+          <select id="competitor-status">
+            <option value="active">Active</option>
+
+            <option value="inactive">Inactive</option>
+
+            <option value="all">All statuses</option>
+          </select>
+        </div>
+
+        <div id="competitor-message" class="hidden"></div>
+
+        <div id="competitors">Loading competitors...</div>
+      </section>
+
+      <!-- ================================================= -->
+      <!-- Events                                            -->
+      <!-- ================================================= -->
+
+      <section id="page-events" class="page hidden">
+        <h2>Events</h2>
+
+        <div id="events-confirmation-notice" aria-live="polite"></div>
+
+        <div id="events">Loading events...</div>
+
+        <div id="event-details"></div>
+      </section>
+
+      <!-- ================================================= -->
+      <!-- Settings                                          -->
+      <!-- ================================================= -->
+
+      <section id="page-settings" class="page hidden">
+        <h2>Settings</h2>
+
+        <p>Manage reusable point profiles.</p>
+
+        <div id="point-profile-manager">Loading point profiles...</div>
+      </section>
+    </main>
+
+    <!-- ================================================= -->
+    <!-- Competitor Modal                                  -->
+    <!-- ================================================= -->
+
+    <div id="competitor-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2 id="modal-title">Add Competitor</h2>
+
+        <input type="hidden" id="competitor-id" />
+
+        <label> Name </label>
+
+        <input id="competitor-name" type="text" />
+
+        <label> Age </label>
+
+        <input id="competitor-age" type="number" />
+
+        <label> Gender </label>
+
+        <select id="competitor-gender">
+          <option value="Male">Male</option>
+
+          <option value="Female">Female</option>
+
+          <option value="Non-binary">Non-binary</option>
+        </select>
+
+        <label> Competition Gender </label>
+
+        <select id="competition-gender">
+          <option value="Male">Male</option>
+
+          <option value="Female">Female</option>
+        </select>
+
+        <label> Team </label>
+
+        <select id="competitor-team"></select>
+
+        <label> Active </label>
+
+        <input id="competitor-active" type="checkbox" checked />
+
+        <div class="modal-buttons">
+          <button id="btn-cancel-competitor">Cancel</button>
+
+          <button id="btn-save-competitor">Save</button>
+        </div>
+      </div>
     </div>
 
-
-</div>
-
-
-
-<script src="js/config.js"></script>
-<script src="js/api.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/app.js"></script>
-
-
-</body>
-
+    <script src="js/config.js"></script>
+    <script src="js/runtime-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/session.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+  </body>
 </html>

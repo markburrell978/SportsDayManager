@@ -1,3 +1,146 @@
+# Restricted production-data rehearsal — 2026-09-25
+
+- Downloaded the production workbook through the owner's authenticated browser without changing Google Sheets or granting a new application access
+- Created and verified an immutable private snapshot and restore-tested backup covering 4 teams, 23 competitors, 8 events, 12 runs and 32 Results
+- Added a supported `export-xlsx` route with a pinned reader after Google blocked the separate read-only OAuth consent flow
+- Added tested support for exact known headers in a different order and unambiguous Excel whole-number values
+- Added reported whitespace normalization and strict validation for team hex colours
+- Passed a transactional import and exact reconciliation in a fresh disposable local database in 0.37 seconds, then dropped the database
+- Reconciled all 4 live leaderboard entries, 8 Event Histories and 12 runs against the production Apps Script read API
+- Backed up fictional hosted staging with a verified private checksum, tested the replacement bundle against a seeded disposable database and imported the restricted copy to staging in 1.109 seconds
+- Verified every hosted table count, authenticated application loading, zero anonymous table rows and HTTP 401 for unauthenticated Edge API access
+- Kept participant data, backups, credentials and source identifiers outside Git; the public production website, Apps Script and Google Sheets were unchanged
+
+---
+
+# Repeatable data migration tooling — 2026-09-24
+
+- Added a read-only Google Sheets exporter for every required and optional migration tab
+- Added immutable CSV manifests with exact headers, row counts and SHA-256 checksums
+- Added private backup archives with adjacent checksums and automatic clean-directory restore tests
+- Added deterministic transformation for stable IDs, source order, types and documented legacy shapes
+- Added pre-import primary-key, foreign-key, event/run and engine consistency validation
+- Added independent expected leaderboard and Event History summaries for post-import comparison
+- Added tamper-evident migration bundles and transactional PostgreSQL imports with empty-target protection and exact reconciliation
+- Added an explicit replacement mode protected at both preparation and load time
+- Added 30 Python tests and connected them to the normal pull-request quality command
+- Passed a real disposable-database rehearsal using all migrations and fictional data for all five event formats
+- Production Google Sheets, hosted staging and production Supabase data were unchanged
+
+---
+
+# Hosted Supabase staging — 2026-09-23
+
+- Linked an isolated London-region Supabase project and applied all five migrations plus fictional seed data
+- Configured an allow-listed organiser, loopback-only staging origins and the deployed `sports-day-api` Edge Function
+- Added a loopback-only Staging launcher and visible fictional-data environment label without changing the published Apps Script configuration
+- Replaced hosted legacy API-key use with Supabase publishable-key configuration while retaining the local-stack fallback
+- Disabled legacy staging API keys and revoked the legacy HS256 signing key after a CLI command unexpectedly exposed the old service-role key; no credential was committed and post-revocation validation passed
+- Passed hosted sign-in, main-screen reads and a reversible result correction/confirmation/restoration test; restored the original Alpha 40, Beta 35, Gamma 35, Delta 31 leaderboard
+- Checked the current-run and history views for all five event formats on hosted staging without changing data
+- Completed a full hosted fictional Sports Day across all five formats, including resets, progression, pending-result notices, completion, confirmation and retained history
+- Reconciled the completed rehearsal leaderboard exactly: Alpha 40, Gamma 40, Delta 31 and Beta 30, with no unconfirmed results left
+- Confirmed that the remote database has no pending migrations and the Edge Function is active
+- Added `docs/STAGING_REPORT.md` with evidence, incident response, restart instructions and remaining release gates
+- Corrected the Cloudflare preview version command and added the missing repository configuration for the static website in `web/`
+- Production data, the production endpoint, Apps Script and Google Sheets were unchanged
+
+---
+
+# Merge-readiness review — 2026-09-23
+
+- Adopted a documented Google-inspired JavaScript/TypeScript standard and Google/PEP 8-inspired Python standard
+- Added pinned Prettier/ESLint tooling, full-word binding checks, purpose-comment checks and pull-request quality automation
+- Expanded abbreviated internal names while preserving all external API and Sheet field names
+- Reused maintained Apps Script utilities in generated Supabase adapters and extracted shared repository translation/persistence helpers
+- Moved record identifiers out of executable inline-handler strings into escaped data attributes and added regression coverage
+- Passed formatting, linting, Python style, Deno type checking, 14 frontend tests, all 28 API parity workflows, five-engine confirmation tests, rollback/concurrency tests and real practice integration
+- Added `docs/CODE_REVIEW.md` with findings, validation, remaining gates and a file-by-file purpose guide
+- Preserved practice results and production configuration; no commit or deployment performed
+
+---
+
+# Clearer result confirmation — 2026-09-23
+
+- Added a larger red confirmation button with a soft, non-flashing glow when saved results await confirmation
+- Added Events and Leaderboard notices listing affected events, with Review event navigation and guidance for incomplete events
+- Added persistent current-run revision tracking and a Supabase-only status endpoint; official leaderboard scoring is unchanged
+- Confirming clears the warning atomically; no-op saves and empty fixtures do not create warnings; resets start clean
+- Applied the migration without resetting existing practice data; tested all five engines, UI rendering and fresh/upgrade database paths
+- Owner visual check of the new styling remains outstanding; no remote deployment or production changes
+
+---
+
+# Local practice frontend — 2026-09-23
+
+- Connected the existing screens to the local Supabase API with a visible Practice banner
+- Added organiser sign-in/sign-out, tab-scoped token storage, session renewal and clear access/error states
+- Preserved the published Apps Script default and production endpoint; missing practice settings fail closed
+- Added a loopback-only practice launcher and reusable fictional organiser with private ignored credentials outside the website
+- Passed eleven automated frontend checks, including actual local Auth/API integration and queued-request/sign-out race protection
+- No remote deployment, production data changes or Git commit performed; browser/user walkthrough remains outstanding
+
+---
+
+# v1.2.0 — Local Supabase API milestone (2026-09-22)
+
+- Implemented all 28 existing API actions with generated compatibility service modules and a transactional PostgreSQL repository
+- Added verified Supabase Auth users, an organiser UUID allow-list, explicit CORS origins and safe database error mapping
+- Added insertion-order metadata and deferred position uniqueness to support valid race/distance corrections
+- Passed v1 parity tests across all five event workflows, rollback and concurrency checks, and real local Edge Function HTTP/Auth tests
+- Kept the production frontend and Apps Script backend unchanged; staging, frontend sign-in/provider selection and production migration remain outstanding
+
+---
+
+# v1.1.0 — Supabase schema milestone
+
+## Local validation — 2026-09-22
+
+- Started the full Docker-backed Supabase stack and completed a clean local database reset
+- Passed schema smoke tests with the fictional seed data
+- Added repeatable local acceptance checks for current-run transactions and default browser-role access
+- Verified anonymous Data API reads expose no application data and team insertion is rejected
+- Updated local setup instructions and removed the resolved Docker prerequisite from outstanding tasks
+- No production changes, remote project linking or application API port performed
+
+## Added
+
+- Verified v1.0.0 recovery references and documented restricted backup/restore procedures
+- Complete Google Sheet-to-PostgreSQL mapping, including optional Attempts and derived concepts
+- Supabase local configuration and three ordered PostgreSQL migrations
+- Relational core and event-engine tables with stable text IDs
+- Composite Event/Event Run foreign keys and explicit sequence fields for Sheet-order compatibility
+- Exact-one current-run enforcement using a partial unique index and deferred constraint triggers
+- Query indexes, updated-at triggers and RLS enabled on all application tables
+- Fictional seed data covering all event types, historical reset state, ties, negative points and unconfirmed completion
+- Database smoke tests for key foreign-key, uniqueness, current-run and RLS invariants
+- Local setup, cutover and rollback documentation
+
+## Changed
+
+- Project documentation now identifies v1.0.0 as the field-tested production release
+- Architecture documentation distinguishes current Apps Script production from the staged Supabase target
+- PostgreSQL row ordering is explicit where Event History previously relied on implicit Sheet order
+
+## Not started
+
+- Supabase Edge Function/API port
+- Authentication and organiser authorization
+- Production data export/import
+- Staging, parallel-mode testing and production cutover
+
+---
+
+# v1.0.0 — Field-tested Google Sheets release
+
+## Preserved
+
+- Git tag and commit recovery point
+- Existing GitHub Pages workflow and Apps Script production endpoint
+- Apps Script/Google Sheets backend for rollback during the v2 migration programme
+
+---
+
 # v0.8.0
 
 ## Added

@@ -1,6 +1,8 @@
 # Sports Day Manager API
 
-Version: 0.8.0
+Production behavior: v1.0.0 Apps Script compatibility contract
+
+Migration status: all 28 original actions now have a locally tested Supabase implementation, plus the Supabase-only `getConfirmationStatus` read action. The Edge Function requires a verified, allow-listed organiser and preserves the business response envelope. The local practice frontend uses Supabase; the published default still uses Apps Script/Google Sheets. See `docs/migration/API_COMPATIBILITY_MATRIX.md` and `docs/migration/STAGE_4_API.md` for local coverage and remaining release gates.
 
 ---
 
@@ -554,6 +556,26 @@ Completed distance runs cannot be edited. Corrections require the existing Reset
 ---
 
 # Result Confirmation
+
+## getConfirmationStatus (Supabase only)
+
+Method: `GET`. Requires the same verified organiser access as other actions. Returns the standard success envelope with one item per current Event Run, ordered by Event display order:
+
+```json
+{
+    "EventID": "EV_EXAMPLE",
+    "EventName": "Example event",
+    "EventRunID": "run-uuid",
+    "Status": "COMPLETE",
+    "ResultsConfirmed": true,
+    "NeedsConfirmation": true,
+    "CanConfirm": true
+}
+```
+
+`ResultsConfirmed` means official Results already exist; `NeedsConfirmation` means saved engine changes are newer than the last confirmation, or a complete run has never been confirmed. Both can be true. `CanConfirm` requires completion. Current unfinished runs with saved results can need confirmation without being ready to confirm. Empty fixtures/entrants and no-op saves do not create warnings. Reconfirmation acknowledges the revision in the same transaction as Results replacement. Reset creates a clean new current run.
+
+This endpoint powers the Events and Leaderboard notices and the prominent confirmation button. It does not change scores or the original 28 response shapes. The frontend skips this call for Apps Script.
 
 ## confirmEventResults
 
