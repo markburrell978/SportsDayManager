@@ -5,8 +5,8 @@ Project: Sports Day Manager
 Production version: v1.0.0
 
 Development status: Supabase schema, transactional API, organiser sign-in,
-hosted fictional validation, repeatable data-migration tooling and restricted
-production-data reconciliation complete. Hosted cutover rehearsal remains
+hosted fictional validation, repeatable data-migration tooling and a restricted
+hosted production-data rehearsal complete. Cutover/rollback rehearsal remains
 pending.
 
 ## Purpose
@@ -43,9 +43,11 @@ production Apps Script address. No production endpoint or production data was
 changed.
 
 The isolated staging project reference is `jnzyedbrkxxaqxgsaavc`. All five
-migrations, fictional seed data and the `sports-day-api` function are deployed.
-An allow-listed organiser can sign in from the local staging launcher. See
-`docs/STAGING_REPORT.md` for validation, incident response and next steps.
+migrations and the `sports-day-api` function are deployed. Staging contains a
+restricted production-data copy imported on 2026-09-25, so it must be treated
+as private. An allow-listed organiser can sign in from the local staging
+launcher. See `docs/STAGING_REPORT.md` for validation, incident response and
+next steps.
 
 ## Source layout
 
@@ -144,7 +146,7 @@ loads one self-reconciling PostgreSQL transaction. Its five-engine fictional
 bundle passed against a disposable local database and a repeated default load
 was safely rejected. See `docs/migration/DATA_MIGRATION.md`. Real participant
 data was exported privately on 2026-09-25, reconciled in a disposable local
-database and removed from PostgreSQL after the test. No private export is
+database and imported into restricted hosted staging. No private export is
 tracked by Git. See
 `docs/migration/PRODUCTION_REHEARSAL_2026-09-25.md`.
 
@@ -159,6 +161,12 @@ full hosted fictional Sports Day was then completed: all five events were
 reset, progressed, completed and confirmed, and all superseded runs remained in
 history. The final reconciled leaderboard was Alpha 40, Gamma 40, Delta 31 and
 Beta 30, with no pending results.
+
+On 2026-09-25, the fictional staging data was privately backed up and replaced
+with the reconciled production-data copy. The transactional hosted import took
+1.109 seconds and all 12 table counts matched the migration report. The owner
+confirmed authenticated teams/events loaded. Anonymous reads exposed zero
+application rows and an unauthenticated Edge request returned HTTP 401.
 
 During initial staging setup, a CLI command unexpectedly printed a legacy
 service-role key. It was never written to the repository. The code was moved to
@@ -198,6 +206,6 @@ Next actions:
 
 1. resolve pull-request findings;
 2. complete least-privilege production database security;
-3. run a timed hosted import and authenticated application rehearsal;
-4. rehearse cutover/rollback before any explicit production approval;
+3. rehearse and time rollback before any explicit production approval;
+4. agree the maintenance window and final private backup locations;
 5. retain Apps Script and Sheets through the agreed rollback period.

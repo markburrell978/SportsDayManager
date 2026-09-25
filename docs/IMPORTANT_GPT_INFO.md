@@ -5,10 +5,10 @@ system. Do not rewrite it or change its endpoint while the Supabase migration is
 incomplete.
 
 The schema and all 28 compatible API actions are implemented and tested. An
-isolated hosted staging project now has all migrations, fictional seed data,
-the Edge Function and an allow-listed organiser. A reversible hosted result
-correction/confirmation test passed and the original scores were restored. See
-`docs/STAGING_REPORT.md` before staging work.
+isolated hosted staging project now has all migrations, the Edge Function, an
+allow-listed organiser and a restricted production-data copy. Its fictional
+workflow tests and realistic-data import/security checks passed. See
+`docs/STAGING_REPORT.md` before staging work and treat staging data as private.
 
 Repeatable read-only Google Sheets export, checksum-backed backup, deterministic
 transformation and transactional PostgreSQL import tooling is implemented. Its
@@ -16,8 +16,10 @@ five-engine fictional bundle and a restricted production copy passed disposable
 local database rehearsals. The production leaderboard and every Event History
 matched the migration report on 2026-09-25. See
 `docs/migration/DATA_MIGRATION.md` and
-`docs/migration/PRODUCTION_REHEARSAL_2026-09-25.md`. No hosted real-data import
-has been performed.
+`docs/migration/PRODUCTION_REHEARSAL_2026-09-25.md`. The reconciled copy was
+imported to explicitly cleared hosted staging on 2026-09-25 in 1.109 seconds;
+all table counts matched, authenticated application reads passed and anonymous
+access exposed no rows.
 
 The published website still selects Apps Script. Use `docs/PRACTICE.md` for the
 local Supabase website. Use `supabase/scripts/staging.py` for the loopback-only

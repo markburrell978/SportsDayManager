@@ -39,7 +39,7 @@
 - [x] Compare all actions and persisted state with unchanged v1 services on fictional fixtures
 - [x] Test rollback, concurrent reset/confirmation, transport and real Edge Function authentication
 - [x] Deploy the API to staging and verify authenticated reads/writes
-- [ ] Validate performance and copied-production-data compatibility on staging
+- [x] Validate performance and copied-production-data compatibility on staging
 
 ## v1.3.0 — Data migration and reconciliation
 
@@ -75,7 +75,7 @@
 - [x] Check current-run and history views for all five event formats on hosted staging
 - [x] Complete every end-to-end workflow for all five event formats on staging
 - [x] Run a full simulated Sports Day and reconcile its final leaderboard and histories (2026-09-24)
-- [ ] Complete realistic-data security and performance checks
+- [x] Complete realistic-data security and performance checks
 - [ ] Complete and time at least one clean cutover and rollback rehearsal
 
 ## Version control and review

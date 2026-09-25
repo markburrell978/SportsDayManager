@@ -1,12 +1,13 @@
 # Supabase staging report
 
-Report date: 2026-09-23; updated 2026-09-24
+Report date: 2026-09-23; updated 2026-09-25
 
 ## Plain-English outcome
 
-The Supabase test system is online and working. It contains fictional Sports Day
-data only. The public website still uses Google Apps Script and Google Sheets,
-so none of this work changed the live Sports Day.
+The Supabase test system is online and working. On 2026-09-25 its fictional
+dataset was replaced with a restricted copy of the production Sports Day data
+for a realistic migration rehearsal. The public website still uses Google Apps
+Script and Google Sheets, so the live Sports Day was not changed.
 
 The tested staging project is:
 
@@ -19,7 +20,8 @@ The tested staging project is:
 
 1. The repository was linked to the isolated Supabase staging project.
 2. All five ordered database migrations were applied.
-3. The fictional seed data was loaded. It covers all five event formats.
+3. Fictional seed data covering all five event formats was used for the initial
+   checks, then replaced with the restricted production copy.
 4. An organiser account was created in Supabase Authentication and its user ID
    was added to the server-side organiser allow-list.
 5. The allowed website origins were restricted to the local staging launcher.
@@ -29,11 +31,34 @@ The tested staging project is:
    `supabase/scripts/staging.py`. It serves the existing frontend with the
    public staging project address and publishable key. It does not read or
    store the organiser password.
-8. The browser displays a clear **Staging · Fictional data** banner.
+8. The browser displays a clear **Staging · Non-production data** banner.
 
 The ignored `.env.staging.json` file contains only the public project address
 and public publishable key. It is excluded from Git. Database credentials,
 organiser passwords and privileged keys are not served to the browser.
+
+## Restricted production-data import — 2026-09-25
+
+Before replacement, the complete fictional staging database was saved to the
+Git-ignored `backups/` directory. Its SHA-256 checksum was verified after the
+operation. The deterministic replacement bundle was first tested against a
+seeded disposable local database and then applied to hosted staging in one
+transaction.
+
+The hosted import completed in 1.109 seconds. A final database inspection found
+exactly 4 teams, 23 competitors, 5 point profiles, 8 events, 12 event runs, 32
+results, 26 matches, 8 race results, 23 event competitors, 8 distance results,
+1 double-team match and 0 attempts. These counts exactly match the independently
+reconciled migration report.
+
+The organiser signed in through the staging application and confirmed that the
+expected teams and events loaded. Anonymous requests using the public browser
+key exposed zero rows from all 12 application tables, and an unauthenticated
+Edge Function request was denied with HTTP 401. The staging copy therefore
+remains accessible only through the allow-listed organiser flow.
+
+Staging now contains restricted participant data. Keep its credentials and
+private backups controlled, and do not use it for public demonstrations.
 
 ## Validation performed
 
@@ -113,8 +138,8 @@ The final leaderboard exactly matched the points entered during the rehearsal:
 Event History retained every superseded run. Round Robin showed current Run 3
 and previous Runs 2 and 1. The other four events showed current Run 2 and
 previous Run 1, with the expected confirmed row counts in every current run.
-The hosted staging project has been left in this completed fictional state as
-an audit trail for review.
+This completed fictional state was retained as an audit trail until it was
+replaced by the restricted production copy on 2026-09-25.
 
 Local review checks also passed after the staging changes:
 
@@ -190,13 +215,10 @@ dashboard version command now includes `--assets ./web/`, and `wrangler.jsonc`
 records the Worker metadata in the repository.
 
 1. Resolve any reviewer findings before the pull request is made ready.
-2. Build repeatable Google Sheet export and Supabase import tooling with row
-   counts, checksums and foreign-key validation.
-3. Copy real data into a restricted rehearsal environment only after private
-   backups have been created and restore-tested.
-4. Measure realistic latency, memory and transaction-lock behavior, then
-   complete the least-privilege production database design.
-5. Rehearse cutover and rollback. Change the public website only after every
+2. Complete the least-privilege production database design.
+3. Rehearse and time a clean cutover and rollback.
+4. Agree the maintenance window and final private backup locations.
+5. Change the public website only after every
    acceptance gate passes and the owner explicitly approves production
    cutover.
 

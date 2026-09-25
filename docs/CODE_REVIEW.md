@@ -47,8 +47,8 @@ or service-role credentials remain outside `web/`.
   remain the source used to generate the Supabase compatibility services.
 - The Supabase API still serializes each small organiser-sized request and loads
   all application tables into a transaction-scoped repository. This is simple
-  and well-tested for the present workload; realistic staging performance must
-  be measured before production.
+  and passed the current production-sized staging rehearsal; future growth may
+  justify scoped reads or finer locking.
 - The new `getConfirmationStatus` action is Supabase-only metadata. The original
   28 action response shapes and scoring rules remain unchanged.
 - `Error.cause` is not required in the Apps Script-compatible service layer
@@ -91,11 +91,9 @@ The local code and initial hosted staging deployment are ready for a normal
 pull-request review. These product and deployment gates remain deliberately
 open:
 
-- import the reconciled copy into a dedicated hosted rehearsal environment and
-  repeat authenticated application checks;
-- test realistic data volume, latency and lock contention;
 - complete least-privilege production database access and owner-approved
-  cutover.
+  cutover;
+- time and verify the rollback portion of the final cutover rehearsal.
 
 ## Non-blocking technical debt
 

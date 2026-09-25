@@ -7,7 +7,9 @@
 - Added reported whitespace normalization and strict validation for team hex colours
 - Passed a transactional import and exact reconciliation in a fresh disposable local database in 0.37 seconds, then dropped the database
 - Reconciled all 4 live leaderboard entries, 8 Event Histories and 12 runs against the production Apps Script read API
-- Kept participant data, backups, credentials and source identifiers outside Git; hosted staging and production systems were unchanged
+- Backed up fictional hosted staging with a verified private checksum, tested the replacement bundle against a seeded disposable database and imported the restricted copy to staging in 1.109 seconds
+- Verified every hosted table count, authenticated application loading, zero anonymous table rows and HTTP 401 for unauthenticated Edge API access
+- Kept participant data, backups, credentials and source identifiers outside Git; the public production website, Apps Script and Google Sheets were unchanged
 
 ---
 

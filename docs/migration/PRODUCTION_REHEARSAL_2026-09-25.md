@@ -15,8 +15,9 @@ identifiers or team names were added to Git or this report.
 
 The complete transformation and transactional import passed against a fresh
 disposable database built from all five repository migrations. The database
-was dropped immediately after reconciliation. Hosted staging, production
-Supabase, Apps Script and Google Sheets were unchanged.
+was dropped immediately after reconciliation. The same bundle then replaced
+the explicitly cleared hosted staging data in one transaction. Apps Script,
+Google Sheets and the public production website were unchanged.
 
 ## Source reconciliation
 
@@ -94,9 +95,23 @@ the temporary converter used during this rehearsal.
 
 - Install and configure the least-privilege production database role and
   Supabase environment.
-- Time a complete cutover and rollback rehearsal against a dedicated hosted
-  rehearsal project or an explicitly cleared staging project.
-- Run application-level authenticated reads against the hosted imported copy.
+- Time a complete cutover and rollback rehearsal; the hosted import itself took
+  1.109 seconds, but the rollback path has not yet been exercised.
 - Agree the maintenance window and final backup locations before production.
 - Keep Apps Script and the original Sheet available through at least one
   successful live Supabase event.
+
+## Hosted staging result
+
+The fictional staging database was backed up to a private Git-ignored SQL file
+and its checksum was verified. The replacement bundle was tested against a
+seeded disposable database before it was applied to staging.
+
+The hosted import completed in 1.109 seconds. All 12 table counts matched this
+report, and the existing organiser account successfully loaded the expected
+teams and events through the application. Anonymous browser-key reads exposed
+zero application rows across every table, while an unauthenticated Edge API
+request returned HTTP 401.
+
+Staging now holds a restricted production-data copy. No participant row, source
+identifier, credential or private backup has been committed to Git.
