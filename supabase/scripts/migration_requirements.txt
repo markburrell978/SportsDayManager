@@ -1,0 +1,2 @@
+# Pinned reader for authenticated Google Sheets Excel downloads.
+openpyxl==3.1.5

@@ -10,6 +10,7 @@ from migration_export import (
     GoogleSheetsSource,
     SnapshotExporter,
     SnapshotVerifier,
+    XlsxWorkbookSource,
 )
 from migration_import import MigrationBundle, PsqlExecutor
 from migration_transform import MigrationTransformer
@@ -43,6 +44,14 @@ def build_argument_parser():
     export_parser.add_argument("--spreadsheet-identifier", required=True)
     export_parser.add_argument("--access-token-file", type=Path, required=True)
     export_parser.add_argument("--snapshot-directory", type=Path, required=True)
+
+    xlsx_parser = commands.add_parser(
+        "export-xlsx",
+        help="Snapshot a browser-downloaded Google Sheets Excel workbook.",
+    )
+    xlsx_parser.add_argument("--source-file", type=Path, required=True)
+    xlsx_parser.add_argument("--spreadsheet-identifier", required=True)
+    xlsx_parser.add_argument("--snapshot-directory", type=Path, required=True)
 
     verify_parser = commands.add_parser(
         "verify-snapshot",
@@ -85,6 +94,16 @@ def export_google(command_arguments):
     source = GoogleSheetsSource(
         command_arguments.spreadsheet_identifier,
         access_token,
+    )
+    SnapshotExporter().export(source, command_arguments.snapshot_directory)
+    print(f"Snapshot created: {command_arguments.snapshot_directory}")
+
+
+def export_xlsx(command_arguments):
+    """Create an immutable snapshot from a browser-downloaded workbook."""
+    source = XlsxWorkbookSource(
+        command_arguments.source_file,
+        command_arguments.spreadsheet_identifier,
     )
     SnapshotExporter().export(source, command_arguments.snapshot_directory)
     print(f"Snapshot created: {command_arguments.snapshot_directory}")
@@ -151,6 +170,7 @@ def main(command_line_arguments=None):
     command_arguments = parser.parse_args(command_line_arguments)
     handlers = {
         "export-google": export_google,
+        "export-xlsx": export_xlsx,
         "verify-snapshot": verify_snapshot,
         "backup": create_backup,
         "prepare": prepare_bundle,

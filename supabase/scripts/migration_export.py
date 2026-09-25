@@ -123,6 +123,79 @@ class GoogleSheetsSource:
         return SheetData(sheet_name, headers, rows)
 
 
+def load_xlsx_workbook(source_file, **options):
+    """Load an Excel workbook through the optional pinned dependency."""
+    try:
+        from openpyxl import load_workbook
+    except ImportError as error:
+        raise RuntimeError(
+            "Excel import requires: pip install -r "
+            "supabase/scripts/migration_requirements.txt"
+        ) from error
+    return load_workbook(source_file, **options)
+
+
+def last_populated_cell_index(values):
+    """Return the position after the final nonblank cell."""
+    for index in range(len(values), 0, -1):
+        if values[index - 1] not in (None, ""):
+            return index
+    return 0
+
+
+class XlsxWorkbookSource:
+    """Read a browser-downloaded Google workbook without write access."""
+
+    def __init__(
+        self,
+        source_file,
+        spreadsheet_identifier,
+        workbook_loader=load_xlsx_workbook,
+    ):
+        """Open cached cell values through an injectable workbook reader."""
+        self.source_file = Path(source_file)
+        if not self.source_file.is_file():
+            raise FileNotFoundError(f"Workbook is unavailable: {source_file}")
+        if not spreadsheet_identifier:
+            raise ValueError("Spreadsheet identifier is required.")
+        self.spreadsheet_identifier = spreadsheet_identifier
+        self.workbook = workbook_loader(
+            self.source_file,
+            data_only=True,
+            read_only=True,
+        )
+
+    def source_details(self):
+        """Return workbook provenance without participant records."""
+        return {
+            "kind": "authenticated_browser_xlsx_export",
+            "spreadsheet_identifier": self.spreadsheet_identifier,
+            "source_file_sha256": sha256_file(self.source_file),
+        }
+
+    def read_sheet(self, sheet_name):
+        """Return cached worksheet values with unused dimensions removed."""
+        if sheet_name not in self.workbook.sheetnames:
+            return None
+        worksheet = self.workbook[sheet_name]
+        source_rows = [
+            tuple(row) for row in worksheet.iter_rows(values_only=True)
+        ]
+        if not source_rows:
+            return SheetData(sheet_name, (), ())
+        header_width = last_populated_cell_index(source_rows[0])
+        headers = tuple(
+            str(value) for value in source_rows[0][:header_width]
+        )
+        rows = []
+        for source_row in source_rows[1:]:
+            row_width = last_populated_cell_index(source_row)
+            rows.append(tuple(source_row[: max(header_width, row_width)]))
+        while rows and not any(value not in (None, "") for value in rows[-1]):
+            rows.pop()
+        return SheetData(sheet_name, headers, tuple(rows))
+
+
 def utc_timestamp():
     """Return a second-precision UTC timestamp for snapshot evidence."""
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(

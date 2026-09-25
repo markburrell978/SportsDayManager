@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 SCRIPTS_DIRECTORY = Path(__file__).resolve().parents[1] / "scripts"
@@ -75,6 +76,35 @@ class MigrationCommandLineTest(unittest.TestCase):
             self.assertTrue(archive_file.is_file())
             self.assertTrue(
                 archive_file.with_name(archive_file.name + ".sha256").is_file()
+            )
+
+    def test_xlsx_export_command_uses_the_shared_snapshot_pipeline(self):
+        """Connect an authenticated browser download to the normal exporter."""
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            working_directory = Path(temporary_directory)
+            source_file = working_directory / "source.xlsx"
+            snapshot_directory = working_directory / "snapshot"
+            source_file.write_bytes(b"fictional workbook")
+
+            with patch("migration_cli.XlsxWorkbookSource") as source_class:
+                with patch("migration_cli.SnapshotExporter") as exporter_class:
+                    exit_status = main(
+                        [
+                            "export-xlsx",
+                            "--source-file",
+                            str(source_file),
+                            "--spreadsheet-identifier",
+                            "FICTIONAL",
+                            "--snapshot-directory",
+                            str(snapshot_directory),
+                        ]
+                    )
+
+            self.assertEqual(exit_status, 0)
+            source_class.assert_called_once_with(source_file, "FICTIONAL")
+            exporter_class.return_value.export.assert_called_once_with(
+                source_class.return_value,
+                snapshot_directory,
             )
 
     def test_secret_files_must_have_owner_only_permissions(self):

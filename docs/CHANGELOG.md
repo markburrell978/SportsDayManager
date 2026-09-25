@@ -1,3 +1,16 @@
+# Restricted production-data rehearsal — 2026-09-25
+
+- Downloaded the production workbook through the owner's authenticated browser without changing Google Sheets or granting a new application access
+- Created and verified an immutable private snapshot and restore-tested backup covering 4 teams, 23 competitors, 8 events, 12 runs and 32 Results
+- Added a supported `export-xlsx` route with a pinned reader after Google blocked the separate read-only OAuth consent flow
+- Added tested support for exact known headers in a different order and unambiguous Excel whole-number values
+- Added reported whitespace normalization and strict validation for team hex colours
+- Passed a transactional import and exact reconciliation in a fresh disposable local database in 0.37 seconds, then dropped the database
+- Reconciled all 4 live leaderboard entries, 8 Event Histories and 12 runs against the production Apps Script read API
+- Kept participant data, backups, credentials and source identifiers outside Git; hosted staging and production systems were unchanged
+
+---
+
 # Repeatable data migration tooling — 2026-09-24
 
 - Added a read-only Google Sheets exporter for every required and optional migration tab
@@ -8,7 +21,7 @@
 - Added independent expected leaderboard and Event History summaries for post-import comparison
 - Added tamper-evident migration bundles and transactional PostgreSQL imports with empty-target protection and exact reconciliation
 - Added an explicit replacement mode protected at both preparation and load time
-- Added 24 Python tests and connected them to the normal pull-request quality command
+- Added 30 Python tests and connected them to the normal pull-request quality command
 - Passed a real disposable-database rehearsal using all migrations and fictional data for all five event formats
 - Production Google Sheets, hosted staging and production Supabase data were unchanged
 

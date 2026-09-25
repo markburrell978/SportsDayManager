@@ -48,8 +48,8 @@
 - [x] Transform copied data without silent ambiguous repair
 - [x] Create a fictional dataset covering all five event formats
 - [x] Rehearse the complete fictional import against a disposable Supabase PostgreSQL database
-- [ ] Compare Apps Script and Supabase read responses using a production-shaped copy
-- [ ] Reconcile leaderboard and Event History against the copied data
+- [x] Compare Apps Script and migration outputs using a restricted production copy
+- [x] Reconcile leaderboard and Event History against the copied data
 
 ## v1.4.0 — Authentication and production security
 

@@ -78,7 +78,7 @@ The disposable review database was dropped after testing. The integration write
 restored the original fictional point profile. Existing practice event results
 were not reset or replaced.
 
-The data-migration addition also passed 24 Python tests for read-only export,
+The data-migration addition also passed 30 Python tests for read-only export,
 tamper detection, restore-tested backups, deterministic transformation,
 relationship validation, reconciliation reports, transactional SQL and CLI
 safeguards. An opt-in integration test applied all five real migrations and a
@@ -91,9 +91,8 @@ The local code and initial hosted staging deployment are ready for a normal
 pull-request review. These product and deployment gates remain deliberately
 open:
 
-- complete all five event workflows and a full simulated Sports Day on staging;
-- rehearse the implemented export/import and backup workflow with a restricted
-  production-shaped copy;
+- import the reconciled copy into a dedicated hosted rehearsal environment and
+  repeat authenticated application checks;
 - test realistic data volume, latency and lock contention;
 - complete least-privilege production database access and owner-approved
   cutover.
@@ -228,6 +227,7 @@ transition, practice frontend, confirmation warnings and this review.
 | `supabase/scripts/migration_transform.py` | Converts snapshots into typed rows, applies documented legacy rules and builds reconciliation expectations. |
 | `supabase/scripts/migration_import.py` | Builds tamper-evident transactional SQL bundles and executes them without exposing database passwords in arguments. |
 | `supabase/scripts/migration_cli.py` | Provides operator commands for export, verification, backup, preparation and guarded loading. |
+| `supabase/scripts/migration_requirements.txt` | Pins the optional reader used for authenticated browser Excel downloads. |
 | `supabase/tests/frontend_test.mjs` | Tests provider routing, auth/session races, screen reads and reversible real-practice integration. |
 | `supabase/tests/confirmation_ui_test.mjs` | Tests pending-confirmation UI states, escaping and safe identifier handlers. |
 | `supabase/tests/api_test.js` | Compares all 28 actions and persisted state with an independent Apps Script oracle; tests rollback/concurrency. |
@@ -263,6 +263,7 @@ transition, practice frontend, confirmation warnings and this review.
 | `docs/migration/STAGE_2_SCHEMA.md` | Records the PostgreSQL schema design and acceptance boundary. |
 | `docs/migration/STAGE_4_API.md` | Records API architecture, access boundary, tests and limitations. |
 | `docs/migration/DATA_MIGRATION.md` | Gives the exact private export, backup, review, transactional import and reconciliation workflow. |
+| `docs/migration/PRODUCTION_REHEARSAL_2026-09-25.md` | Records aggregate evidence and findings from the restricted production-data rehearsal without participant records. |
 | `docs/migration/SHEET_TO_POSTGRES_MAPPING.md` | Maps every Sheet and legacy field to its PostgreSQL table/column. |
 | `docs/migration/API_COMPATIBILITY_MATRIX.md` | Tracks all API actions, read/write sets, transactions and parity status. |
 | `docs/migration/CUTOVER_RUNBOOK.md` | Defines staged import, reconciliation, switch and acceptance steps. |

@@ -20,6 +20,7 @@ from migration_export import (  # noqa: E402
     SnapshotExporter,
     SnapshotVerificationError,
     SnapshotVerifier,
+    XlsxWorkbookSource,
 )
 from migration_schema import SHEET_SPECIFICATIONS  # noqa: E402
 
@@ -228,6 +229,78 @@ class GoogleSheetsSourceTest(unittest.TestCase):
             request_headers["Authorization"],
             "Bearer PRIVATE_TOKEN",
         )
+
+
+class FakeWorksheet:
+    """Expose controlled cached worksheet values."""
+
+    def __init__(self, rows):
+        """Store rows returned by the workbook reader."""
+        self.rows = rows
+
+    def iter_rows(self, values_only=False):
+        """Return rows while requiring value-only access."""
+        if not values_only:
+            raise AssertionError("Worksheet must be read as values only.")
+        return iter(self.rows)
+
+
+class FakeWorkbook:
+    """Provide named worksheets through the openpyxl workbook interface."""
+
+    def __init__(self, worksheets):
+        """Store worksheets by tab name."""
+        self.worksheets = worksheets
+        self.sheetnames = list(worksheets)
+
+    def __getitem__(self, sheet_name):
+        """Return one worksheet by tab name."""
+        return self.worksheets[sheet_name]
+
+
+class XlsxWorkbookSourceTest(unittest.TestCase):
+    """Verify authenticated browser downloads use the snapshot interface."""
+
+    def test_source_reads_cached_values_and_trims_only_trailing_blanks(self):
+        """Preserve false and numeric values while removing unused dimensions."""
+        workbook = FakeWorkbook(
+            {
+                "Teams": FakeWorksheet(
+                    [
+                        ("ID", "Active", None),
+                        ("TEAM_ALPHA", True, None),
+                        ("TEAM_ZERO", False, None),
+                        (None, None, None),
+                    ]
+                )
+            }
+        )
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            source_file = Path(temporary_directory) / "source.xlsx"
+            source_file.write_bytes(b"fictional workbook")
+            source = XlsxWorkbookSource(
+                source_file,
+                "FICTIONAL",
+                workbook_loader=lambda *arguments, **keywords: workbook,
+            )
+
+            sheet = source.read_sheet("Teams")
+            details = source.source_details()
+
+            self.assertEqual(sheet.headers, ("ID", "Active"))
+            self.assertEqual(
+                sheet.rows,
+                (("TEAM_ALPHA", True), ("TEAM_ZERO", False)),
+            )
+            self.assertIsNone(source.read_sheet("Attempts"))
+            self.assertEqual(
+                details["source_file_sha256"],
+                hashlib.sha256(b"fictional workbook").hexdigest(),
+            )
+            self.assertEqual(
+                details["kind"],
+                "authenticated_browser_xlsx_export",
+            )
 
 
 if __name__ == "__main__":

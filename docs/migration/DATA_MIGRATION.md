@@ -13,8 +13,8 @@ tokens and database addresses private. The repository ignores `exports/` and
 
 The migration commands:
 
-- export all 11 required tabs and the optional `Attempts` tab through the
-  read-only Google Sheets API;
+- export all 11 required tabs and the optional `Attempts` tab through either the
+  read-only Google Sheets API or an authenticated browser Excel download;
 - preserve IDs, row order, false values, zero values and decimal attempts;
 - record exact headers, row counts and SHA-256 checksums;
 - archive the snapshot, restore it into a clean directory and verify it again;
@@ -34,8 +34,27 @@ problem before connecting to PostgreSQL.
 Run commands from the repository root with Python 3. A real load also requires
 the PostgreSQL `psql` client.
 
-Obtain a short-lived Google OAuth access token for the account that can view the
-Sports Day spreadsheet. Authorize only this scope:
+The recommended route is the normal Google Sheets browser download because it
+does not require a separate application authorization:
+
+1. Sign in to the Google account that can view the Sports Day spreadsheet.
+2. Open the spreadsheet.
+3. Choose **File → Download → Microsoft Excel (.xlsx)**.
+4. Move the downloaded file into the ignored `exports/` directory and run
+   `chmod 600` on it.
+5. Install the pinned reader into the Python environment used for migration:
+
+```bash
+python3 -m pip install --requirement \
+  supabase/scripts/migration_requirements.txt
+```
+
+The spreadsheet identifier is the value between `/d/` and `/edit` in its Google
+Sheets address.
+
+The alternative API route needs a short-lived Google OAuth access token for an
+account that can view the spreadsheet and an OAuth client whose Google Cloud
+project has the Sheets API enabled. Authorize only this scope:
 
 ```text
 https://www.googleapis.com/auth/spreadsheets.readonly
@@ -48,13 +67,21 @@ temporary private file, then restrict it:
 chmod 600 /private/tmp/sports-day-google-token.txt
 ```
 
-The spreadsheet identifier is the value between `/d/` and `/edit` in its Google
-Sheets address.
-
 ## 1. Export an immutable snapshot
 
 Choose a new timestamped directory. The command refuses to overwrite an
 existing snapshot.
+
+For the recommended authenticated browser download:
+
+```bash
+python3 supabase/scripts/migration_cli.py export-xlsx \
+  --source-file exports/production-YYYYMMDD-HHMMSS.xlsx \
+  --spreadsheet-identifier YOUR_SPREADSHEET_ID \
+  --snapshot-directory exports/production-YYYYMMDD-HHMMSS
+```
+
+For an OAuth client with the Sheets API enabled:
 
 ```bash
 python3 supabase/scripts/migration_cli.py export-google \
@@ -64,7 +91,9 @@ python3 supabase/scripts/migration_cli.py export-google \
 ```
 
 The snapshot contains one CSV per present tab and `manifest.json`. The access
-token is never written into the snapshot.
+token is never written into the snapshot. Browser-download snapshots record the
+source workbook SHA-256 so the original file can be matched without exposing
+its contents.
 
 Verify it independently:
 
@@ -154,7 +183,7 @@ rollback period.
 
 ## Development validation
 
-The normal quality command runs 24 migration tests, with the Docker database
+The normal quality command runs 30 migration tests, with the Docker database
 test skipped unless explicitly enabled:
 
 ```bash

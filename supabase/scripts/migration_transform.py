@@ -102,6 +102,7 @@ class MigrationTransformer:
             )
             rows_by_table[specification.table_name] = transformed_rows
 
+        self._normalise_team_colours(rows_by_table, warnings)
         legacy_run_assignments = self._assign_legacy_run_identifiers(
             rows_by_table,
             errors,
@@ -289,9 +290,16 @@ class MigrationTransformer:
         errors,
     ):
         """Accept only canonical headers and documented legacy conversions."""
-        if headers == specification.headers:
+        if (
+            len(headers) == len(specification.headers)
+            and set(headers) == set(specification.headers)
+        ):
+            if headers != specification.headers:
+                warnings.append(
+                    f"{specification.sheet_name} columns were mapped by header name"
+                )
             return tuple(
-                dict(zip(specification.headers, row, strict=True))
+                dict(zip(headers, row, strict=True))
                 for row in source_rows
             )
         if specification.sheet_name == "Competitors":
@@ -420,6 +428,22 @@ class MigrationTransformer:
             transformed_rows.append(transformed_row)
         return transformed_rows
 
+    def _normalise_team_colours(self, rows_by_table, warnings):
+        """Remove and report harmless whitespace around Team hex colours."""
+        changed_count = 0
+        for team in rows_by_table["teams"]:
+            colour = team["colour"]
+            trimmed_colour = colour.strip()
+            if trimmed_colour != colour:
+                team["colour"] = trimmed_colour
+                changed_count += 1
+        if changed_count:
+            row_label = "row" if changed_count == 1 else "rows"
+            warnings.append(
+                "Teams Colour surrounding whitespace was removed from "
+                f"{changed_count} {row_label}"
+            )
+
     def _convert_value(self, value, specification):
         """Convert one cell without guessing ambiguous values."""
         if is_blank(value):
@@ -441,9 +465,9 @@ class MigrationTransformer:
             raise ValueError("expected TRUE or FALSE.")
         if specification.value_kind == "integer":
             normalized_value = str(value).strip()
-            if not re.fullmatch(r"[+-]?\d+", normalized_value):
+            if not re.fullmatch(r"[+-]?\d+(?:\.0+)?", normalized_value):
                 raise ValueError("expected a whole number.")
-            return int(normalized_value)
+            return int(Decimal(normalized_value))
         if specification.value_kind == "decimal":
             try:
                 converted_value = Decimal(str(value).strip())
@@ -534,6 +558,9 @@ class MigrationTransformer:
 
     def _validate_enumerations(self, rows_by_table, errors):
         """Mirror constrained enum values before database access."""
+        for row in rows_by_table["teams"]:
+            if not re.fullmatch(r"#[0-9A-Fa-f]{6}", row["colour"]):
+                errors.append(f"Team {row['id']} has invalid Colour.")
         for row in rows_by_table["events"]:
             if row["event_type"] not in EVENT_TYPES:
                 errors.append(

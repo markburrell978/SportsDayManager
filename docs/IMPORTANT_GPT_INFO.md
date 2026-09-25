@@ -12,9 +12,12 @@ correction/confirmation test passed and the original scores were restored. See
 
 Repeatable read-only Google Sheets export, checksum-backed backup, deterministic
 transformation and transactional PostgreSQL import tooling is implemented. Its
-five-engine fictional bundle passed a disposable local database rehearsal. See
-`docs/migration/DATA_MIGRATION.md`. No real Sheet export or hosted import has
-been performed.
+five-engine fictional bundle and a restricted production copy passed disposable
+local database rehearsals. The production leaderboard and every Event History
+matched the migration report on 2026-09-25. See
+`docs/migration/DATA_MIGRATION.md` and
+`docs/migration/PRODUCTION_REHEARSAL_2026-09-25.md`. No hosted real-data import
+has been performed.
 
 The published website still selects Apps Script. Use `docs/PRACTICE.md` for the
 local Supabase website. Use `supabase/scripts/staging.py` for the loopback-only
@@ -45,6 +48,7 @@ Read these before database or API work:
 - `docs/STAGING_REPORT.md`
 - `docs/migration/STAGE_4_API.md`
 - `docs/migration/DATA_MIGRATION.md`
+- `docs/migration/PRODUCTION_REHEARSAL_2026-09-25.md`
 - `docs/migration/SHEET_TO_POSTGRES_MAPPING.md`
 - `docs/migration/STAGE_1_PRESERVATION.md`
 - `docs/migration/STAGE_2_SCHEMA.md`

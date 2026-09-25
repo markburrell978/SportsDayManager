@@ -5,8 +5,9 @@ Project: Sports Day Manager
 Production version: v1.0.0
 
 Development status: Supabase schema, transactional API, organiser sign-in,
-hosted fictional validation and repeatable data-migration tooling complete.
-Production-shaped acceptance and cutover remain pending.
+hosted fictional validation, repeatable data-migration tooling and restricted
+production-data reconciliation complete. Hosted cutover rehearsal remains
+pending.
 
 ## Purpose
 
@@ -132,7 +133,7 @@ tracking, frontend session races and clean/upgrade database paths.
 
 The code-quality baseline uses Google-inspired JavaScript/TypeScript plus
 Google/PEP 8-inspired Python rules. `npm run check` runs formatting, ESLint,
-full-word naming, purpose comments, 24 Python migration tests,
+full-word naming, purpose comments, 30 Python migration tests,
 generated-service drift and frontend tests. Deno type checking passes
 separately. See `docs/CODE_REVIEW.md`.
 
@@ -142,7 +143,10 @@ or relationally invalid data, creates expected leaderboard/history evidence and
 loads one self-reconciling PostgreSQL transaction. Its five-engine fictional
 bundle passed against a disposable local database and a repeated default load
 was safely rejected. See `docs/migration/DATA_MIGRATION.md`. Real participant
-data has not been exported or imported.
+data was exported privately on 2026-09-25, reconciled in a disposable local
+database and removed from PostgreSQL after the test. No private export is
+tracked by Git. See
+`docs/migration/PRODUCTION_REHEARSAL_2026-09-25.md`.
 
 Hosted staging passed sign-in, all main read surfaces and a reversible Round
 Robin correction. Pending notices appeared before confirmation, the leaderboard
@@ -193,7 +197,7 @@ configuration and must remain untracked.
 Next actions:
 
 1. resolve pull-request findings;
-2. use the completed tooling on a restricted production-shaped copy;
-3. reconcile its leaderboard and Event History against Supabase staging;
-4. measure performance and complete least-privilege production security;
-5. rehearse cutover/rollback before any explicit production approval.
+2. complete least-privilege production database security;
+3. run a timed hosted import and authenticated application rehearsal;
+4. rehearse cutover/rollback before any explicit production approval;
+5. retain Apps Script and Sheets through the agreed rollback period.

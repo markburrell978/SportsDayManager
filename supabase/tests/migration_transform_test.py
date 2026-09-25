@@ -154,6 +154,98 @@ class MigrationTransformerTest(unittest.TestCase):
             ):
                 MigrationTransformer().transform(snapshot_directory)
 
+    def test_canonical_headers_can_appear_in_a_different_order(self):
+        """Map exact known columns by name when a Sheet reorders them."""
+        sheets = build_fictional_sheets()
+        results = sheets["Results"]
+        reordered_headers = (
+            "ID",
+            "EventID",
+            "Position",
+            "TeamID",
+            "EventRunID",
+            "PointsAwarded",
+        )
+        source_indexes = [
+            results.headers.index(header) for header in reordered_headers
+        ]
+        sheets["Results"] = SheetData(
+            "Results",
+            reordered_headers,
+            tuple(
+                tuple(row[index] for index in source_indexes)
+                for row in results.rows
+            ),
+        )
+
+        temporary_directory, dataset = transform_sheets(sheets)
+        self.addCleanup(temporary_directory.cleanup)
+
+        self.assertEqual(dataset.rows_by_table["results"][0]["position"], 1)
+        self.assertIn(
+            "Results columns were mapped by header name",
+            dataset.report["warnings"],
+        )
+
+    def test_integral_decimal_text_converts_to_an_integer(self):
+        """Accept an unambiguous whole number emitted by an Excel export."""
+        sheets = build_fictional_sheets()
+        events = list(sheets["Events"].rows)
+        events[0] = (*events[0][:5], "1.0", events[0][6])
+        sheets["Events"] = SheetData(
+            "Events",
+            sheets["Events"].headers,
+            tuple(events),
+        )
+
+        temporary_directory, dataset = transform_sheets(sheets)
+        self.addCleanup(temporary_directory.cleanup)
+
+        self.assertEqual(dataset.rows_by_table["events"][0]["display_order"], 1)
+
+    def test_team_colour_whitespace_is_removed_and_reported(self):
+        """Normalize an otherwise valid hex colour without hiding the repair."""
+        sheets = build_fictional_sheets()
+        teams = list(sheets["Teams"].rows)
+        teams[0] = (*teams[0][:2], " #D32F2F ", teams[0][3])
+        sheets["Teams"] = SheetData(
+            "Teams",
+            sheets["Teams"].headers,
+            tuple(teams),
+        )
+
+        temporary_directory, dataset = transform_sheets(sheets)
+        self.addCleanup(temporary_directory.cleanup)
+
+        self.assertEqual(dataset.rows_by_table["teams"][0]["colour"], "#D32F2F")
+        self.assertIn(
+            "Teams Colour surrounding whitespace was removed from 1 row",
+            dataset.report["warnings"],
+        )
+
+    def test_invalid_team_colour_is_rejected_before_database_access(self):
+        """Reject a colour that is still invalid after safe whitespace removal."""
+        sheets = build_fictional_sheets()
+        teams = list(sheets["Teams"].rows)
+        teams[0] = (*teams[0][:2], "red", teams[0][3])
+        sheets["Teams"] = SheetData(
+            "Teams",
+            sheets["Teams"].headers,
+            tuple(teams),
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            snapshot_directory = Path(temporary_directory) / "snapshot"
+            SnapshotExporter().export(
+                DictionarySheetSource(sheets),
+                snapshot_directory,
+            )
+            with self.assertRaisesRegex(
+                MigrationValidationError,
+                "invalid Colour",
+            ):
+                MigrationTransformer().transform(snapshot_directory)
+
     def test_broken_foreign_key_is_rejected_before_database_access(self):
         """Report a competitor that references an unavailable Team ID."""
         sheets = build_fictional_sheets()
