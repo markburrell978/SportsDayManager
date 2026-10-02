@@ -75,15 +75,15 @@ publishable key and will not affect GitHub Pages unless the branch is merged.
 The Apps Script URL remains in `web/js/config.js` for a one-file provider
 rollback.
 
-The remaining hosted change is to allow the exact origin
-`https://markburrell978.github.io` in `SPORTS_DAY_ALLOWED_ORIGINS`. Supabase
-authentication and the organiser UUID allow-list still protect every request.
-That origin change requires separate explicit approval because it changes a
-hosted security boundary.
+With explicit owner approval, the exact origin
+`https://markburrell978.github.io` was added to
+`SPORTS_DAY_ALLOWED_ORIGINS`. Its preflight returned HTTP 204 and the matching
+`Access-Control-Allow-Origin` header. A preflight from `https://example.com`
+returned HTTP 403. Supabase authentication and the organiser UUID allow-list
+continue to protect every application request.
 
 ## Remaining gates
 
-- Apply and verify the exact GitHub Pages CORS origin after approval.
 - Resolve or formally accept the broken Apps Script leaderboard rollback path.
 - Complete pull-request review and merge the production runtime configuration.
 - Verify the deployed Pages sign-in, reads and one controlled reversible write.

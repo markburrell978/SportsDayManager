@@ -93,7 +93,7 @@ the temporary converter used during this rehearsal.
 
 ## Remaining release gates
 
-- Apply and verify the exact GitHub Pages CORS origin after approval.
+- The exact GitHub Pages CORS origin was applied and verified on 2026-10-02.
 - Resolve or formally accept the Apps Script leaderboard rollback failure found
   during the 2026-10-02 rehearsal.
 - Agree the maintenance window and final backup locations before production.

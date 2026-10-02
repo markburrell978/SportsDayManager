@@ -96,8 +96,9 @@ browser table access remains blocked by the RLS defaults.
 Hosted staging has an allow-listed organiser. Legacy hosted API keys are
 disabled and the legacy signing key is revoked. The least-privilege
 `sports_day_api` role and its explicit RLS policies passed local and hosted
-boundary checks on 2026-10-02. The exact production website origin remains a
-release gate.
+boundary checks on 2026-10-02. The exact production website origin was then
+added to the allow-list: its preflight returned 204 with that origin, while an
+unapproved origin returned 403.
 
 ## Run locally
 
@@ -163,6 +164,5 @@ Verified checks include:
 
 ## Remaining release gates
 
-- Apply and verify the exact production website CORS origin.
 - Resolve or explicitly accept the Apps Script leaderboard rollback failure.
 - Complete the owner-approved production deployment and post-deploy checks.

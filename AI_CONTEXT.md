@@ -6,8 +6,9 @@ Production version: v1.0.0
 
 Development status: Supabase schema, transactional API, organiser sign-in,
 hosted fictional validation, repeatable data-migration tooling, a restricted
-hosted production-data rehearsal and least-privilege API role complete. Final
-CORS and rollback gates remain pending.
+hosted production-data rehearsal, least-privilege API role and exact GitHub
+Pages CORS configuration complete. Final rollback and deployment gates remain
+pending.
 
 ## Purpose
 
@@ -214,7 +215,6 @@ configuration and must remain untracked.
 Next actions:
 
 1. resolve pull-request findings;
-2. approve/apply the exact GitHub Pages CORS origin;
-3. resolve or accept the Apps Script leaderboard rollback failure;
-4. agree the maintenance window and final private backup locations;
-5. retain Apps Script and Sheets through the agreed rollback period.
+2. resolve or accept the Apps Script leaderboard rollback failure;
+3. agree the maintenance window and final private backup locations;
+4. retain Apps Script and Sheets through the agreed rollback period.
