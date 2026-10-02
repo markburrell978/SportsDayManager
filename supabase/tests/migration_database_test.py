@@ -118,6 +118,23 @@ class MigrationDatabaseTest(unittest.TestCase):
                 )
                 self.assertEqual(state.stdout.strip(), "5|5|5|28")
 
+                role_check = self.run_container_command(
+                    [
+                        "psql",
+                        "--username",
+                        "supabase_admin",
+                        "--dbname",
+                        database_name,
+                        "--set",
+                        "ON_ERROR_STOP=1",
+                    ],
+                    (TESTS_DIRECTORY / "least_privilege_role.sql").read_text(
+                        encoding="utf-8"
+                    ),
+                    check=False,
+                )
+                self.assertEqual(role_check.returncode, 0, role_check.stderr)
+
                 repeated_import = self.run_container_command(
                     [
                         "psql",

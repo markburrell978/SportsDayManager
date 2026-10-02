@@ -1,3 +1,15 @@
+# Least-privilege production readiness — 2026-10-02
+
+- Added and hosted-tested the dedicated `sports_day_api` PostgreSQL role with application-table CRUD and explicit RLS policies
+- Proved the role cannot read Supabase Auth data, create tables, create roles or bypass RLS
+- Added a dedicated encrypted Edge Function connection with a managed local/operational fallback and four configuration tests
+- Rehearsed removing and restoring the dedicated connection; both authenticated application paths loaded the same restricted-data leaderboard without changing rows
+- Prepared the branch's public runtime configuration for authenticated production Supabase use while retaining one-file Apps Script rollback
+- Found that the current Apps Script `getLeaderboard` action and live GitHub Pages leaderboard end on Google's page-not-found response after a long delay; final rollback remains open
+- Kept the public endpoint unchanged and left the exact GitHub Pages CORS-origin change pending explicit security-boundary approval
+
+---
+
 # Restricted production-data rehearsal — 2026-09-25
 
 - Downloaded the production workbook through the owner's authenticated browser without changing Google Sheets or granting a new application access

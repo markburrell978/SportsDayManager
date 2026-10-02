@@ -53,15 +53,48 @@ async function client(fetcher, { practice = true, storage = new Map() } = {}) {
   };
 }
 
-test('published configuration preserves Apps Script GET/POST with no sign-in or bearer header', async () => {
+test('published configuration requires production Supabase authentication', async () => {
   const calls = [];
-  const { ApplicationInterface } = await client(
+  const { ApplicationInterface, Authentication } = await client(
+    async (requestAddress, options) => {
+      calls.push({ url: requestAddress, options });
+      return requestAddress.includes('/auth/')
+        ? response(sessionValue())
+        : response({ success: true, data: [] });
+    },
+    { practice: false },
+  );
+
+  assert.equal(ApplicationInterface.requiresSignIn, true);
+  assert.equal(ApplicationInterface.environment, 'production');
+  assert.equal(
+    ApplicationInterface.settings.endpoint,
+    'https://jnzyedbrkxxaqxgsaavc.supabase.co/functions/v1/sports-day-api',
+  );
+  await Authentication.signIn('test@example.test', 'password');
+  await ApplicationInterface.getTeams();
+  const applicationRequest = calls.find(({ url: requestAddress }) =>
+    requestAddress.includes('/functions/v1/sports-day-api'),
+  );
+  assert.equal(
+    applicationRequest.options.headers.Authorization,
+    'Bearer access',
+  );
+  assert.match(applicationRequest.options.headers.apikey, /^sb_publishable_/);
+});
+
+test('Apps Script rollback configuration preserves its unauthenticated transport', async () => {
+  const calls = [];
+  const { context, ApplicationInterface } = await client(
     async (requestAddress, options) => {
       calls.push({ url: requestAddress, options });
       return response({ success: true, data: [] });
     },
     { practice: false },
   );
+  context.SPORTS_DAY_RUNTIME = { provider: 'apps-script' };
+  ApplicationInterface.initialise();
+
   assert.equal(ApplicationInterface.requiresSignIn, false);
   await ApplicationInterface.getTeams();
   await ApplicationInterface.updateCompetitor({ ID: 'one', Active: false });
@@ -331,9 +364,27 @@ test('sign-in screen gates initial loading, submits once, clears password and si
   assert.equal(classes.has('auth-pending'), true);
 });
 
-test('legacy session starts immediately and failed practice setup keeps screens hidden', async () => {
+test('staging sign-in describes its copied data as private', async () => {
+  const { context, ApplicationInterface } = await client(async () =>
+    response({ success: true, data: [] }),
+  );
+  context.SPORTS_DAY_RUNTIME.environment = 'staging';
+  ApplicationInterface.initialise();
+  const { element } = page(context);
+  virtualMachine.runInContext(
+    await readFile(new URL('js/session.js', web), 'utf8'),
+    context,
+  );
+
+  await context.Session.start(async () => {});
+
+  assert.match(element('sign-in-description').textContent, /private/);
+  assert.doesNotMatch(element('sign-in-description').textContent, /fictional/);
+});
+
+test('Apps Script rollback starts immediately and failed practice setup stays hidden', async () => {
   for (const practice of [false, true]) {
-    const { context } = await client(
+    const { context, ApplicationInterface } = await client(
       () => {
         throw new Error('No network expected');
       },
@@ -342,6 +393,9 @@ test('legacy session starts immediately and failed practice setup keeps screens 
     const { element, classes } = page(context);
     if (practice) {
       context.SPORTS_DAY_RUNTIME = undefined;
+    } else {
+      context.SPORTS_DAY_RUNTIME = { provider: 'apps-script' };
+      ApplicationInterface.initialise();
     }
     virtualMachine.runInContext(
       await readFile(new URL('js/session.js', web), 'utf8'),

@@ -5,9 +5,9 @@ Project: Sports Day Manager
 Production version: v1.0.0
 
 Development status: Supabase schema, transactional API, organiser sign-in,
-hosted fictional validation, repeatable data-migration tooling and a restricted
-hosted production-data rehearsal complete. Cutover/rollback rehearsal remains
-pending.
+hosted fictional validation, repeatable data-migration tooling, a restricted
+hosted production-data rehearsal and least-privilege API role complete. Final
+CORS and rollback gates remain pending.
 
 ## Purpose
 
@@ -168,6 +168,15 @@ with the reconciled production-data copy. The transactional hosted import took
 confirmed authenticated teams/events loaded. Anonymous reads exposed zero
 application rows and an unauthenticated Edge request returned HTTP 401.
 
+On 2026-10-02, the dedicated `sports_day_api` role passed local, disposable and
+hosted boundary checks. The Edge Function loaded the restricted-data leaderboard
+through both that role and a timed managed-connection fallback, then returned to
+the dedicated role without data changes. The frontend rollback rehearsal found
+that the live Apps Script `getLeaderboard` action currently ends on Google's
+page-not-found response after 28–40 seconds, while `getTeams` still succeeds.
+The branch prepares the public runtime for Supabase; `main` remains on Apps
+Script. See `docs/migration/PRODUCTION_READINESS_REHEARSAL_2026-10-02.md`.
+
 During initial staging setup, a CLI command unexpectedly printed a legacy
 service-role key. It was never written to the repository. The code was moved to
 publishable keys, legacy hosted API keys were disabled, the legacy HS256 signing
@@ -205,7 +214,7 @@ configuration and must remain untracked.
 Next actions:
 
 1. resolve pull-request findings;
-2. complete least-privilege production database security;
-3. rehearse and time rollback before any explicit production approval;
+2. approve/apply the exact GitHub Pages CORS origin;
+3. resolve or accept the Apps Script leaderboard rollback failure;
 4. agree the maintenance window and final private backup locations;
 5. retain Apps Script and Sheets through the agreed rollback period.

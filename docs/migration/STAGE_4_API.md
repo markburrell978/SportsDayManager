@@ -85,15 +85,19 @@ anonymous bypass exists.
 The hosted function uses Supabase's publishable-key configuration for Auth
 verification. The local stack may fall back to its locally supplied legacy
 anonymous key. These are browser/Auth routing keys, not privileged database
-credentials. The server-only `SUPABASE_DB_URL` never enters `web/`.
+credentials. Hosted requests use the encrypted `SPORTS_DAY_DATABASE_URL` for
+the dedicated application role; the managed `SUPABASE_DB_URL` remains a local
+and operational fallback. Neither database address enters `web/`.
 
 The gateway's JWT check is disabled for this function because the handler
 performs user verification itself, including organiser authorization. Direct
 browser table access remains blocked by the RLS defaults.
 
-Hosted staging has an allow-listed organiser and loopback-only website origins.
-Legacy hosted API keys are disabled and the legacy signing key is revoked. A
-least-privilege production database role/policy design remains a release gate.
+Hosted staging has an allow-listed organiser. Legacy hosted API keys are
+disabled and the legacy signing key is revoked. The least-privilege
+`sports_day_api` role and its explicit RLS policies passed local and hosted
+boundary checks on 2026-10-02. The exact production website origin remains a
+release gate.
 
 ## Run locally
 
@@ -159,9 +163,6 @@ Verified checks include:
 
 ## Remaining release gates
 
-- Complete every event workflow and a full simulated Sports Day on staging.
-- Build private, repeatable production backup, export and import tooling.
-- Compare a restricted copied dataset with Apps Script results and history.
-- Measure production-shaped latency, memory and lock contention.
-- Complete least-privilege production security design.
-- Complete an owner-approved cutover and rollback rehearsal.
+- Apply and verify the exact production website CORS origin.
+- Resolve or explicitly accept the Apps Script leaderboard rollback failure.
+- Complete the owner-approved production deployment and post-deploy checks.

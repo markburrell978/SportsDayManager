@@ -60,7 +60,7 @@
 - [x] Replace legacy hosted API-key use with a publishable key
 - [x] Disable staging legacy API keys and revoke the legacy signing key
 - [x] Verify anonymous API access fails and no privileged secret reaches the frontend
-- [ ] Implement and test the least-privilege production database role/policy design
+- [x] Implement and test the least-privilege production database role/policy design
 - [ ] Configure production accounts, secrets and website origins during an approved rehearsal
 
 ## v1.5.0 — Staging and rehearsal

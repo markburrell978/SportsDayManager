@@ -117,7 +117,7 @@ Stage 2 enables RLS on every application table and creates no direct browser pol
 - privileged credentials stored only in Supabase project secrets;
 - no anonymous writes and no service-role key in `web/`.
 
-The local API now verifies Supabase Auth users, an organiser UUID allow-list and explicit CORS origins. Local frontend login is implemented; online organiser setup and least-privilege production database policies remain future security work; direct browser table access stays blocked.
+The API verifies Supabase Auth users, an organiser UUID allow-list and explicit CORS origins. The hosted Edge Function uses the dedicated `sports_day_api` database role with application-only grants and explicit RLS policies. Direct browser table access stays blocked; the exact production website CORS origin remains a release gate.
 
 ## Environments and deployment
 

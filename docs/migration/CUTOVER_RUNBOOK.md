@@ -1,6 +1,6 @@
 # Production Cutover Runbook
 
-Status: future Stage 9 procedure; not authorized or executed
+Status: staging rehearsal executed 2026-10-02; production cutover not executed
 
 Do not use this runbook until Stages 3–8 pass, a full rehearsal is repeatable, the v1.0.0 private inventory/backups are complete and the owner approves a maintenance window.
 

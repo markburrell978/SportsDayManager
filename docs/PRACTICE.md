@@ -109,6 +109,5 @@ temporary databases, which were then removed.
 ## What remains
 
 The local practice milestone is complete. The remaining work is tracked in
-`docs/TODO.md` and focuses on the hosted full-event walkthrough, production data
-export/import, realistic performance, least-privilege security and rehearsed
-cutover/rollback.
+`docs/TODO.md` and focuses on the exact production website origin, the failing
+Apps Script leaderboard rollback path, deployment review and live cutover.

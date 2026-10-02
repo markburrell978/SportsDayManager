@@ -23,10 +23,10 @@ only for the disposable local database.
 
 ## Hosted Supabase staging
 
-The isolated hosted staging project was created and validated on 2026-09-23.
-It contains only fictional seed data. All five migrations and the
-`sports-day-api` Edge Function are deployed, and an allow-listed organiser can
-sign in through the local staging launcher.
+The isolated hosted staging project was created on 2026-09-23 and now
+contains the restricted production-data rehearsal copy. All six migrations and
+the `sports-day-api` Edge Function are deployed, and an allow-listed organiser
+can sign in through the local staging launcher.
 
 See `docs/STAGING_REPORT.md` for the project reference, validation evidence,
 credential-remediation record, restart command and remaining work.
@@ -64,12 +64,18 @@ Auth verification. The local stack retains its legacy anonymous-key fallback
 because current local Supabase output still supplies that key. Neither value is
 a privileged database credential.
 
+The hosted Edge Function uses the dedicated `sports_day_api` PostgreSQL login
+through the encrypted `SPORTS_DAY_DATABASE_URL` secret. The role has CRUD access
+only to the 12 application tables and their sequences, is constrained by
+explicit RLS policies, and cannot read Auth data or perform database
+administration. `SUPABASE_DB_URL` remains an operational fallback.
+
 ## Future production Supabase
 
-Production remains `apps-script` until data migration, reconciliation,
-realistic performance, least-privilege security, full rehearsal and rollback
-gates pass. The future static Pages configuration may contain a public project
-address and publishable key only.
+Production remains `apps-script` until the exact website origin and rollback
+gates pass and the prepared branch is merged. The branch's static Pages
+configuration contains only the public Supabase project address and publishable
+key; the currently deployed `main` branch still selects Apps Script.
 
 Use `docs/migration/CUTOVER_RUNBOOK.md` only after those gates pass. Use
 `docs/migration/ROLLBACK.md` during the defined rollback window. Preserve the

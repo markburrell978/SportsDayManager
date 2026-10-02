@@ -1,6 +1,6 @@
 # Supabase staging report
 
-Report date: 2026-09-23; updated 2026-09-25
+Report date: 2026-09-23; updated 2026-10-02
 
 ## Plain-English outcome
 
@@ -19,7 +19,7 @@ The tested staging project is:
 ## What was set up
 
 1. The repository was linked to the isolated Supabase staging project.
-2. All five ordered database migrations were applied.
+2. All six ordered database migrations were applied.
 3. Fictional seed data covering all five event formats was used for the initial
    checks, then replaced with the restricted production copy.
 4. An organiser account was created in Supabase Authentication and its user ID
@@ -59,6 +59,28 @@ remains accessible only through the allow-listed organiser flow.
 
 Staging now contains restricted participant data. Keep its credentials and
 private backups controlled, and do not use it for public demonstrations.
+
+## Least-privilege API role and rollback rehearsal — 2026-10-02
+
+Migration `202609250001_least_privilege_api_role.sql` created a dedicated
+`sports_day_api` login with CRUD access only to the 12 application tables and
+identity sequences. Explicit RLS policies permit that server-side role while
+anonymous and normal authenticated browser roles remain blocked. Hosted tests
+proved that the role cannot read `auth.users`, create tables or create roles.
+
+The Edge Function now prefers an encrypted dedicated-role connection and keeps
+Supabase's managed connection only as an operational fallback. The existing
+organiser loaded the restricted-data leaderboard through the dedicated role.
+Removing the dedicated secret switched to the fallback in about 35 seconds and
+the application loaded correctly; restoring it took about 5 seconds plus a
+17-second function restart/read. No application row changed.
+
+The frontend provider rollback uncovered a separate live issue: both a local
+Apps Script configuration and the current GitHub Pages site receive Google's
+page-not-found response from `getLeaderboard` after roughly 28–40 seconds.
+`getTeams` still succeeds. The final rollback gate stays open until this is
+resolved or explicitly accepted. See
+`docs/migration/PRODUCTION_READINESS_REHEARSAL_2026-10-02.md`.
 
 ## Validation performed
 
@@ -147,7 +169,7 @@ Local review checks also passed after the staging changes:
 - ESLint and descriptive-name rules;
 - Python naming, line-length and docstring checks;
 - generated-service drift checks;
-- 15 frontend tests, including the hosted-staging configuration boundary;
+- 21 frontend/configuration tests, including production and rollback provider boundaries;
 - Deno type checking for the Edge Function;
 - `git diff --check`;
 - a repository scan confirming that the exposed legacy-key fingerprint was
@@ -214,13 +236,13 @@ Worker metadata existing only on an unmerged Cloudflare setup branch. The
 dashboard version command now includes `--assets ./web/`, and `wrangler.jsonc`
 records the Worker metadata in the repository.
 
-1. Resolve any reviewer findings before the pull request is made ready.
-2. Complete the least-privilege production database design.
-3. Rehearse and time a clean cutover and rollback.
+1. Apply and verify the exact GitHub Pages API origin after explicit
+   security-boundary approval.
+2. Resolve or formally accept the failing Apps Script leaderboard rollback.
+3. Resolve reviewer findings and make the pull request ready.
 4. Agree the maintenance window and final private backup locations.
-5. Change the public website only after every
-   acceptance gate passes and the owner explicitly approves production
-   cutover.
+5. Merge and verify the prepared Supabase production configuration only after
+   every remaining acceptance gate passes.
 
 The live Apps Script and Google Sheets system stays available throughout this
 work and remains the rollback path.

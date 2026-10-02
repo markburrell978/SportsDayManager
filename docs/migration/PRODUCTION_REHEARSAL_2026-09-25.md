@@ -93,10 +93,9 @@ the temporary converter used during this rehearsal.
 
 ## Remaining release gates
 
-- Install and configure the least-privilege production database role and
-  Supabase environment.
-- Time a complete cutover and rollback rehearsal; the hosted import itself took
-  1.109 seconds, but the rollback path has not yet been exercised.
+- Apply and verify the exact GitHub Pages CORS origin after approval.
+- Resolve or formally accept the Apps Script leaderboard rollback failure found
+  during the 2026-10-02 rehearsal.
 - Agree the maintenance window and final backup locations before production.
 - Keep Apps Script and the original Sheet available through at least one
   successful live Supabase event.

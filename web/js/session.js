@@ -46,9 +46,13 @@ window.Session = {
         ApplicationInterface.environment === 'staging' ? 'Staging' : 'Practice';
       document.getElementById('test-environment-name').textContent =
         environmentName;
+      const environmentDescription =
+        ApplicationInterface.environment === 'staging'
+          ? 'Data in this environment is private.'
+          : 'All teams and results here are fictional.';
       document.getElementById('sign-in-description').textContent =
         `Use your ${environmentName.toLowerCase()} organiser account. ` +
-        'All teams and results here are fictional.';
+        environmentDescription;
     }
     Authentication.onEnded((text) => {
       // A reload clears cached data, open modals and pending screen state.

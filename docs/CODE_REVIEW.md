@@ -61,7 +61,7 @@ or service-role credentials remain outside `web/`.
 The following checks passed after the review:
 
 - `npm run check`: formatting, ESLint, descriptive binding names, named-function
-  comments, Python names/docstrings, generated-service drift and 15 frontend/UI
+  comments, Python names/docstrings, generated-service drift and 21 frontend/configuration
   tests;
 - Deno type checking for the Edge Function entry point;
 - clean migrations, fictional seed, schema smoke test and browser-role access
@@ -91,9 +91,9 @@ The local code and initial hosted staging deployment are ready for a normal
 pull-request review. These product and deployment gates remain deliberately
 open:
 
-- complete least-privilege production database access and owner-approved
-  cutover;
-- time and verify the rollback portion of the final cutover rehearsal.
+- apply and verify the exact production website CORS origin;
+- resolve or accept the failing Apps Script leaderboard rollback before the
+  owner-approved cutover.
 
 ## Non-blocking technical debt
 
@@ -110,8 +110,8 @@ application. Staging measurements should decide whether it needs scoped reads
 or finer locking before production; speculative optimization now would make the
 compatibility port harder to verify.
 
-No Git commit, remote deployment, production endpoint change or production-data
-operation was performed during this review.
+The original 2026-09-23 review performed no production deployment or endpoint
+change. Later rehearsals are recorded in the linked staging and migration reports.
 
 ## File guide
 
@@ -143,8 +143,8 @@ transition, practice frontend, confirmation warnings and this review.
 | `web/index.html` | Defines the accessible single-page screens, organiser sign-in, practice marker and confirmation-notice locations. |
 | `web/css/main.css` | Styles the complete application, responsive layouts, sign-in states and prominent pending-confirmation controls. |
 | `web/css/styles.css` | Retains an older minimal stylesheet referenced by historical documentation; it is not loaded by the current page. |
-| `web/js/config.js` | Keeps the published production endpoint on Apps Script. |
-| `web/js/runtime-config.js` | Provides the safe published provider default; local practice replaces its response with public Supabase settings. |
+| `web/js/config.js` | Retains the Apps Script endpoint used by the documented one-file rollback. |
+| `web/js/runtime-config.js` | Prepares the published provider for production Supabase using public-only settings; local launchers replace its response. |
 | `web/js/auth.js` | Manages tab-scoped Supabase tokens, refresh sharing, cancellation races and sign-out. |
 | `web/js/api.js` | Centralizes provider selection and every frontend API request; exposes no privileged credentials. |
 | `web/js/session.js` | Gates the interface behind verified organiser access and coordinates sign-in/sign-out UI. |
@@ -183,13 +183,15 @@ transition, practice frontend, confirmation warnings and this review.
 | `supabase/migrations/202608020003_enable_rls.sql` | Enables RLS with no direct browser policies. |
 | `supabase/migrations/202609220001_api_transactions.sql` | Adds explicit source order and deferrable race/distance placing uniqueness for transactional updates. |
 | `supabase/migrations/202609230001_confirmation_revisions.sql` | Tracks meaningful saved engine changes and the revision acknowledged by confirmation. |
+| `supabase/migrations/202609250001_least_privilege_api_role.sql` | Creates the application-only database login, grants and explicit RLS policies. |
 | `supabase/seed.sql` | Loads fictional local teams, competitors, profiles, runs, engines and official results. |
 
 ### Supabase Edge Function
 
 | File | Purpose |
 | --- | --- |
-| `supabase/functions/sports-day-api/index.ts` | Starts the Edge Function, verifies Supabase users and enforces organiser/origin allow-lists. |
+| `supabase/functions/sports-day-api/index.ts` | Starts the Edge Function, uses the selected database address, verifies users and enforces organiser/origin allow-lists. |
+| `supabase/functions/sports-day-api/configuration.js` | Selects the dedicated hosted database address, managed fallback and publishable-key configuration. |
 | `supabase/functions/sports-day-api/http.js` | Handles CORS, methods, body formats, authentication outcomes and safe response envelopes. |
 | `supabase/functions/sports-day-api/application.js` | Runs one serialized database transaction, dispatches actions and acknowledges confirmations atomically. |
 | `supabase/functions/sports-day-api/repository.js` | Converts SQL rows to compatibility records, journals service writes and flushes bound SQL statements. |
@@ -226,7 +228,8 @@ transition, practice frontend, confirmation warnings and this review.
 | `supabase/scripts/migration_import.py` | Builds tamper-evident transactional SQL bundles and executes them without exposing database passwords in arguments. |
 | `supabase/scripts/migration_cli.py` | Provides operator commands for export, verification, backup, preparation and guarded loading. |
 | `supabase/scripts/migration_requirements.txt` | Pins the optional reader used for authenticated browser Excel downloads. |
-| `supabase/tests/frontend_test.mjs` | Tests provider routing, auth/session races, screen reads and reversible real-practice integration. |
+| `supabase/tests/frontend_test.mjs` | Tests production, rollback and test provider routing, auth/session races, screen reads and reversible real-practice integration. |
+| `supabase/tests/function_configuration_test.mjs` | Tests dedicated database configuration precedence, fallback and fail-closed behavior. |
 | `supabase/tests/confirmation_ui_test.mjs` | Tests pending-confirmation UI states, escaping and safe identifier handlers. |
 | `supabase/tests/api_test.js` | Compares all 28 actions and persisted state with an independent Apps Script oracle; tests rollback/concurrency. |
 | `supabase/tests/confirmation_test.js` | Tests revision tracking, no-op saves, confirmation and reset across all five engines. |
@@ -234,6 +237,7 @@ transition, practice frontend, confirmation warnings and this review.
 | `supabase/tests/edge_smoke.py` | Exercises the real local Edge/Auth boundary with temporary users and cleans up its records. |
 | `supabase/tests/schema_smoke.sql` | Checks seeded schema, relational invariants, RLS and expected fictional counts. |
 | `supabase/tests/local_acceptance.sql` | Checks reset transactions and denied direct access for browser roles, rolling back test writes. |
+| `supabase/tests/least_privilege_role.sql` | Proves the API role can use application data but cannot administer the database or read Auth users. |
 | `supabase/tests/migration_test_data.py` | Supplies one shared fictional Google Sheets workbook covering every event engine. |
 | `supabase/tests/migration_export_test.py` | Tests read-only Google access, immutable snapshots, tamper detection and backup restoration. |
 | `supabase/tests/migration_transform_test.py` | Tests types, ordering, documented legacy conversion, relationship errors and expected application results. |
@@ -262,6 +266,7 @@ transition, practice frontend, confirmation warnings and this review.
 | `docs/migration/STAGE_4_API.md` | Records API architecture, access boundary, tests and limitations. |
 | `docs/migration/DATA_MIGRATION.md` | Gives the exact private export, backup, review, transactional import and reconciliation workflow. |
 | `docs/migration/PRODUCTION_REHEARSAL_2026-09-25.md` | Records aggregate evidence and findings from the restricted production-data rehearsal without participant records. |
+| `docs/migration/PRODUCTION_READINESS_REHEARSAL_2026-10-02.md` | Records the dedicated role, timed connection fallback, prepared cutover and Apps Script rollback failure. |
 | `docs/migration/SHEET_TO_POSTGRES_MAPPING.md` | Maps every Sheet and legacy field to its PostgreSQL table/column. |
 | `docs/migration/API_COMPATIBILITY_MATRIX.md` | Tracks all API actions, read/write sets, transactions and parity status. |
 | `docs/migration/CUTOVER_RUNBOOK.md` | Defines staged import, reconciliation, switch and acceptance steps. |

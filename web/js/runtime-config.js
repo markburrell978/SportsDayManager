@@ -1,3 +1,8 @@
-// Published default. The local practice server supplies its own public-only config
-// at this same path; production is never selected by a query string or storage.
-window.SPORTS_DAY_RUNTIME = Object.freeze({ provider: 'apps-script' });
+// Published production configuration. This file may contain only public browser settings.
+// Restore the Apps Script provider object here to execute the documented rollback.
+window.SPORTS_DAY_RUNTIME = Object.freeze({
+  provider: 'supabase',
+  environment: 'production',
+  url: 'https://jnzyedbrkxxaqxgsaavc.supabase.co',
+  publishableKey: 'sb_publishable_CW4Mvs9OVxTuHnHzk9NvGA_B5ONJhI8',
+});

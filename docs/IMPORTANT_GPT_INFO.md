@@ -21,7 +21,17 @@ imported to explicitly cleared hosted staging on 2026-09-25 in 1.109 seconds;
 all table counts matched, authenticated application reads passed and anonymous
 access exposed no rows.
 
-The published website still selects Apps Script. Use `docs/PRACTICE.md` for the
+A dedicated least-privilege `sports_day_api` database role was deployed and
+validated on 2026-10-02. Its encrypted Edge Function connection passed hosted
+application reads and denied Auth/schema/role administration. The managed
+connection fallback also passed. The frontend rollback rehearsal found that
+the live Apps Script `getLeaderboard` action currently ends on Google's
+page-not-found response after a long delay, although `getTeams` still works.
+See `docs/migration/PRODUCTION_READINESS_REHEARSAL_2026-10-02.md`.
+
+The branch prepares the published runtime for Supabase, but the live website
+still selects Apps Script until merge. The exact GitHub Pages CORS origin still
+requires explicit hosted security-boundary approval. Use `docs/PRACTICE.md` for the
 local Supabase website. Use `supabase/scripts/staging.py` for the loopback-only
 website connected to hosted staging. Never apply the fictional seed or a reset
 to production.

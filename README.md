@@ -6,7 +6,7 @@ A reusable, mobile-friendly web application for running an annual Sports Day.
 
 - **Production:** v1.0.0 — field-tested GitHub Pages + Google Apps Script + Google Sheets.
 - **Development:** Supabase staging — the schema, transactional API, organiser sign-in, fictional workflows and a restricted production-data rehearsal are validated.
-- Production still uses Apps Script and Google Sheets. Production security and a timed rollback rehearsal remain outstanding.
+- Production still uses Apps Script and Google Sheets. The least-privilege Supabase role is validated; final CORS, rollback and deployment gates remain outstanding.
 - The v1.0.0 Apps Script deployment remains the rollback backend.
 
 See the [hosted staging report](docs/STAGING_REPORT.md) for what was deployed,
@@ -16,7 +16,9 @@ The repeatable backup, Google Sheets export and transactional Supabase import
 workflow is documented in the
 [data migration guide](docs/migration/DATA_MIGRATION.md).
 The [restricted rehearsal report](docs/migration/PRODUCTION_REHEARSAL_2026-09-25.md)
-records aggregate evidence without participant data.
+records aggregate evidence without participant data. The
+[production-readiness rehearsal](docs/migration/PRODUCTION_READINESS_REHEARSAL_2026-10-02.md)
+records the least-privilege role, timed fallback and remaining rollback issue.
 
 ## Current features
 
