@@ -83,9 +83,12 @@ With explicit owner approval, the exact origin
 returned HTTP 403. Supabase authentication and the organiser UUID allow-list
 continue to protect every application request.
 
-## Remaining gates
+## Cutover result
 
-- Complete pull-request review and merge the production runtime configuration.
-- Verify the deployed Pages sign-in, reads and one controlled reversible write.
-- Retain Google Sheets and Apps Script through at least one successful live
-  Supabase event.
+Pull request #2 merged as `8dbb307`. The GitHub Pages deployment and quality
+workflow passed. The live site passed organiser sign-in, leaderboard, event and
+competitor reads. A competitor rename succeeded and was immediately restored;
+the original value and unchanged leaderboard were verified.
+
+Retain Google Sheets, Apps Script and the private backups through at least one
+successful live Supabase event.

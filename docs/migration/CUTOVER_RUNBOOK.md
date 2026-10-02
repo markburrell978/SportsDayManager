@@ -1,7 +1,6 @@
 # Production Cutover Runbook
 
-Status: staging rehearsal executed and production cutover approved 2026-10-02;
-deployment in progress
+Status: production cutover completed and verified 2026-10-02
 
 Do not use this runbook until Stages 3–8 pass, a full rehearsal is repeatable, the v1.0.0 private inventory/backups are complete and the owner approves a maintenance window.
 
@@ -43,6 +42,22 @@ Freeze writes on copied test Sheets, export every tab with metadata/checksums, t
 ## Success gate
 
 Do not declare cutover successful unless authentication, data reconciliation, foreign keys, current runs, all write workflows, leaderboard, Event History and secret scanning pass. GitHub Pages must reference only the intended production Supabase project and no privileged credential may be present in its artifact.
+
+## Production verification
+
+- Pull request #2 merged into `main` as `8dbb307`.
+- GitHub Pages deployment and code-quality workflows passed.
+- The live page and application assets returned HTTP 200.
+- The approved-origin preflight returned HTTP 204; an unauthenticated API read
+  returned HTTP 401.
+- Organiser sign-in succeeded and loaded four leaderboard rows, eight events
+  and 23 competitors from Supabase.
+- A competitor rename succeeded through the live API, was immediately restored,
+  and the original value was verified. Confirmed leaderboard scores were
+  unchanged.
+- Initial authenticated reads and writes took several seconds. This is an
+  operational performance observation rather than a cutover failure and should
+  be monitored before the next event.
 
 ## Rollback
 

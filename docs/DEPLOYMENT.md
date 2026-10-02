@@ -2,15 +2,16 @@
 
 ## Current production deployment
 
-Production v1.0.0 consists of:
+Production consists of:
 
 - static `web/` files deployed by `.github/workflows/pages.yml` to GitHub Pages;
-- the Apps Script `/exec` address selected by `web/js/config.js`;
-- the Google Sheet selected privately by Apps Script configuration.
+- the authenticated `sports-day-api` Supabase Edge Function;
+- Supabase PostgreSQL protected by the dedicated least-privilege role and RLS.
 
 The Pages workflow runs on pushes to `main` and uploads only `web/`. The
-Supabase project, migration documents and private settings do not enter the
-Pages artifact. The live endpoint has not changed.
+Supabase migrations, documents and private settings do not enter the Pages
+artifact. Only the public project URL and publishable key are deployed to the
+browser.
 
 Do not run `clasp push`, replace an Apps Script deployment, edit the production
 Google Sheet or change `web/js/config.js` during staging work.
@@ -70,14 +71,15 @@ only to the 12 application tables and their sequences, is constrained by
 explicit RLS policies, and cannot read Auth data or perform database
 administration. `SUPABASE_DB_URL` remains an operational fallback.
 
-## Future production Supabase
+## Production Supabase
 
 The owner approved the Supabase production cutover and accepted the known Apps
 Script leaderboard rollback limitation on 2026-10-02. The exact GitHub Pages
-origin was added to the Supabase allow-list and verified the same day. The branch's static Pages
-configuration contains only the public Supabase project address and publishable
-key; the currently deployed `main` branch still selects Apps Script.
+origin was added to the Supabase allow-list and verified the same day. Pull
+request #2 merged as commit `8dbb307`; the Pages and code-quality workflows
+passed. The live site then passed organiser sign-in, leaderboard, event and
+competitor reads, plus a competitor rename that was immediately restored.
 
-Use `docs/migration/CUTOVER_RUNBOOK.md` only after those gates pass. Use
-`docs/migration/ROLLBACK.md` during the defined rollback window. Preserve the
-Apps Script deployment and Sheet backup until explicit retirement approval.
+Use `docs/migration/ROLLBACK.md` during the defined rollback window. Preserve
+the Apps Script deployment, Sheet and private backups until explicit retirement
+approval.

@@ -2,14 +2,15 @@
 
 Project: Sports Day Manager
 
-Production version: v1.0.0
+Production version: Supabase cutover, merge commit `8dbb307`, 2026-10-02
 
 Development status: Supabase schema, transactional API, organiser sign-in,
 hosted fictional validation, repeatable data-migration tooling, a restricted
 hosted production-data rehearsal, least-privilege API role and exact GitHub
 Pages CORS configuration complete. On 2026-10-02, the owner accepted the known
 Apps Script leaderboard rollback limitation and explicitly approved the
-Supabase cutover. Deployment and post-deployment verification remain pending.
+Supabase cutover. The live deployment, authenticated reads and a reversible
+write were then verified successfully.
 
 ## Purpose
 
@@ -20,17 +21,17 @@ v1.0.0 behavior take priority over redesign.
 
 ## Architecture status
 
-Production remains:
+Production is:
 
 ```text
 web/ on GitHub Pages
         ↓
-apps-script/ API and services
+authenticated Supabase Edge Function
         ↓
-Google Sheets
+Supabase PostgreSQL with RLS
 ```
 
-The staging target is operational:
+The local practice path remains operational:
 
 ```text
 web/ served by a loopback-only staging launcher
@@ -40,16 +41,13 @@ authenticated hosted Supabase Edge Function
 hosted Supabase PostgreSQL
 ```
 
-`web/js/config.js` and the published runtime configuration still select the
-production Apps Script address. No production endpoint or production data was
-changed.
+The published runtime configuration selects Supabase. `web/js/config.js`
+retains the Apps Script provider configuration for the documented rollback.
 
-The isolated staging project reference is `jnzyedbrkxxaqxgsaavc`. All five
-migrations and the `sports-day-api` function are deployed. Staging contains a
-restricted production-data copy imported on 2026-09-25, so it must be treated
-as private. An allow-listed organiser can sign in from the local staging
-launcher. See `docs/STAGING_REPORT.md` for validation, incident response and
-next steps.
+The production project reference is `jnzyedbrkxxaqxgsaavc`. All migrations and
+the `sports-day-api` function are deployed. It contains the migrated restricted
+production data and must be treated as private. Only the allow-listed organiser
+can use the application API.
 
 ## Source layout
 
@@ -202,8 +200,8 @@ of `docs/STAGING_REPORT.md`.
 
 ## Current working state and next actions
 
-The SQL transition is committed on `v1.1_ChangeToSQL`. The branch is pushed and
-draft GitHub pull request #2 is open. GitHub's `quality.yml` workflow passes.
+The SQL transition was merged by pull request #2 as commit `8dbb307`.
+GitHub's Pages and `quality.yml` workflows passed.
 The Cloudflare Workers preview failure was traced to its dashboard version
 command omitting the static asset directory and to an unmerged Cloudflare
 autoconfiguration branch. The command is now
@@ -213,8 +211,5 @@ The resulting Cloudflare branch preview and GitHub `quality.yml` check both
 pass. The ignored `.env.staging.json` contains public staging browser
 configuration and must remain untracked.
 
-Next actions:
-
-1. merge the approved pull request and verify the public Pages deployment;
-2. verify authenticated reads and one controlled reversible write;
-3. retain Apps Script, Sheets and private backups through the rollback period.
+Next action: retain Apps Script, Sheets and private backups through the rollback
+period and at least one successful live Supabase event.

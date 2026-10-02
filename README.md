@@ -4,10 +4,9 @@ A reusable, mobile-friendly web application for running an annual Sports Day.
 
 ## Release and migration status
 
-- **Production:** v1.0.0 — field-tested GitHub Pages + Google Apps Script + Google Sheets.
-- **Development:** Supabase staging — the schema, transactional API, organiser sign-in, fictional workflows and a restricted production-data rehearsal are validated.
-- Production cutover to Supabase was approved on 2026-10-02. The least-privilege role and exact GitHub Pages CORS origin are validated; deployment and post-deployment verification are in progress.
-- The v1.0.0 Apps Script deployment remains the rollback backend.
+- **Production:** GitHub Pages + Supabase, deployed and verified on 2026-10-02.
+- The schema, transactional API, organiser sign-in, migrated data, least-privilege role and exact GitHub Pages CORS origin are validated.
+- The preserved v1.0.0 Apps Script deployment, Google Sheet and private backups remain available during the rollback period; its known leaderboard failure was accepted for cutover.
 
 See the [hosted staging report](docs/STAGING_REPORT.md) for what was deployed,
 what was tested and the exact next steps.
@@ -18,7 +17,8 @@ workflow is documented in the
 The [restricted rehearsal report](docs/migration/PRODUCTION_REHEARSAL_2026-09-25.md)
 records aggregate evidence without participant data. The
 [production-readiness rehearsal](docs/migration/PRODUCTION_READINESS_REHEARSAL_2026-10-02.md)
-records the least-privilege role, timed fallback and remaining rollback issue.
+records the least-privilege role, timed fallback, accepted rollback limitation
+and successful production cutover.
 
 ## Current features
 
@@ -32,20 +32,20 @@ records the least-privilege role, timed fallback and remaining rollback issue.
 
 ## Architecture
 
-Production remains:
+Production is:
 
 ```text
 GitHub Pages frontend
         ↓
-Google Apps Script API and services
+Authenticated Supabase Edge Function API
         ↓
-Google Sheets
+Supabase PostgreSQL with RLS
 ```
 
-The staging and future production target is:
+The retained local practice path is:
 
 ```text
-Frontend with Supabase organiser sign-in
+Loopback-only frontend with Supabase organiser sign-in
         ↓
 authenticated Supabase Edge Function API
         ↓
