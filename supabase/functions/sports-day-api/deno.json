@@ -1,0 +1,8 @@
+{
+  "imports": { "postgres": "npm:postgres@3.4.7" },
+  "compilerOptions": { "checkJs": false },
+  "fmt": { "indentWidth": 4 },
+  "tasks": {
+    "test": "deno test --allow-env --allow-net --allow-read ../../tests/api_test.js ../../tests/http_test.js ../../tests/confirmation_test.js"
+  }
+}
