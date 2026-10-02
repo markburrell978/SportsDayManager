@@ -6,7 +6,7 @@ A reusable, mobile-friendly web application for running an annual Sports Day.
 
 - **Production:** v1.0.0 — field-tested GitHub Pages + Google Apps Script + Google Sheets.
 - **Development:** Supabase staging — the schema, transactional API, organiser sign-in, fictional workflows and a restricted production-data rehearsal are validated.
-- Production still uses Apps Script and Google Sheets. The least-privilege Supabase role and exact GitHub Pages CORS origin are validated; rollback and deployment gates remain outstanding.
+- Production cutover to Supabase was approved on 2026-10-02. The least-privilege role and exact GitHub Pages CORS origin are validated; deployment and post-deployment verification are in progress.
 - The v1.0.0 Apps Script deployment remains the rollback backend.
 
 See the [hosted staging report](docs/STAGING_REPORT.md) for what was deployed,

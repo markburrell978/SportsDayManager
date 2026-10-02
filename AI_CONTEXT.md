@@ -7,8 +7,9 @@ Production version: v1.0.0
 Development status: Supabase schema, transactional API, organiser sign-in,
 hosted fictional validation, repeatable data-migration tooling, a restricted
 hosted production-data rehearsal, least-privilege API role and exact GitHub
-Pages CORS configuration complete. Final rollback and deployment gates remain
-pending.
+Pages CORS configuration complete. On 2026-10-02, the owner accepted the known
+Apps Script leaderboard rollback limitation and explicitly approved the
+Supabase cutover. Deployment and post-deployment verification remain pending.
 
 ## Purpose
 
@@ -214,7 +215,6 @@ configuration and must remain untracked.
 
 Next actions:
 
-1. resolve pull-request findings;
-2. resolve or accept the Apps Script leaderboard rollback failure;
-3. agree the maintenance window and final private backup locations;
-4. retain Apps Script and Sheets through the agreed rollback period.
+1. merge the approved pull request and verify the public Pages deployment;
+2. verify authenticated reads and one controlled reversible write;
+3. retain Apps Script, Sheets and private backups through the rollback period.

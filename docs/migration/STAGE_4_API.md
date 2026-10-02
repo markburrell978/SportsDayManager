@@ -164,5 +164,4 @@ Verified checks include:
 
 ## Remaining release gates
 
-- Resolve or explicitly accept the Apps Script leaderboard rollback failure.
-- Complete the owner-approved production deployment and post-deploy checks.
+- Complete the owner-approved production deployment and post-deployment checks.

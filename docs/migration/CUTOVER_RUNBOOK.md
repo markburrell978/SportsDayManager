@@ -1,8 +1,14 @@
 # Production Cutover Runbook
 
-Status: staging rehearsal executed 2026-10-02; production cutover not executed
+Status: staging rehearsal executed and production cutover approved 2026-10-02;
+deployment in progress
 
 Do not use this runbook until Stages 3–8 pass, a full rehearsal is repeatable, the v1.0.0 private inventory/backups are complete and the owner approves a maintenance window.
+
+The owner explicitly accepted the known failure of the legacy Apps Script
+leaderboard as a rollback limitation, citing the available data backups and
+time before the next event. The legacy source, Sheet and provider configuration
+remain preserved, but that deployment is not a verified working rollback.
 
 ## Pre-cutover gate
 
@@ -41,4 +47,3 @@ Do not declare cutover successful unless authentication, data reconciliation, fo
 ## Rollback
 
 Follow `ROLLBACK.md`. Rollback is not automatically lossless after Supabase-only writes; stop writes first and explicitly decide how post-cutover data will be preserved or transformed.
-

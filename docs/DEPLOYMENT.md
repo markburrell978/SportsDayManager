@@ -72,9 +72,9 @@ administration. `SUPABASE_DB_URL` remains an operational fallback.
 
 ## Future production Supabase
 
-Production remains `apps-script` until the rollback and deployment gates pass
-and the prepared branch is merged. The exact GitHub Pages origin was added to
-the Supabase allow-list and verified on 2026-10-02. The branch's static Pages
+The owner approved the Supabase production cutover and accepted the known Apps
+Script leaderboard rollback limitation on 2026-10-02. The exact GitHub Pages
+origin was added to the Supabase allow-list and verified the same day. The branch's static Pages
 configuration contains only the public Supabase project address and publishable
 key; the currently deployed `main` branch still selects Apps Script.
 

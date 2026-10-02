@@ -65,7 +65,8 @@ the rehearsal.
 This means Apps Script source and Sheets remain preserved, but the current
 deployment cannot be treated as a verified working rollback until its
 leaderboard action or deployment is repaired. The final cutover/rollback gate
-therefore remains open.
+was explicitly accepted by the owner on 2026-10-02 because private backups are
+available and there is time before the next event.
 
 ## Prepared production configuration
 
@@ -84,7 +85,6 @@ continue to protect every application request.
 
 ## Remaining gates
 
-- Resolve or formally accept the broken Apps Script leaderboard rollback path.
 - Complete pull-request review and merge the production runtime configuration.
 - Verify the deployed Pages sign-in, reads and one controlled reversible write.
 - Retain Google Sheets and Apps Script through at least one successful live
