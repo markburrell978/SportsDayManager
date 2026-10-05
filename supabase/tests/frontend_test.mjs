@@ -13,6 +13,23 @@ const sessionValue = (extra = {}) => ({
 });
 const response = (data, status = 200) =>
   new Response(JSON.stringify(data), { status });
+
+test('published assets use a release version so browsers do not mix frontend versions', async () => {
+  const documentMarkup = await readFile(new URL('index.html', web), 'utf8');
+  for (const assetPath of [
+    'css/main.css',
+    'js/config.js',
+    'js/runtime-config.js',
+    'js/auth.js',
+    'js/api.js',
+    'js/session.js',
+    'js/ui.js',
+    'js/app.js',
+  ]) {
+    assert.match(documentMarkup, new RegExp(`${assetPath}\\?v=1\\.2\\.0`));
+  }
+});
+
 async function client(fetcher, { practice = true, storage = new Map() } = {}) {
   const context = virtualMachine.createContext({
     fetch: fetcher,
