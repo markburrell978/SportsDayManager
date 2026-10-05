@@ -3,11 +3,19 @@ import { APPLICATION_ACTIONS } from './constants.js';
 import { dispatch } from './dispatch.js';
 import { createServices } from './services.js';
 import { loadRepository } from './repository.js';
+import {
+  createSportsDay,
+  getSportsDay,
+  getSportsDays,
+  SportsDayValidationError,
+} from './sports_days.js';
 
 export class ValidationError extends Error {}
 export const actions = new Set([
   ...Object.values(APPLICATION_ACTIONS),
   'getConfirmationStatus',
+  'getSportsDays',
+  'createSportsDay',
 ]);
 export const getActions = new Set([
   'getTeams',
@@ -16,6 +24,17 @@ export const getActions = new Set([
   'getPointProfiles',
   'getLeaderboard',
   'getConfirmationStatus',
+  'getSportsDays',
+]);
+const readOnlyActions = new Set([
+  ...getActions,
+  'getPointProfile',
+  'getMatchesForEvent',
+  'getRaceResultsForEvent',
+  'getDoubleTeamMatchForEvent',
+  'getCurrentEventRun',
+  'getDistanceResultsForEventRun',
+  'getEventHistory',
 ]);
 
 /** Serialize the request, execute services and persist all changes atomically. */
@@ -25,19 +44,50 @@ export async function executeInTransaction(transaction, request, options = {}) {
   }
   // One organiser-sized unit of work per request. Lock before reading at READ COMMITTED
   // so queued requests see committed changes, including a concurrent reset/confirmation.
-  await transaction`select pg_advisory_xact_lock(1936745588, 1)`;
+  if (!readOnlyActions.has(request.action)) {
+    await transaction`select pg_advisory_xact_lock(1936745588, 1)`;
+  }
+  if (request.action === 'getSportsDays') {
+    return {
+      success: true,
+      message: '',
+      data: await getSportsDays(transaction),
+    };
+  }
+  if (request.action === 'createSportsDay') {
+    return {
+      success: true,
+      message: 'Sports Day created.',
+      data: await createSportsDay(transaction, request.payload, options.uuid),
+    };
+  }
+  const sportsDay = await getSportsDay(
+    transaction,
+    request.payload.sportsDayId || request.payload.SportsDayID,
+  );
+  if (!sportsDay) {
+    throw new ValidationError('The selected Sports Day does not exist.');
+  }
   if (request.action === 'getConfirmationStatus') {
     return {
       success: true,
       message: '',
-      data: await getConfirmationStatus(transaction),
+      data: await getConfirmationStatus(transaction, sportsDay.id),
     };
   }
-  const repository = await loadRepository(transaction);
+  const repository = await loadRepository(transaction, sportsDay.id);
   const { services, ServiceUtilities } = createServices(repository, options);
   const response = dispatch(request, services, ServiceUtilities);
   if (!response.success) {
     throw new ValidationError(response.message);
+  }
+  if (
+    !sportsDay.is_active &&
+    (repository.operations.length || request.action === 'confirmEventResults')
+  ) {
+    throw new ValidationError(
+      'Historical Sports Days are read-only. Select the active Sports Day to make changes.',
+    );
   }
   await repository.flush();
   if (request.action === 'confirmEventResults') {
@@ -59,7 +109,10 @@ export async function execute(databaseConnection, request, options = {}) {
 
 /** Expose actionable validation errors while hiding internal database details. */
 export function publicError(error) {
-  if (error instanceof ValidationError) {
+  if (
+    error instanceof ValidationError ||
+    error instanceof SportsDayValidationError
+  ) {
     return error.message;
   }
   if (error?.code === '23503') {

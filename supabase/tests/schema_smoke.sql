@@ -56,6 +56,7 @@ begin
     where namespace.nspname = 'public'
       and relation.relname in (
           'teams',
+          'sports_days',
           'competitors',
           'point_profiles',
           'events',
@@ -70,8 +71,8 @@ begin
       )
       and relation.relrowsecurity;
 
-    if rls_table_count <> 12 then
-        raise exception 'Expected RLS on 12 application tables; found %', rls_table_count;
+    if rls_table_count <> 13 then
+        raise exception 'Expected RLS on 13 application tables; found %', rls_table_count;
     end if;
 
     if not exists (
@@ -176,4 +177,3 @@ end;
 $$;
 
 select 'schema smoke tests passed' as result;
-

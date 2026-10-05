@@ -33,6 +33,7 @@ begin
       and table_schema = 'public'
       and table_name in (
           'teams',
+          'sports_days',
           'competitors',
           'point_profiles',
           'events',
@@ -47,8 +48,8 @@ begin
       )
       and privilege_type in ('SELECT', 'INSERT', 'UPDATE', 'DELETE');
 
-    if application_privilege_count <> 48 then
-        raise exception 'Expected 48 application table grants; found %',
+    if application_privilege_count <> 52 then
+        raise exception 'Expected 52 application table grants; found %',
             application_privilege_count;
     end if;
 
@@ -60,8 +61,8 @@ begin
       and 'sports_day_api' = any(roles)
       and cmd = 'ALL';
 
-    if application_policy_count <> 12 then
-        raise exception 'Expected 12 application RLS policies; found %',
+    if application_policy_count <> 13 then
+        raise exception 'Expected 13 application RLS policies; found %',
             application_policy_count;
     end if;
 end;
@@ -78,6 +79,11 @@ begin
     if team_count = 0 then
         raise exception 'The API role cannot read application data';
     end if;
+
+    insert into public.sports_days (id, name, is_active)
+    values ('TEST_SPORTS_DAY_ROLE', 'Test Sports Day Role', false);
+
+    delete from public.sports_days where id = 'TEST_SPORTS_DAY_ROLE';
 
     insert into public.teams (id, name, colour)
     values ('TEST_LEAST_PRIVILEGE', 'Test Role', '#000000');

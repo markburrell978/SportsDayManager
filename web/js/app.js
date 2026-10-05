@@ -14,6 +14,10 @@
 const ApplicationState = {
   currentPage: 'leaderboard',
 
+  sportsDays: [],
+
+  currentSportsDay: null,
+
   competitors: [],
 
   filteredCompetitors: [],
@@ -83,7 +87,113 @@ async function initialise() {
 
   registerCompetitorEvents();
 
-  await Session.start(() => showPage('leaderboard'));
+  registerSportsDayEvents();
+
+  await Session.start(async (sportsDays) => {
+    setSportsDays(
+      sportsDays || [{ ID: 'legacy', Name: 'SportsDay2026', Active: true }],
+    );
+    document.getElementById('btn-create-sports-day').hidden =
+      !ApplicationInterface.requiresSignIn;
+    await showPage('leaderboard');
+  });
+}
+
+/** Populate the annual Sports Day selector and select the active entry. */
+function setSportsDays(sportsDays, selectedIdentifier = null) {
+  ApplicationState.sportsDays = sportsDays;
+  ApplicationState.currentSportsDay =
+    sportsDays.find(
+      (sportsDay) =>
+        sportsDay.ID === selectedIdentifier ||
+        (!selectedIdentifier && sportsDay.Active),
+    ) || null;
+  ApplicationInterface.selectSportsDay(ApplicationState.currentSportsDay?.ID);
+  const selector = document.getElementById('sports-day-selector');
+  selector.innerHTML = EventView.renderSportsDayOptions(sportsDays);
+  selector.value = ApplicationState.currentSportsDay?.ID || '';
+  document.getElementById('historical-sports-day-banner').hidden =
+    ApplicationState.currentSportsDay?.Active !== false;
+  document.getElementById('btn-add-competitor').disabled =
+    ApplicationState.currentSportsDay?.Active === false;
+}
+
+/** Clear screen caches when switching annual Sports Days. */
+function clearSportsDayState() {
+  ApplicationState.competitors = [];
+  ApplicationState.filteredCompetitors = [];
+  ApplicationState.teams = [];
+  ApplicationState.leaderboard = [];
+  ApplicationState.confirmationStatus = null;
+  ApplicationState.events = [];
+  ApplicationState.currentEvent = null;
+  ApplicationState.currentEventRun = null;
+  ApplicationState.currentEventHistory = null;
+  ApplicationState.pointProfiles = [];
+  ApplicationState.pointProfilesByIdentifier = {};
+  document.getElementById('leaderboard').textContent = 'Loading leaderboard...';
+  document.getElementById('competitors').textContent = 'Loading competitors...';
+  document.getElementById('events').textContent = 'Loading events...';
+  document.getElementById('event-details').replaceChildren();
+  document.getElementById('point-profile-manager').textContent =
+    'Loading point profiles...';
+  document.getElementById('leaderboard-confirmation-notice').replaceChildren();
+  document.getElementById('events-confirmation-notice').replaceChildren();
+}
+
+/** Disable mutation controls while retaining historical navigation and filters. */
+function protectHistoricalSportsDay() {
+  if (ApplicationState.currentSportsDay?.Active !== false) {
+    return;
+  }
+  document
+    .querySelectorAll(
+      '#page-events button:not(.read-only-navigation), ' +
+        '#page-events input, #page-events select, ' +
+        '#competitors button, ' +
+        '#point-profile-manager button, #point-profile-manager input',
+    )
+    .forEach((control) => {
+      control.disabled = true;
+    });
+}
+
+/** Register annual Sports Day selection and creation controls. */
+function registerSportsDayEvents() {
+  document
+    .getElementById('sports-day-selector')
+    .addEventListener('change', async (event) => {
+      setSportsDays(ApplicationState.sportsDays, event.target.value);
+      clearSportsDayState();
+      await showPage(ApplicationState.currentPage);
+    });
+  document
+    .getElementById('btn-create-sports-day')
+    .addEventListener('click', createNewSportsDay);
+}
+
+/** Create a clean active Sports Day from the selected reusable setup. */
+async function createNewSportsDay() {
+  const input = document.getElementById('new-sports-day-name');
+  const button = document.getElementById('btn-create-sports-day');
+  const message = document.getElementById('sports-day-message');
+  button.disabled = true;
+  message.className = '';
+  message.textContent = '';
+  try {
+    const created = await ApplicationInterface.createSportsDay(input.value);
+    const sportsDays = await ApplicationInterface.getSportsDays();
+    setSportsDays(sportsDays, created.ID);
+    clearSportsDayState();
+    input.value = '';
+    message.textContent = `${created.Name} is ready with an empty competitor list.`;
+    await showPage('competitors');
+  } catch (error) {
+    message.className = 'error';
+    message.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
 }
 
 /**
@@ -220,9 +330,11 @@ async function loadLeaderboard() {
   renderLeaderboard();
 
   try {
-    ApplicationState.leaderboard = await ApplicationInterface.getLeaderboard();
-
-    await refreshConfirmationStatus();
+    const [leaderboard] = await Promise.all([
+      ApplicationInterface.getLeaderboard(),
+      refreshConfirmationStatus(),
+    ]);
+    ApplicationState.leaderboard = leaderboard;
   } catch (error) {
     ApplicationState.leaderboardError = error.message;
   } finally {
@@ -331,17 +443,25 @@ function normaliseTeamColour(colour) {
  * Events
  */
 async function loadEvents() {
-  const [events, teams] = await Promise.all([
+  const [events, teams, pointProfiles] = await Promise.all([
     ApplicationInterface.getEvents(),
 
     ApplicationInterface.getTeams(),
+
+    ApplicationInterface.getPointProfiles(),
+
+    refreshConfirmationStatus(),
   ]);
 
   ApplicationState.events = events;
 
   ApplicationState.teams = teams;
 
-  await refreshConfirmationStatus();
+  ApplicationState.pointProfiles = pointProfiles;
+
+  ApplicationState.pointProfilesByIdentifier = Object.fromEntries(
+    pointProfiles.map((profile) => [profile.ID, profile]),
+  );
 
   if (!ApplicationState.events.length) {
     ApplicationState.currentEvent = null;
@@ -413,6 +533,7 @@ function renderEvents() {
   EventView.renderEventTable(
     ApplicationState.events,
     ApplicationState.currentEvent,
+    ApplicationState.pointProfiles,
   );
 
   EventView.renderEventDetails(
@@ -434,6 +555,8 @@ function renderEvents() {
     ApplicationState.eventHistoryLoading,
     ApplicationState.eventHistoryError,
   );
+
+  protectHistoricalSportsDay();
 }
 
 /** Clear the previous selection and load all data for the chosen event. */
@@ -1461,6 +1584,8 @@ ${
 </div>`;
 
   container.innerHTML = markup;
+
+  protectHistoricalSportsDay();
 }
 
 /** Clear the selected profile and display an empty creation form. */
@@ -1682,6 +1807,8 @@ ${lifecycleButton}
 `;
 
   container.innerHTML = markup;
+
+  protectHistoricalSportsDay();
 }
 
 /**

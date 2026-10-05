@@ -1,3 +1,17 @@
+# Named annual Sports Days and faster loading — 2026-10-05
+
+- Added a `sports_days` parent table and scoped all application records, reads and writes to one named Sports Day
+- Preserved current production records as `SportsDay2026` without changing existing event data
+- Added a header selector for current and historical Sports Days; historical years remain available but read-only
+- Added one-step new-year creation that copies teams, point profiles and event definitions with fresh IDs and clean runs, while copying no competitors, results or fixtures
+- Replaced twelve sequential table reads with one combined scoped query and removed the write lock from read-only requests
+- Pinned Edge Function execution to the London database region and parallelized independent frontend loads
+- Added responsive annual controls, immediate loading states on year changes and friendly point-profile names in the event list
+- Passed formatting, linting, unit, browser, migration, database/API parity and authenticated Edge smoke tests locally
+- Kept the hosted database, Edge Function and production website unchanged pending release approval
+
+---
+
 # Least-privilege production readiness — 2026-10-02
 
 - Added and hosted-tested the dedicated `sports_day_api` PostgreSQL role with application-table CRUD and explicit RLS policies

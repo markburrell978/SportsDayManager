@@ -77,6 +77,10 @@ test('published configuration requires production Supabase authentication', asyn
     requestAddress.includes('/functions/v1/sports-day-api'),
   );
   assert.equal(
+    new URL(applicationRequest.url).searchParams.get('forceFunctionRegion'),
+    'eu-west-2',
+  );
+  assert.equal(
     applicationRequest.options.headers.Authorization,
     'Bearer access',
   );
@@ -108,6 +112,36 @@ test('Apps Script rollback configuration preserves its unauthenticated transport
   assert.deepEqual(JSON.parse(calls[1].options.body.get('payload')), {
     ID: 'one',
     Active: false,
+  });
+});
+
+test('Supabase requests carry the selected Sports Day without changing Apps Script requests', async () => {
+  const calls = [];
+  const { ApplicationInterface, Authentication } = await client(
+    async (requestAddress, options) => {
+      calls.push({ url: requestAddress, options });
+      return requestAddress.includes('/auth/')
+        ? response(sessionValue())
+        : response({ success: true, data: [] });
+    },
+    { practice: false },
+  );
+  await Authentication.signIn('test@example.test', 'password');
+  ApplicationInterface.selectSportsDay('SPORTS_DAY_2027');
+  await ApplicationInterface.getTeams();
+  await ApplicationInterface.createSportsDay('SportsDay2028');
+
+  const [read, create] = calls.filter(({ url: requestAddress }) =>
+    requestAddress.includes('/functions/v1/sports-day-api'),
+  );
+  assert.equal(
+    new URL(read.url).searchParams.get('sportsDayId'),
+    'SPORTS_DAY_2027',
+  );
+  assert.deepEqual(JSON.parse(create.options.body.get('payload')), {
+    name: 'SportsDay2028',
+    sourceSportsDayId: 'SPORTS_DAY_2027',
+    sportsDayId: 'SPORTS_DAY_2027',
   });
 });
 
@@ -330,11 +364,15 @@ function page(context) {
 }
 
 test('sign-in screen gates initial loading, submits once, clears password and signs out', async () => {
-  const { context } = await client(async (requestAddress) =>
-    requestAddress.includes('/auth/')
-      ? response(sessionValue())
-      : response({ success: true, data: [] }),
-  );
+  const { context } = await client(async (requestAddress) => {
+    if (requestAddress.includes('/auth/')) {
+      return response(sessionValue());
+    }
+    return response({
+      success: true,
+      data: [{ ID: 'SPORTS_DAY_2026', Name: 'SportsDay2026', Active: true }],
+    });
+  });
   const { element, classes } = page(context);
   let ready = 0;
   let reloaded = 0;
