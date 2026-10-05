@@ -278,11 +278,17 @@ export class UnitOfWork {
 }
 
 /** Apply the ordered journal using server-owned identifiers and bound values. */
-async function flushOperations(transaction, operations, sequences) {
+async function flushOperations(
+  transaction,
+  operations,
+  sequences,
+  sportsDayIdentifier,
+) {
   for (const { kind, name: tableName, row } of operations) {
     const mapping = TABLE_MAPPINGS[tableName];
     const values = toDatabaseRecord(mapping, row);
     if (kind === 'insert') {
+      values.sports_day_id = sportsDayIdentifier;
       if (mapping.sequence) {
         const sequenceKey = tableName + ':' + values.event_run_id;
         values.sequence_number = (sequences.get(sequenceKey) || 0) + 1;
@@ -312,7 +318,9 @@ async function flushOperations(transaction, operations, sequences) {
         parameters.push(values[column]);
         return `${column} = $${parameters.length}`;
       })
+      .concat([`sports_day_id = $${parameters.length + 1}`])
       .join(' and ');
+    parameters.push(sportsDayIdentifier);
     const assignments = updatedColumns
       .map((column, columnIndex) => `${column} = $${columnIndex + 1}`)
       .join(',');
@@ -330,31 +338,62 @@ async function flushOperations(transaction, operations, sequences) {
 }
 
 /** Load the small organiser dataset into one transaction-scoped repository. */
-export async function loadRepository(transaction) {
-  const rows = {};
+export async function loadRepository(
+  transaction,
+  requestedSportsDayIdentifier,
+) {
+  let sportsDayIdentifier = requestedSportsDayIdentifier;
+  if (!sportsDayIdentifier) {
+    const [activeSportsDay] =
+      await transaction`select id from public.sports_days where is_active`;
+    sportsDayIdentifier = activeSportsDay?.id;
+  }
+  if (!sportsDayIdentifier) {
+    throw new Error('No active Sports Day is configured.');
+  }
+  const rows = Object.fromEntries(
+    Object.keys(TABLE_MAPPINGS).map((tableName) => [tableName, []]),
+  );
   const sequences = new Map();
-  for (const [tableName, mapping] of Object.entries(TABLE_MAPPINGS)) {
-    // Table names and ordering come exclusively from this module's mappings.
-    const ordering = mapping.sequence
-      ? 'event_run_id, sequence_number'
-      : 'source_order';
-    const records = await transaction.unsafe(
-      `select * from public.${mapping.table} order by ${ordering}`,
-    );
-    rows[tableName] = records.map((record) => {
-      if (mapping.sequence) {
-        const sequenceKey = tableName + ':' + record.event_run_id;
-        sequences.set(
-          sequenceKey,
-          Math.max(sequences.get(sequenceKey) || 0, record.sequence_number),
-        );
-      }
-      return toLegacyRecord(mapping, record);
-    });
+  // Constants in TABLE_MAPPINGS exclusively supply identifiers in this query.
+  // One combined request avoids twelve network round trips to PostgreSQL.
+  const combinedQuery = Object.entries(TABLE_MAPPINGS)
+    .map(([tableName, mapping], tableIndex) => {
+      const ordering = mapping.sequence
+        ? 'event_run_id, sequence_number'
+        : 'source_order';
+      return `select ${tableIndex} as table_order,
+          row_number() over (order by ${ordering}) as row_order,
+          '${tableName}'::text as table_name,
+          to_jsonb(source_record) as record
+        from public.${mapping.table} source_record
+        where sports_day_id = $1`;
+    })
+    .join('\nunion all\n');
+  const records = await transaction.unsafe(
+    `select table_name, record from (${combinedQuery}) scoped_records
+     order by table_order, row_order`,
+    [sportsDayIdentifier],
+  );
+  for (const { table_name: tableName, record } of records) {
+    const mapping = TABLE_MAPPINGS[tableName];
+    if (mapping.sequence) {
+      const sequenceKey = tableName + ':' + record.event_run_id;
+      sequences.set(
+        sequenceKey,
+        Math.max(sequences.get(sequenceKey) || 0, record.sequence_number),
+      );
+    }
+    rows[tableName].push(toLegacyRecord(mapping, record));
   }
   const repository = new UnitOfWork(rows);
   // A repository belongs to one request and is flushed exactly once by the API.
   repository.flush = () =>
-    flushOperations(transaction, repository.operations, sequences);
+    flushOperations(
+      transaction,
+      repository.operations,
+      sequences,
+      sportsDayIdentifier,
+    );
   return repository;
 }

@@ -13,6 +13,7 @@
 
 const ApplicationInterface = {
   settings: null,
+  selectedSportsDayIdentifier: null,
 
   /** Configure the backend and enforce local practice connection boundaries. */
   initialise() {
@@ -74,6 +75,7 @@ const ApplicationInterface = {
       publishableKey: runtime.publishableKey,
       environment: runtime.environment,
       endpoint: `${requestAddress.origin}/functions/v1/sports-day-api`,
+      functionRegion: runtime.functionRegion || '',
     };
     Authentication.configure(this.settings);
   },
@@ -110,14 +112,32 @@ const ApplicationInterface = {
         Authorization: `Bearer ${token}`,
       };
     }
+    const scopedPayload = { ...payload };
+    if (
+      supabase &&
+      this.selectedSportsDayIdentifier &&
+      action !== 'getSportsDays'
+    ) {
+      scopedPayload.sportsDayId = this.selectedSportsDayIdentifier;
+    }
     let requestAddress = this.settings.endpoint;
     if (method === 'GET') {
-      requestAddress += `?action=${encodeURIComponent(action)}`;
+      const parameters = new URLSearchParams({ action });
+      if (supabase && this.settings.functionRegion) {
+        parameters.set('forceFunctionRegion', this.settings.functionRegion);
+      }
+      if (scopedPayload.sportsDayId) {
+        parameters.set('sportsDayId', scopedPayload.sportsDayId);
+      }
+      requestAddress += `?${parameters}`;
     } else {
       options.body = new URLSearchParams({
         action,
-        payload: JSON.stringify(payload),
+        payload: JSON.stringify(scopedPayload),
       });
+      if (supabase && this.settings.functionRegion) {
+        requestAddress += `?forceFunctionRegion=${encodeURIComponent(this.settings.functionRegion)}`;
+      }
     }
     let response;
     try {
@@ -174,6 +194,24 @@ const ApplicationInterface = {
       return null;
     }
     return await this.get('getConfirmationStatus');
+  },
+
+  /** Select the Sports Day used to scope subsequent reads and writes. */
+  selectSportsDay(identifier) {
+    this.selectedSportsDayIdentifier = identifier || null;
+  },
+
+  /** List named Sports Days, with the current one first. */
+  async getSportsDays() {
+    return await this.get('getSportsDays');
+  },
+
+  /** Start a clean Sports Day from the selected reusable setup. */
+  async createSportsDay(name) {
+    return await this.post('createSportsDay', {
+      name,
+      sourceSportsDayId: this.selectedSportsDayIdentifier,
+    });
   },
 
   /**

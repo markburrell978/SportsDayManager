@@ -1,11 +1,12 @@
 // Additional read endpoint; existing v1 response shapes and scoring stay intact.
-export async function getConfirmationStatus(transaction) {
+export async function getConfirmationStatus(transaction, sportsDayIdentifier) {
   const rows = await transaction`
         select event.id as event_id, event.name, run.id as run_id, run.status,
             run.results_revision, run.confirmed_revision,
             exists(select 1 from public.results result where result.event_run_id = run.id) as confirmed
         from public.events event
         join public.event_runs run on run.event_id = event.id and run.is_current
+        where event.sports_day_id = ${sportsDayIdentifier}
         order by event.display_order, event.source_order
     `;
   return rows.map((row) => ({

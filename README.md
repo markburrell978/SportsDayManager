@@ -5,6 +5,7 @@ A reusable, mobile-friendly web application for running an annual Sports Day.
 ## Release and migration status
 
 - **Production:** GitHub Pages + Supabase, deployed and verified on 2026-10-02.
+- **Production release:** v1.2 adds named annual Sports Days and reduces API latency; deployed and verified on 2026-10-05.
 - The schema, transactional API, organiser sign-in, migrated data, least-privilege role and exact GitHub Pages CORS origin are validated.
 - The preserved v1.0.0 Apps Script deployment, Google Sheet and private backups remain available during the rollback period; its known leaderboard failure was accepted for cutover.
 
@@ -29,6 +30,9 @@ and successful production cutover.
 - Reusable one-row point profiles with signed integer points
 - Dynamic organiser leaderboard using current point-profile values
 - Read-only Event History for current and previous runs
+- Named annual Sports Days with a current/historical selector
+- One-step new-year setup that copies teams, point profiles and event definitions, while starting with no competitors or results
+- Read-only protection for previous Sports Days
 
 ## Architecture
 
@@ -122,7 +126,7 @@ See [API implementation and tests](docs/migration/STAGE_4_API.md) for the
 transactional replacement API, organiser access, compatibility checks and
 remaining release gates.
 
-## v1.0.0 development and rollback
+## Legacy rollback
 
 The legacy backend still uses clasp:
 
@@ -131,9 +135,8 @@ clasp status
 clasp deployments
 ```
 
-Do not run `clasp push`, create a deployment, change `web/js/config.js`, or edit
-production spreadsheet data as part of staging work. Follow the Stage 1 backup
-procedure before any rehearsal or cutover.
+Do not run `clasp push`, create a deployment, or edit the archived production
+spreadsheet. Follow the Stage 1 backup procedure before any rollback rehearsal.
 
 ## Data safety
 

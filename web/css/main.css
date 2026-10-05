@@ -32,6 +32,33 @@ header {
   padding: 20px;
 }
 
+.account-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.account-controls select {
+  min-width: 180px;
+  padding: 8px;
+}
+
+.historical-banner {
+  padding: 12px 20px;
+  background: #fff3cd;
+  color: #664d03;
+  border-bottom: 1px solid #ffecb5;
+  font-weight: bold;
+}
+
+.sports-day-manager input {
+  padding: 10px;
+  margin: 0 10px;
+  min-width: 220px;
+}
+
 header h1 {
   margin: 0;
 }
@@ -1076,6 +1103,23 @@ header {
 @media (max-width: 480px) {
   header h1 {
     font-size: 24px;
+  }
+  .account-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .account-controls select,
+  .account-controls button {
+    width: 100%;
+  }
+  .sports-day-manager input {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    margin: 10px 0;
+  }
+  .sports-day-manager button {
+    width: 100%;
   }
   .sign-in-card {
     padding: 22px;

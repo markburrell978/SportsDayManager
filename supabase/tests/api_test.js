@@ -24,6 +24,16 @@ const databaseConnection = postgres(databaseAddress, {
   prepare: false,
   max: 4,
 });
+// These integration tests intentionally share one PostgreSQL pool. Deno's
+// per-test resource sanitizer cannot assign the pool's background I/O to a
+// single test, so the final test closes it explicitly.
+const databaseTest = (name, testFunction) =>
+  Deno.test({
+    name,
+    fn: testFunction,
+    sanitizeOps: false,
+    sanitizeResources: false,
+  });
 const rollback = new Error('rollback test fixture');
 const teams = ['TEAM_ALPHA', 'TEAM_BETA', 'TEAM_GAMMA', 'TEAM_DELTA'];
 const eventIdentifiers = [
@@ -36,7 +46,7 @@ const eventIdentifiers = [
 const canonical = (value) =>
   JSON.parse(
     JSON.stringify(value).replace(
-      /\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z/g,
+      /\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|\+00:00)/g,
       '<timestamp>',
     ),
   );
@@ -160,7 +170,7 @@ async function fixture(run) {
   }
 }
 
-Deno.test(
+databaseTest(
   'all 28 actions match v1 across complete event workflows, corrections, confirmation and history',
   async () => {
     await fixture(async (transaction) => {
@@ -450,7 +460,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+databaseTest(
   'failure during result replacement restores the original confirmed results',
   async () => {
     await fixture(async (transaction) => {
@@ -484,7 +494,7 @@ Deno.test(
   },
 );
 
-Deno.test(
+databaseTest(
   'concurrent resets reject a stale request; concurrent confirmations cannot duplicate results',
   async () => {
     await databaseConnection.begin(async (transaction) => {
@@ -550,6 +560,117 @@ Deno.test(
   },
 );
 
-Deno.test('close test connections', async () => {
+databaseTest(
+  'a new Sports Day copies setup, starts empty, and protects historical records',
+  async () => {
+    await fixture(async (transaction) => {
+      let nextIdentifier = 0;
+      const created = await executeInTransaction(
+        transaction,
+        {
+          action: 'createSportsDay',
+          payload: {
+            name: 'SportsDay2027',
+            sourceSportsDayId: 'SPORTS_DAY_2026',
+          },
+        },
+        { uuid: () => `SPORTS_DAY_TEST_${++nextIdentifier}` },
+      );
+      assert.equal(created.success, true);
+      assert.equal(created.data.Name, 'SportsDay2027');
+      const sportsDayIdentifier = created.data.ID;
+
+      const [counts] = await transaction`
+        select
+          (select count(*)::int from public.teams where sports_day_id = ${sportsDayIdentifier}) as teams,
+          (select count(*)::int from public.point_profiles where sports_day_id = ${sportsDayIdentifier}) as profiles,
+          (select count(*)::int from public.events where sports_day_id = ${sportsDayIdentifier}) as events,
+          (select count(*)::int from public.event_runs where sports_day_id = ${sportsDayIdentifier}) as runs,
+          (select count(*)::int from public.competitors where sports_day_id = ${sportsDayIdentifier}) as competitors,
+          (select count(*)::int from public.results where sports_day_id = ${sportsDayIdentifier}) as results,
+          (select count(*)::int from public.matches where sports_day_id = ${sportsDayIdentifier}) as matches,
+          (select count(*)::int from public.race_results where sports_day_id = ${sportsDayIdentifier}) as race_results,
+          (select count(*)::int from public.event_competitors where sports_day_id = ${sportsDayIdentifier}) as event_competitors,
+          (select count(*)::int from public.distance_results where sports_day_id = ${sportsDayIdentifier}) as distance_results,
+          (select count(*)::int from public.double_team_matches where sports_day_id = ${sportsDayIdentifier}) as double_team_matches,
+          (select count(*)::int from public.attempts where sports_day_id = ${sportsDayIdentifier}) as attempts
+      `;
+      assert.deepEqual(counts, {
+        teams: 5,
+        profiles: 2,
+        events: 5,
+        runs: 5,
+        competitors: 0,
+        results: 0,
+        matches: 0,
+        race_results: 0,
+        event_competitors: 0,
+        distance_results: 0,
+        double_team_matches: 0,
+        attempts: 0,
+      });
+      assert.equal(
+        (
+          await transaction`
+            select count(*)::int as count
+            from public.event_runs
+            where sports_day_id = ${sportsDayIdentifier}
+              and status = 'NOT_STARTED'
+              and is_current
+          `
+        )[0].count,
+        5,
+      );
+
+      const sportsDays = await executeInTransaction(transaction, {
+        action: 'getSportsDays',
+        payload: {},
+      });
+      assert.equal(sportsDays.data[0].ID, sportsDayIdentifier);
+      assert.equal(sportsDays.data[0].Active, true);
+
+      for (const payload of [
+        { name: '  sportsday2027  ', sourceSportsDayId: sportsDayIdentifier },
+        { name: ' ', sourceSportsDayId: sportsDayIdentifier },
+        { name: 'SportsDay2028', sourceSportsDayId: 'MISSING' },
+      ]) {
+        await assert.rejects(
+          executeInTransaction(transaction, {
+            action: 'createSportsDay',
+            payload,
+          }),
+          /already exists|between 1 and 80|source Sports Day does not exist/,
+        );
+      }
+
+      await assert.rejects(
+        executeInTransaction(transaction, {
+          action: 'updateCompetitor',
+          payload: {
+            sportsDayId: 'SPORTS_DAY_2026',
+            ID: 'COMP_ALPHA_M',
+            Name: 'Must Not Change',
+            Age: 11,
+            Gender: 'Male',
+            CompetitionGender: 'Male',
+            TeamID: 'TEAM_ALPHA',
+            Active: true,
+          },
+        }),
+        /Historical Sports Days are read-only/,
+      );
+      assert.equal(
+        (
+          await transaction`
+            select name from public.competitors where id = 'COMP_ALPHA_M'
+          `
+        )[0].name,
+        'Alex Alder',
+      );
+    });
+  },
+);
+
+databaseTest('close test connections', async () => {
   await databaseConnection.end();
 });

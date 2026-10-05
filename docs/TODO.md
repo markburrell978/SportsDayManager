@@ -1,5 +1,29 @@
 # Sports Day Manager Roadmap
 
+## v1.2 — Named annual Sports Days and faster loading
+
+- [x] Preserve existing production records as `SportsDay2026`
+- [x] Scope every event-data table, API read and API write to a Sports Day
+- [x] Add current/historical year selection and protect historical years from writes
+- [x] Copy teams, point profiles and event definitions into a new year
+- [x] Start every new year with empty competitors, results and engine data
+- [x] Reduce database round trips, parallelize independent reads and pin the Edge Function to London
+- [x] Pass local unit, browser, migration, database/API and Edge smoke tests
+- [x] Review and merge the v1.2 pull request
+- [x] Back up production and deploy the schema, function and frontend in one release window
+- [x] Complete the post-deployment smoke test
+
+## v1.1 — Supabase production release
+
+- [x] Migrate the production application and data from Google Apps Script/Sheets to Supabase
+- [x] Deploy GitHub Pages, authentication, the Edge Function and least-privilege PostgreSQL access
+- [x] Verify production reads and a reversible write after cutover
+- [x] Preserve the Apps Script source, Sheet and private backups for rollback
+- [ ] Retire the preserved Google resources only after owner approval
+
+The version headings below record the migration's original internal milestone
+plan. Those stages were packaged and released together as v1.1.
+
 ## v1.0.0 — Field-tested Google Sheets release
 
 - [x] Competitor and team operations
@@ -87,14 +111,14 @@
 - [x] Pass `.github/workflows/quality.yml` on GitHub
 - [x] Diagnose the separate Cloudflare Workers build check on pull request #2
 - [x] Pass the Cloudflare Workers preview check with the corrected static-asset command
-- [ ] Resolve pull-request findings before merge
+- [x] Resolve pull-request findings and merge pull request #2
 
-## v2.0.0 — Production cutover
+## Supabase production cutover
 
-- [ ] Complete every cutover acceptance gate
-- [ ] Import and reconcile final production data in a maintenance window
-- [ ] Switch GitHub Pages public configuration to production Supabase
-- [ ] Verify authentication, controlled writes, leaderboard and Event History
+- [x] Complete every cutover acceptance gate
+- [x] Import and reconcile final production data in a maintenance window
+- [x] Switch GitHub Pages public configuration to production Supabase
+- [x] Verify authentication, controlled writes, leaderboard and Event History
 - [ ] Retain Apps Script/Sheets for at least one successful live event
 - [ ] Retire legacy resources only with explicit owner approval
 

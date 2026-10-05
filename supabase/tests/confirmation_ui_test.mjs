@@ -10,6 +10,17 @@ const context = virtualMachine.createContext({ window: {} });
 virtualMachine.runInContext(source, context);
 const eventView = virtualMachine.runInContext('EventView', context);
 
+test('Sports Day selector marks the current year and escapes stored names', () => {
+  const markup = eventView.renderSportsDayOptions([
+    { ID: 'old', Name: '<Old Day>', Active: false },
+    { ID: 'current"', Name: 'SportsDay2027', Active: true },
+  ]);
+  assert.match(markup, /&lt;Old Day&gt;/);
+  assert.match(markup, /SportsDay2027 \(current\)/);
+  assert.match(markup, /value="current&quot;"/);
+  assert.doesNotMatch(markup, /<Old Day>/);
+});
+
 test('pending confirmation is prominent, explanatory and does not claim results are up to date', () => {
   const markup = eventView.renderEventRun(
     {
@@ -98,7 +109,9 @@ test('record identifiers stay in data attributes instead of executable handlers'
       },
     ],
     null,
+    [{ ID: 'PROFILE', Name: 'Friendly profile' }],
   );
+  assert.match(container.innerHTML, /Friendly profile/);
   assert.match(container.innerHTML, /data-event-identifier=/);
   assert.match(
     container.innerHTML,

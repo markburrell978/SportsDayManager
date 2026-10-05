@@ -2,7 +2,7 @@
 
 Project: Sports Day Manager
 
-Production version: Supabase cutover, merge commit `8dbb307`, 2026-10-02
+Production version: v1.1 Supabase cutover, commit `cebaaad`, 2026-10-02
 
 Development status: Supabase schema, transactional API, organiser sign-in,
 hosted fictional validation, repeatable data-migration tooling, a restricted
@@ -48,6 +48,13 @@ The production project reference is `jnzyedbrkxxaqxgsaavc`. All migrations and
 the `sports-day-api` function are deployed. It contains the migrated restricted
 production data and must be treated as private. Only the allow-listed organiser
 can use the application API.
+
+The v1.2 release adds named annual Sports Days. Existing production
+records become `SportsDay2026`. Starting a new Sports Day copies teams, point
+profiles and event definitions, creates a clean first run for each event, and
+copies no competitors, engine records or results. Earlier Sports Days remain
+selectable and read-only. The production backup was restore-tested and the
+schema, function and frontend were deployed on 2026-10-05.
 
 ## Source layout
 
@@ -110,15 +117,15 @@ can use the application API.
 ## PostgreSQL and API decisions
 
 - Existing IDs remain `text`, including UUID-shaped dynamic IDs.
-- The 12 application tables use foreign keys, checks, indexes and RLS.
+- The 12 event-data tables plus `sports_days` use foreign keys, checks, indexes and RLS.
 - Composite event/run foreign keys prevent cross-event engine rows.
 - Deferred triggers enforce exactly one current run at transaction commit.
 - `sequence_number` and `source_order` replace implicit Sheet order.
 - Race/distance position uniqueness is deferred for valid multi-row swaps.
 - All application writes go through the Edge Function transaction boundary.
-- Each request currently takes an advisory lock and loads all application
-  tables. This suits the small single-organiser dataset but must be measured
-  with production-shaped data.
+- Writes take an advisory transaction lock; independent reads no longer wait
+  for it. A request loads its selected Sports Day through one combined database
+  query rather than twelve sequential queries.
 - The original 28 API actions and PascalCase response fields remain compatible.
   `getConfirmationStatus` is additional Supabase-only metadata.
 - The handler verifies Supabase Auth and a server-side organiser UUID allow-list.
@@ -200,8 +207,8 @@ of `docs/STAGING_REPORT.md`.
 
 ## Current working state and next actions
 
-The SQL transition was merged by pull request #2 as commit `8dbb307`.
-GitHub's Pages and `quality.yml` workflows passed.
+The SQL transition was merged by pull request #2 and the production cutover was
+recorded in commit `cebaaad`. GitHub Pages and `quality.yml` passed.
 The Cloudflare Workers preview failure was traced to its dashboard version
 command omitting the static asset directory and to an unmerged Cloudflare
 autoconfiguration branch. The command is now
@@ -211,5 +218,8 @@ The resulting Cloudflare branch preview and GitHub `quality.yml` check both
 pass. The ignored `.env.staging.json` contains public staging browser
 configuration and must remain untracked.
 
-Next action: retain Apps Script, Sheets and private backups through the rollback
-period and at least one successful live Supabase event.
+The v1.2 release was delivered through pull request #3. Migration
+`202610020001_sports_days.sql`, the Edge Function and the frontend were deployed
+in that order and passed the post-deployment smoke test. Keep the preserved Apps
+Script, Sheet and private backups until the owner explicitly approves their
+deletion.

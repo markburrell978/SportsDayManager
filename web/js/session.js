@@ -17,13 +17,18 @@ window.Session = {
     /** Verify organiser access before revealing and loading the application. */
     const enter = async () => {
       // A valid Authentication account is not necessarily an authorised organiser.
-      await ApplicationInterface.getTeams();
+      const sportsDays = await ApplicationInterface.getSportsDays();
+      const activeSportsDay = sportsDays.find((sportsDay) => sportsDay.Active);
+      if (!activeSportsDay) {
+        throw new Error('No active Sports Day is configured.');
+      }
+      ApplicationInterface.selectSportsDay(activeSportsDay.ID);
       panel.hidden = true;
       document.getElementById('account-email').textContent =
         Authentication.user?.email || 'Organiser';
       document.getElementById('account-controls').hidden = false;
       document.body.classList.remove('auth-pending');
-      await onReady();
+      await onReady(sportsDays);
     };
     document.getElementById('practice-banner').hidden =
       !window.SPORTS_DAY_TEST_ENVIRONMENT;

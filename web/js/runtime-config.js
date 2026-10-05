@@ -5,4 +5,5 @@ window.SPORTS_DAY_RUNTIME = Object.freeze({
   environment: 'production',
   url: 'https://jnzyedbrkxxaqxgsaavc.supabase.co',
   publishableKey: 'sb_publishable_CW4Mvs9OVxTuHnHzk9NvGA_B5ONJhI8',
+  functionRegion: 'eu-west-2',
 });

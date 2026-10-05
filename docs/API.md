@@ -2,7 +2,11 @@
 
 Production behavior: v1.0.0 Apps Script compatibility contract
 
-Migration status: all 28 original actions now have a locally tested Supabase implementation, plus the Supabase-only `getConfirmationStatus` read action. The Edge Function requires a verified, allow-listed organiser and preserves the business response envelope. The local practice frontend uses Supabase; the published default still uses Apps Script/Google Sheets. See `docs/migration/API_COMPATIBILITY_MATRIX.md` and `docs/migration/STAGE_4_API.md` for local coverage and remaining release gates.
+Migration status: all 28 original actions run on the production Supabase API,
+along with Supabase-only confirmation and annual Sports Day actions. The Edge
+Function requires a verified, allow-listed organiser and preserves the business
+response envelope. See `docs/migration/API_COMPATIBILITY_MATRIX.md` and
+`docs/migration/STAGE_4_API.md` for compatibility coverage.
 
 ---
 
@@ -19,6 +23,42 @@ All API responses use the same structure.
 ```
 
 Failed requests return `success: false`, a friendly `message`, and `data: null`.
+
+All legacy actions accept `sportsDayId` in their GET query or POST payload. If
+it is omitted, the API resolves the active Sports Day. Reads may select a
+historical Sports Day; mutations against one are rejected.
+
+---
+
+# Sports Days
+
+## getSportsDays
+
+Returns named Sports Days with the current entry first. Each item contains
+`ID`, `Name` and `Active`.
+
+Method: `GET`
+
+Action: `getSportsDays`
+
+## createSportsDay
+
+Creates and activates a clean Sports Day from reusable setup in the selected
+source. The operation copies teams, point profiles and event definitions, but
+does not copy competitors, results or event-engine data.
+
+Method: `POST`
+
+Action: `createSportsDay`
+
+Payload:
+
+```json
+{
+  "name": "SportsDay2027",
+  "sourceSportsDayId": "SPORTS_DAY_2026"
+}
+```
 
 ---
 

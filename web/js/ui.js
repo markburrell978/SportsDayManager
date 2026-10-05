@@ -12,13 +12,24 @@
 'use strict';
 
 const EventView = {
+  /** Build escaped selector options for current and historical Sports Days. */
+  renderSportsDayOptions(sportsDays) {
+    return sportsDays
+      .map(
+        (sportsDay) =>
+          `<option value="${this.escapeHtml(sportsDay.ID)}">${this.escapeHtml(sportsDay.Name)}${sportsDay.Active ? ' (current)' : ''}</option>`,
+      )
+      .join('');
+  },
+
   /**
    * Renders the event browser table.
    *
    * @param {Object[]} events
    * @param {Object|null} currentEvent
+   * @param {Object[]} pointProfiles
    */
-  renderEventTable(events, currentEvent) {
+  renderEventTable(events, currentEvent, pointProfiles = []) {
     const container = document.getElementById('events');
 
     if (!events.length) {
@@ -56,6 +67,9 @@ const EventView = {
     events.forEach((event) => {
       const selectedClass =
         currentEvent && currentEvent.ID === event.ID ? 'selected-row' : '';
+      const pointProfile = pointProfiles.find(
+        (profile) => profile.ID === event.PointsProfileID,
+      );
 
       markup += `
 
@@ -66,7 +80,7 @@ const EventView = {
 
 <td>${this.escapeHtml(event.EventType)}</td>
 
-<td>${this.escapeHtml(event.PointsProfileID)}</td>
+<td>${this.escapeHtml(pointProfile?.Name || event.PointsProfileID)}</td>
 
 <td>${this.escapeHtml(event.Status)}</td>
 
@@ -203,11 +217,11 @@ ${this.renderDistance(
   renderEventViewTabs(eventViewMode) {
     return `
 <div class="event-view-tabs" role="group" aria-label="Event view">
-<button class="${eventViewMode === 'current' ? 'active' : ''}"
+<button class="read-only-navigation ${eventViewMode === 'current' ? 'active' : ''}"
         onclick="showCurrentEventView()">
     Current Run
 </button>
-<button class="${eventViewMode === 'history' ? 'active' : ''}"
+<button class="read-only-navigation ${eventViewMode === 'history' ? 'active' : ''}"
         onclick="openEventHistory()">
     History
 </button>

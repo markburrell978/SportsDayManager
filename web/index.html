@@ -15,6 +15,8 @@
       <h1>🏆 Sports Day Manager</h1>
 
       <div id="account-controls" class="account-controls" hidden>
+        <label for="sports-day-selector">Sports Day</label>
+        <select id="sports-day-selector"></select>
         <span id="account-email"></span>
         <button id="btn-sign-out" type="button">Sign out</button>
       </div>
@@ -23,6 +25,10 @@
     <div id="practice-banner" class="practice-banner" hidden>
       <strong id="test-environment-name">Practice</strong> · Non-production data
       — changes here do not affect your live Sports Day.
+    </div>
+
+    <div id="historical-sports-day-banner" class="historical-banner" hidden>
+      You are viewing a historical Sports Day. Its records are read-only.
     </div>
 
     <section
@@ -140,6 +146,20 @@
 
       <section id="page-settings" class="page hidden">
         <h2>Settings</h2>
+
+        <div class="card sports-day-manager">
+          <h3>Start a new Sports Day</h3>
+          <p>
+            Teams, point profiles and event definitions will be copied.
+            Competitors and all results will start empty.
+          </p>
+          <label for="new-sports-day-name">Name</label>
+          <input id="new-sports-day-name" type="text" maxlength="80" />
+          <button id="btn-create-sports-day" type="button">
+            Start New Sports Day
+          </button>
+          <p id="sports-day-message" role="status" aria-live="polite"></p>
+        </div>
 
         <p>Manage reusable point profiles.</p>
 
