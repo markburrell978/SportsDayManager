@@ -139,3 +139,40 @@ test('record identifiers stay in data attributes instead of executable handlers'
   assert.match(matchMarkup, /saveMatchWinner\(this\.dataset\.matchIdentifier/);
   assert.doesNotMatch(matchMarkup, /saveMatchWinner\('/);
 });
+
+test('heat winners are selected by team and saved with one batch control', () => {
+  const teams = [
+    { ID: 'TEAM_ONE', Name: 'One' },
+    { ID: 'TEAM_TWO', Name: 'Two' },
+  ];
+  const markup = eventView.renderRace(
+    { EventType: 'HEAT_FINAL' },
+    {
+      entrantsExplicit: true,
+      entrantCount: 2,
+      results: [],
+      eligibleCompetitors: [
+        {
+          ID: 'COMPETITOR_ONE',
+          Name: 'First runner',
+          TeamID: 'TEAM_ONE',
+          CompetitionGender: 'Female',
+        },
+        {
+          ID: 'COMPETITOR_TWO',
+          Name: 'Second runner',
+          TeamID: 'TEAM_TWO',
+          CompetitionGender: 'Female',
+        },
+      ],
+    },
+    teams,
+    'Female',
+    false,
+  );
+
+  assert.equal((markup.match(/data-team-identifier=/g) || []).length, 2);
+  assert.equal((markup.match(/Save selected heat winners/g) || []).length, 1);
+  assert.match(markup, /onclick="saveRaceHeatWinners\(\)"/);
+  assert.doesNotMatch(markup, /saveRaceHeatWinner\(/);
+});

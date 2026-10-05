@@ -171,7 +171,7 @@ async function fixture(run) {
 }
 
 databaseTest(
-  'all 28 actions match v1 across complete event workflows, corrections, confirmation and history',
+  'API actions match the retained services across complete event workflows and corrections',
   async () => {
     await fixture(async (transaction) => {
       const reference = await oracle((await loadRepository(transaction)).rows);
@@ -341,14 +341,14 @@ databaseTest(
             const identifiers = teams.map(
               (team) => team.replace('TEAM_', 'COMP_') + '_' + suffix,
             );
-            for (let itemIndex = 0; itemIndex < 4; itemIndex++) {
-              await call('saveRaceHeatWinner', {
-                ...eventPayload,
-                competitionGender: category,
+            await call('saveRaceHeatWinners', {
+              ...eventPayload,
+              competitionGender: category,
+              winners: identifiers.map((identifier, itemIndex) => ({
                 teamId: teams[itemIndex],
-                competitorId: identifiers[itemIndex],
-              });
-            }
+                competitorId: identifier,
+              })),
+            });
             await call('saveRaceFinalPositions', {
               ...eventPayload,
               competitionGender: category,
@@ -564,6 +564,12 @@ databaseTest(
   'a new Sports Day copies setup, starts empty, and protects historical records',
   async () => {
     await fixture(async (transaction) => {
+      const [sourceCounts] = await transaction`
+        select
+          (select count(*)::int from public.teams where sports_day_id = 'SPORTS_DAY_2026') as teams,
+          (select count(*)::int from public.point_profiles where sports_day_id = 'SPORTS_DAY_2026') as profiles,
+          (select count(*)::int from public.events where sports_day_id = 'SPORTS_DAY_2026') as events
+      `;
       let nextIdentifier = 0;
       const created = await executeInTransaction(
         transaction,
@@ -596,10 +602,10 @@ databaseTest(
           (select count(*)::int from public.attempts where sports_day_id = ${sportsDayIdentifier}) as attempts
       `;
       assert.deepEqual(counts, {
-        teams: 5,
-        profiles: 2,
-        events: 5,
-        runs: 5,
+        teams: sourceCounts.teams,
+        profiles: sourceCounts.profiles,
+        events: sourceCounts.events,
+        runs: sourceCounts.events,
         competitors: 0,
         results: 0,
         matches: 0,
@@ -666,6 +672,58 @@ databaseTest(
           `
         )[0].name,
         'Alex Alder',
+      );
+
+      await assert.rejects(
+        executeInTransaction(transaction, {
+          action: 'deleteSportsDay',
+          payload: {
+            sportsDayId: sportsDayIdentifier,
+            confirmationName: 'wrong name',
+          },
+        }),
+        /exact Sports Day name/,
+      );
+
+      const deleted = await executeInTransaction(transaction, {
+        action: 'deleteSportsDay',
+        payload: {
+          sportsDayId: sportsDayIdentifier,
+          confirmationName: 'SportsDay2027',
+        },
+      });
+      assert.equal(deleted.success, true);
+      assert.equal(deleted.data.DeletedName, 'SportsDay2027');
+      assert.equal(deleted.data.ActiveSportsDayID, 'SPORTS_DAY_2026');
+      assert.equal(
+        (
+          await transaction`
+            select count(*)::int as count
+            from public.sports_days
+            where id = ${sportsDayIdentifier}
+          `
+        )[0].count,
+        0,
+      );
+      assert.equal(
+        (
+          await transaction`
+            select is_active from public.sports_days
+            where id = 'SPORTS_DAY_2026'
+          `
+        )[0].is_active,
+        true,
+      );
+
+      await assert.rejects(
+        executeInTransaction(transaction, {
+          action: 'deleteSportsDay',
+          payload: {
+            sportsDayId: 'SPORTS_DAY_2026',
+            confirmationName: 'SportsDay2026',
+          },
+        }),
+        /only remaining Sports Day/,
       );
     });
   },

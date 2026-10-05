@@ -177,6 +177,19 @@ function handleRequest(request) {
 
         break;
 
+      case APPLICATION_ACTIONS.SAVE_RACE_HEAT_WINNERS:
+        response = ServiceUtilities.success(
+          RaceService.saveHeatWinners(
+            request.payload.eventId || request.payload.EventID,
+            request.payload.eventRunId || request.payload.EventRunID,
+            request.payload.competitionGender ||
+              request.payload.CompetitionGender,
+            request.payload.winners || request.payload.Winners,
+          ),
+        );
+
+        break;
+
       case APPLICATION_ACTIONS.SAVE_RACE_FINAL_POSITIONS:
         response = ServiceUtilities.success(
           RaceService.saveFinalPositions(

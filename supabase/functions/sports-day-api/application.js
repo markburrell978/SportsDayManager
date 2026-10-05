@@ -5,6 +5,7 @@ import { createServices } from './services.js';
 import { loadRepository } from './repository.js';
 import {
   createSportsDay,
+  deleteSportsDay,
   getSportsDay,
   getSportsDays,
   SportsDayValidationError,
@@ -16,6 +17,7 @@ export const actions = new Set([
   'getConfirmationStatus',
   'getSportsDays',
   'createSportsDay',
+  'deleteSportsDay',
 ]);
 export const getActions = new Set([
   'getTeams',
@@ -59,6 +61,13 @@ export async function executeInTransaction(transaction, request, options = {}) {
       success: true,
       message: 'Sports Day created.',
       data: await createSportsDay(transaction, request.payload, options.uuid),
+    };
+  }
+  if (request.action === 'deleteSportsDay') {
+    return {
+      success: true,
+      message: 'Sports Day deleted.',
+      data: await deleteSportsDay(transaction, request.payload),
     };
   }
   const sportsDay = await getSportsDay(

@@ -1156,7 +1156,9 @@ ${['Male', 'Female']
       } else {
         markup += `
 <div class="race-heat-control">
-<select id="${selectIdentifier}" ${requestPending || complete ? 'disabled' : ''}>
+<select id="${selectIdentifier}"
+        data-team-identifier="${this.escapeHtml(team.ID)}"
+        ${requestPending || complete ? 'disabled' : ''}>
 <option value="">Choose heat winner</option>
 ${eligibleCompetitors
   .map(
@@ -1168,10 +1170,6 @@ ${eligibleCompetitors
   )
   .join('')}
 </select>
-<button data-team-identifier="${this.escapeHtml(team.ID)}" data-select-identifier="${this.escapeHtml(selectIdentifier)}" onclick="saveRaceHeatWinner(this.dataset.teamIdentifier, this.dataset.selectIdentifier)"
-        ${requestPending || complete ? 'disabled' : ''}>
-    Save Winner
-</button>
 </div>`;
       }
 
@@ -1190,6 +1188,14 @@ ${eligibleCompetitors
 
       markup += `</div>`;
     });
+
+    if (!complete) {
+      markup += `
+<button class="save-heat-winners" onclick="saveRaceHeatWinners()"
+        ${requestPending ? 'disabled' : ''}>
+    Save selected heat winners
+</button>`;
+    }
 
     markup += this.renderRaceFinal(
       categoryResults,

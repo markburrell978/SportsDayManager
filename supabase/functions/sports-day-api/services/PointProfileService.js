@@ -50,7 +50,17 @@ export function createPointProfileService({
 
     /** Validate and insert a point profile with a unique identifier. */
     create(profile) {
-      const normalised = this.validateAndNormalise(profile, true);
+      const profileWithIdentifier = Object.assign({}, profile);
+
+      if (
+        !String(
+          profileWithIdentifier.ID ?? profileWithIdentifier.id ?? '',
+        ).trim()
+      ) {
+        profileWithIdentifier.ID = ServiceUtilities.uuid();
+      }
+
+      const normalised = this.validateAndNormalise(profileWithIdentifier, true);
 
       this.ensureCurrentSchema();
 

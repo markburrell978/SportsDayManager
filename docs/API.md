@@ -60,6 +60,27 @@ Payload:
 }
 ```
 
+## deleteSportsDay
+
+Permanently deletes the selected Sports Day and all records scoped to it. The
+operation refuses to delete the final remaining Sports Day. If the deleted
+entry was current, the newest remaining Sports Day becomes current.
+
+Method: `POST`
+
+Action: `deleteSportsDay`
+
+Payload:
+
+```json
+{
+  "sportsDayId": "test-sports-day-uuid",
+  "confirmationName": "TestSportsDayV1.3"
+}
+```
+
+`confirmationName` must exactly match the stored name.
+
 ---
 
 # Competitors
@@ -201,7 +222,6 @@ Payload:
 
 ```json
 {
-    "ID": "PP_STANDARD",
     "Name": "Standard",
     "First": 10,
     "Second": 7,
@@ -210,7 +230,8 @@ Payload:
 }
 ```
 
-IDs and names are required. All four point values must be integers; negative and zero values are accepted.
+The backend generates the ID. The name is required. All four point values must
+be integers; negative and zero values are accepted.
 
 ---
 
@@ -222,7 +243,8 @@ Method: `POST`
 
 Action: `updatePointProfile`
 
-Payload uses the same shape as `createPointProfile`.
+Payload contains the existing generated `ID` plus the same editable fields as
+`createPointProfile`.
 
 ---
 
@@ -365,6 +387,33 @@ Payload:
 ```
 
 The competitor must be available for events, belong to the selected active team, match the competition category, and satisfy any EventCompetitors restriction. Saving another winner for the same event, category and team updates the existing RaceResults row.
+
+---
+
+## saveRaceHeatWinners
+
+Creates or updates one or more team heat winners in one transaction.
+
+Method: `POST`
+
+Action: `saveRaceHeatWinners`
+
+Payload:
+
+```json
+{
+  "eventId": "EV_EGG_AND_SPOON",
+  "eventRunId": "run-uuid",
+  "competitionGender": "Female",
+  "winners": [
+    { "teamId": "TEAM_RED", "competitorId": "red-competitor-uuid" },
+    { "teamId": "TEAM_BLUE", "competitorId": "blue-competitor-uuid" }
+  ]
+}
+```
+
+Every team may appear once. All selections are validated before saving, and a
+failure rolls back the complete batch.
 
 ---
 

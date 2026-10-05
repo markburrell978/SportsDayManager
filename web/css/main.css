@@ -59,6 +59,31 @@ header {
   min-width: 220px;
 }
 
+.danger-zone {
+  border: 1px solid #b42318;
+  background: #fff5f4;
+}
+
+.danger-zone input {
+  min-width: 220px;
+  margin: 0 10px;
+  padding: 10px;
+}
+
+.danger-zone button {
+  padding: 10px 16px;
+  color: white;
+  background: #b42318;
+  border: 1px solid #8f1c13;
+  border-radius: 5px;
+}
+
+.danger-zone button:disabled {
+  color: #555555;
+  background: #dddddd;
+  border-color: #cccccc;
+}
+
 header h1 {
   margin: 0;
 }
@@ -609,6 +634,11 @@ Heats & Final Race Engine
   min-width: 220px;
 
   padding: 8px;
+}
+
+.save-heat-winners {
+  margin-bottom: 18px;
+  padding: 10px 16px;
 }
 
 .race-finalists {

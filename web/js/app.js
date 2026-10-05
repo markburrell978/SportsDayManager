@@ -22,6 +22,8 @@ const ApplicationState = {
 
   filteredCompetitors: [],
 
+  lastCreatedCompetitorTeamIdentifier: null,
+
   teams: [],
 
   leaderboard: [],
@@ -116,12 +118,14 @@ function setSportsDays(sportsDays, selectedIdentifier = null) {
     ApplicationState.currentSportsDay?.Active !== false;
   document.getElementById('btn-add-competitor').disabled =
     ApplicationState.currentSportsDay?.Active === false;
+  updateSportsDayDeletionControls();
 }
 
 /** Clear screen caches when switching annual Sports Days. */
 function clearSportsDayState() {
   ApplicationState.competitors = [];
   ApplicationState.filteredCompetitors = [];
+  ApplicationState.lastCreatedCompetitorTeamIdentifier = null;
   ApplicationState.teams = [];
   ApplicationState.leaderboard = [];
   ApplicationState.confirmationStatus = null;
@@ -170,6 +174,68 @@ function registerSportsDayEvents() {
   document
     .getElementById('btn-create-sports-day')
     .addEventListener('click', createNewSportsDay);
+  document
+    .getElementById('delete-sports-day-name')
+    .addEventListener('input', updateSportsDayDeletionConfirmation);
+  document
+    .getElementById('btn-delete-sports-day')
+    .addEventListener('click', deleteSelectedSportsDay);
+}
+
+/** Reset the guarded deletion controls for the selected Sports Day. */
+function updateSportsDayDeletionControls() {
+  const dangerZone = document.getElementById('sports-day-danger-zone');
+  const input = document.getElementById('delete-sports-day-name');
+  const confirmationName = document.getElementById(
+    'delete-sports-day-confirmation-name',
+  );
+  const message = document.getElementById('delete-sports-day-message');
+  const selectedName = ApplicationState.currentSportsDay?.Name || '';
+
+  dangerZone.hidden =
+    !ApplicationInterface.requiresSignIn ||
+    ApplicationState.sportsDays.length <= 1 ||
+    !selectedName;
+  confirmationName.textContent = selectedName;
+  input.value = '';
+  message.textContent = '';
+  message.className = '';
+  updateSportsDayDeletionConfirmation();
+}
+
+/** Enable deletion only after the exact selected name has been entered. */
+function updateSportsDayDeletionConfirmation() {
+  const enteredName = document.getElementById('delete-sports-day-name').value;
+  const selectedName = ApplicationState.currentSportsDay?.Name || '';
+
+  document.getElementById('btn-delete-sports-day').disabled =
+    !FormBehaviour.isSportsDayDeletionConfirmed(enteredName, selectedName);
+}
+
+/** Delete the selected Sports Day and switch to the remaining active entry. */
+async function deleteSelectedSportsDay() {
+  const input = document.getElementById('delete-sports-day-name');
+  const button = document.getElementById('btn-delete-sports-day');
+  const message = document.getElementById('delete-sports-day-message');
+  const deletedName = ApplicationState.currentSportsDay?.Name || '';
+
+  button.disabled = true;
+  message.textContent = '';
+  message.className = '';
+
+  try {
+    await ApplicationInterface.deleteSportsDay(input.value);
+    const sportsDays = await ApplicationInterface.getSportsDays();
+    setSportsDays(sportsDays);
+    clearSportsDayState();
+    await showPage('settings');
+    message.className = 'success';
+    message.textContent = `${deletedName} was deleted.`;
+  } catch (error) {
+    message.className = 'error';
+    message.textContent = error.message;
+    updateSportsDayDeletionConfirmation();
+  }
 }
 
 /** Create a clean active Sports Day from the selected reusable setup. */
@@ -1086,8 +1152,8 @@ async function startRaceEvent() {
   }
 }
 
-/** Save the selected competitor as the team’s category heat winner. */
-async function saveRaceHeatWinner(teamIdentifier, selectIdentifier) {
+/** Save all selected team heat winners for the visible race category. */
+async function saveRaceHeatWinners() {
   if (
     !ApplicationState.currentEvent ||
     ApplicationState.currentEvent.EventType !== 'HEAT_FINAL'
@@ -1095,12 +1161,17 @@ async function saveRaceHeatWinner(teamIdentifier, selectIdentifier) {
     return;
   }
 
-  const competitorIdentifier = document.getElementById(selectIdentifier).value;
+  const winners = Array.from(
+    document.querySelectorAll('.race-heat-control select'),
+  )
+    .filter((select) => select.value)
+    .map((select) => ({
+      teamId: select.dataset.teamIdentifier,
+      competitorId: select.value,
+    }));
 
-  if (!competitorIdentifier) {
-    showEventMessage('Please choose a heat winner.', true);
-
-    renderEvents();
+  if (!winners.length) {
+    showEventMessage('Choose at least one heat winner to save.', true);
 
     return;
   }
@@ -1108,17 +1179,19 @@ async function saveRaceHeatWinner(teamIdentifier, selectIdentifier) {
   try {
     setEventRequestPending(true);
 
-    await ApplicationInterface.saveRaceHeatWinner(
-      ApplicationState.currentEvent.ID,
-      ApplicationState.currentEventRun.ID,
-      ApplicationState.raceCategory,
-      teamIdentifier,
-      competitorIdentifier,
-    );
+    ApplicationState.currentRace =
+      await ApplicationInterface.saveRaceHeatWinners(
+        ApplicationState.currentEvent.ID,
+        ApplicationState.currentEventRun.ID,
+        ApplicationState.raceCategory,
+        winners,
+      );
 
     await refreshRaceEvent();
 
-    showEventMessage('Heat winner saved.');
+    showEventMessage(
+      `${winners.length} heat winner${winners.length === 1 ? '' : 's'} saved.`,
+    );
   } catch (error) {
     showEventMessage(error.message, true);
   } finally {
@@ -1303,9 +1376,11 @@ function updateTournamentPairingOptions() {
 
   selects.forEach((select) => {
     Array.from(select.options).forEach((option) => {
-      option.disabled =
-        option.value !== select.value &&
-        selectedTeamIdentifiers.includes(option.value);
+      option.disabled = FormBehaviour.shouldDisableTournamentOption(
+        option.value,
+        select.value,
+        selectedTeamIdentifiers,
+      );
     });
   });
 }
@@ -1536,13 +1611,11 @@ function renderPointProfiles() {
 </div>
 <div class="point-profile-form">
 <h3>${editingProfile ? 'Edit' : 'Add'} Point Profile</h3>
-<label>
-    Profile ID
-    <input id="point-profile-id"
-           type="text"
-           value="${EventView.escapeHtml(editingProfile ? editingProfile.ID : '')}"
-           ${editingProfile ? 'readonly' : ''}>
-</label>
+${
+  editingProfile
+    ? `<p><strong>Profile ID:</strong> ${EventView.escapeHtml(editingProfile.ID)}</p>`
+    : '<p>The profile ID will be generated automatically.</p>'
+}
 <label>
     Name
     <input id="point-profile-name"
@@ -1609,7 +1682,7 @@ function editPointProfile(identifier) {
 /** Validate the form, save the profile and refresh cached profile data. */
 async function savePointProfile() {
   const profile = {
-    ID: document.getElementById('point-profile-id').value.trim(),
+    ID: ApplicationState.editingPointProfileIdentifier || '',
     Name: document.getElementById('point-profile-name').value.trim(),
     First: document.getElementById('point-profile-first').value,
     Second: document.getElementById('point-profile-second').value,
@@ -1624,21 +1697,23 @@ async function savePointProfile() {
 
     saveButton.disabled = true;
 
+    let savedProfile;
+
     if (ApplicationState.editingPointProfileIdentifier) {
-      await ApplicationInterface.updatePointProfile(profile);
+      savedProfile = await ApplicationInterface.updatePointProfile(profile);
 
       ApplicationState.pointProfileMessage = 'Point profile updated.';
     } else {
-      await ApplicationInterface.createPointProfile(profile);
+      savedProfile = await ApplicationInterface.createPointProfile(profile);
 
       ApplicationState.pointProfileMessage = 'Point profile created.';
     }
 
     ApplicationState.pointProfileMessageIsError = false;
 
-    ApplicationState.editingPointProfileIdentifier = profile.ID;
+    ApplicationState.editingPointProfileIdentifier = savedProfile.ID;
 
-    delete ApplicationState.pointProfilesByIdentifier[profile.ID];
+    delete ApplicationState.pointProfilesByIdentifier[savedProfile.ID];
 
     ApplicationState.pointProfiles =
       await ApplicationInterface.getPointProfiles();
@@ -1651,12 +1726,8 @@ async function savePointProfile() {
   }
 }
 
-/** Require an identifier, name and four integer points values. */
+/** Require a name and four integer points values. */
 function validatePointProfile(profile) {
-  if (!profile.ID) {
-    throw new Error('Point profile ID is required.');
-  }
-
   if (!profile.Name) {
     throw new Error('Point profile name is required.');
   }
@@ -1828,6 +1899,10 @@ function registerCompetitorEvents() {
     .addEventListener('click', saveCompetitor);
 
   document
+    .getElementById('competitor-gender')
+    .addEventListener('change', synchroniseCompetitionGender);
+
+  document
     .getElementById('search-competitors')
     .addEventListener('input', filterCompetitors);
 
@@ -1838,6 +1913,17 @@ function registerCompetitorEvents() {
   document
     .getElementById('competitor-status')
     .addEventListener('change', filterCompetitors);
+}
+
+/** Match competition gender when the selected gender has a direct match. */
+function synchroniseCompetitionGender() {
+  const gender = document.getElementById('competitor-gender').value;
+  const competitionGender = document.getElementById('competition-gender');
+
+  competitionGender.value = FormBehaviour.getCompetitionGender(
+    gender,
+    competitionGender.value,
+  );
 }
 
 /** Populate the competitor form for a new or existing participant. */
@@ -1879,10 +1965,11 @@ function openCompetitorModal(person = null) {
 
     document.getElementById('competition-gender').value = 'Male';
 
-    document.getElementById('competitor-team').value = ApplicationState.teams
-      .length
-      ? ApplicationState.teams[0].ID
-      : '';
+    document.getElementById('competitor-team').value =
+      FormBehaviour.getPreferredTeamIdentifier(
+        ApplicationState.teams,
+        ApplicationState.lastCreatedCompetitorTeamIdentifier,
+      );
 
     document.getElementById('competitor-active').checked = true;
   }
@@ -1960,6 +2047,8 @@ async function saveCompetitor() {
       showCompetitorMessage('Competitor updated.');
     } else {
       await ApplicationInterface.createCompetitor(competitor);
+
+      ApplicationState.lastCreatedCompetitorTeamIdentifier = competitor.TeamID;
 
       showCompetitorMessage('Competitor created.');
     }

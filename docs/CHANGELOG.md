@@ -1,3 +1,15 @@
+# v1.3 manual-testing improvements — unreleased
+
+- Added guarded Sports Day deletion with exact-name confirmation, last-entry protection and automatic reactivation of the newest remaining Sports Day
+- Added one-request batch saving for one or more heat winners, with one screen refresh after the complete batch
+- Matched Male/Female competitor gender selections to competition gender while leaving Non-binary selection explicit
+- Reused the previous new competitor's team during the current session and reset that preference when changing Sports Days
+- Fixed tournament setup so every slot can return to `Choose team` while selected real teams remain unique
+- Generated new point-profile identifiers in the backend instead of asking the organiser to enter internal IDs
+- Added browser, service, API parity and transactional database regression coverage for the new behavior
+
+---
+
 # Named annual Sports Days and faster loading — 2026-10-05
 
 - Added a `sports_days` parent table and scoped all application records, reads and writes to one named Sports Day

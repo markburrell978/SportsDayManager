@@ -87,6 +87,8 @@ const APPLICATION_ACTIONS = Object.freeze({
 
   SAVE_RACE_HEAT_WINNER: 'saveRaceHeatWinner',
 
+  SAVE_RACE_HEAT_WINNERS: 'saveRaceHeatWinners',
+
   SAVE_RACE_FINAL_POSITIONS: 'saveRaceFinalPositions',
 
   GET_DOUBLE_TEAM_MATCH_FOR_EVENT: 'getDoubleTeamMatchForEvent',

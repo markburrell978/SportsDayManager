@@ -214,6 +214,11 @@ const ApplicationInterface = {
     });
   },
 
+  /** Permanently delete the selected Sports Day after exact-name confirmation. */
+  async deleteSportsDay(confirmationName) {
+    return await this.post('deleteSportsDay', { confirmationName });
+  },
+
   /**
    * Teams
    */
@@ -351,6 +356,21 @@ const ApplicationInterface = {
       teamId: teamIdentifier,
 
       competitorId: competitorIdentifier,
+    });
+  },
+
+  /** Save one or more selected heat winners in one request. */
+  async saveRaceHeatWinners(
+    eventIdentifier,
+    eventRunIdentifier,
+    competitionGender,
+    winners,
+  ) {
+    return await this.post('saveRaceHeatWinners', {
+      eventId: eventIdentifier,
+      eventRunId: eventRunIdentifier,
+      competitionGender,
+      winners,
     });
   },
 

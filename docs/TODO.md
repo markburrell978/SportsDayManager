@@ -1,5 +1,16 @@
 # Sports Day Manager Roadmap
 
+## v1.3 — Manual-testing improvements
+
+- [x] Match competitor and competition gender when a direct match exists
+- [x] Reuse the previously selected team for the next new competitor
+- [x] Allow every tournament slot to return to `Choose team`
+- [x] Generate new point-profile identifiers in the backend
+- [x] Delete a selected Sports Day with exact-name confirmation and last-entry protection
+- [x] Save one or more heat winners as one transactional batch
+- [x] Pass browser, service and database/API regression tests locally
+- [ ] Complete the production backup, review and release
+
 ## v1.2 — Named annual Sports Days and faster loading
 
 - [x] Preserve existing production records as `SportsDay2026`
