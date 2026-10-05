@@ -5,7 +5,7 @@ A reusable, mobile-friendly web application for running an annual Sports Day.
 ## Release and migration status
 
 - **Production:** GitHub Pages + Supabase, deployed and verified on 2026-10-02.
-- **Current development:** v1.2 adds named annual Sports Days and reduces API latency; it has passed local integration testing but is not deployed yet.
+- **Production release:** v1.2 adds named annual Sports Days and reduces API latency; deployed and verified on 2026-10-05.
 - The schema, transactional API, organiser sign-in, migrated data, least-privilege role and exact GitHub Pages CORS origin are validated.
 - The preserved v1.0.0 Apps Script deployment, Google Sheet and private backups remain available during the rollback period; its known leaderboard failure was accepted for cutover.
 

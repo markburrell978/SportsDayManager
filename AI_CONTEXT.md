@@ -49,12 +49,12 @@ the `sports-day-api` function are deployed. It contains the migrated restricted
 production data and must be treated as private. Only the allow-listed organiser
 can use the application API.
 
-The uncommitted v1.2 branch adds named annual Sports Days. Existing production
+The v1.2 release adds named annual Sports Days. Existing production
 records become `SportsDay2026`. Starting a new Sports Day copies teams, point
 profiles and event definitions, creates a clean first run for each event, and
 copies no competitors, engine records or results. Earlier Sports Days remain
-selectable and read-only. This migration and function version have passed local
-tests but are not deployed to the hosted project.
+selectable and read-only. The production backup was restore-tested and the
+schema, function and frontend were deployed on 2026-10-05.
 
 ## Source layout
 
@@ -218,8 +218,8 @@ The resulting Cloudflare branch preview and GitHub `quality.yml` check both
 pass. The ignored `.env.staging.json` contains public staging browser
 configuration and must remain untracked.
 
-Branch `v1.2_MultipleSportsDays` is the active development branch. Before its
-production release, review and merge its pull request, apply migration
-`202610020001_sports_days.sql`, deploy the Edge Function, publish the frontend,
-and run the documented smoke test. Keep the preserved Apps Script, Sheet and
-private backups until the owner explicitly approves their deletion.
+The v1.2 release was delivered through pull request #3. Migration
+`202610020001_sports_days.sql`, the Edge Function and the frontend were deployed
+in that order and passed the post-deployment smoke test. Keep the preserved Apps
+Script, Sheet and private backups until the owner explicitly approves their
+deletion.

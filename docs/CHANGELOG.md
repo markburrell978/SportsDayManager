@@ -8,7 +8,9 @@
 - Pinned Edge Function execution to the London database region and parallelized independent frontend loads
 - Added responsive annual controls, immediate loading states on year changes and friendly point-profile names in the event list
 - Passed formatting, linting, unit, browser, migration, database/API parity and authenticated Edge smoke tests locally
-- Kept the hosted database, Edge Function and production website unchanged pending release approval
+- Created and checksum-verified a private production backup, then restore-tested all application data in an isolated local database
+- Deployed the additive schema and API before publishing the frontend, preserving all existing production counts and avoiding a version gap
+- Verified the live named selector, leaderboard, events, competitors, historical protection and production performance after deployment
 
 ---
 

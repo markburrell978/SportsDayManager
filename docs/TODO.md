@@ -9,9 +9,9 @@
 - [x] Start every new year with empty competitors, results and engine data
 - [x] Reduce database round trips, parallelize independent reads and pin the Edge Function to London
 - [x] Pass local unit, browser, migration, database/API and Edge smoke tests
-- [ ] Review and merge the v1.2 pull request
-- [ ] Back up production and deploy the schema, function and frontend together
-- [ ] Complete the post-deployment smoke test
+- [x] Review and merge the v1.2 pull request
+- [x] Back up production and deploy the schema, function and frontend in one release window
+- [x] Complete the post-deployment smoke test
 
 ## v1.1 — Supabase production release
 
