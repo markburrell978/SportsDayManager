@@ -70,7 +70,7 @@ Historical engine and Results rows are never reassigned, deleted or made current
 
 Engine completion and result confirmation remain separate. Confirmation validates a completed current run and the current point profile, extracts engine placings, then replaces that run's Results in one transaction. Reconfirmation is correctable and historical Results remain untouched.
 
-`Results.position` is authoritative. `points_awarded` is retained only as the v1 compatibility snapshot. The current profile is used for leaderboard and History display:
+`Results.position` stores confirmed placings. In v1.4 SQL, `points_awarded` stores the official award at confirmation and is authoritative for leaderboard and History display. Changes to a profile or its event assignment mark affected scored current runs for reconfirmation without rewriting awards. The retained Google backend keeps its previous profile-based display for rollback compatibility. Confirmation uses the current profile:
 
 - first through fourth map to the four integer fields;
 - undefined/later places award zero;
@@ -92,7 +92,7 @@ Both use `matches`, as in v1.0.0. Round Robin creates each active-team pairing. 
 
 ### Distance
 
-The field-tested engine records observed Male/Female team places in `distance_results`. Each category uses all four active teams and positions 1–4 exactly once. Both categories must be valid before completion. Completed runs require reset for correction. `attempts` remains reserved and unused.
+The field-tested engine records observed Male/Female team places in `distance_results`. Each category uses all four active teams and positions 1–4 exactly once. Both categories must be valid before completion. v1.4 permits validated category corrections in a completed current run, preserving its completion timestamp and the other category. Saved corrections require reconfirmation; old reset-created runs stay read-only. `attempts` remains reserved and unused.
 
 ### Double Team
 
@@ -100,7 +100,7 @@ One run-scoped fixture contains two two-team sides. All four teams are distinct.
 
 ## Leaderboard
 
-Every active team appears, including zero/negative totals. Inactive teams and their Results are excluded. Only Results for the unique current run of each Event contribute. Totals recalculate against current point profiles. Equal totals share competition rank; alphabetical order is only a stable secondary sort.
+Every active team appears, including zero/negative totals. Inactive teams and their Results are excluded. Only Results for the unique current run of each Event contribute. In v1.4 SQL, totals sum saved confirmed awards until reconfirmation. Equal totals share competition rank; alphabetical order is only a stable secondary sort.
 
 ## Event History
 

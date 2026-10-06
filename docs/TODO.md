@@ -1,5 +1,47 @@
 # Sports Day Manager Roadmap
 
+## v1.4 — Stability and reliable corrections
+
+The owner selected stability first. See [v1.4 preparation](V1_4_PLAN.md) for
+the three selected improvements, acceptance criteria and scoring decisions.
+
+- [x] Review the released v1.3.1 baseline and prepare upgrade options
+- [x] Select stability and reliable corrections as the release focus
+- [x] Rehearse the existing backup: 44 awards across nine confirmed runs, no differences
+- [x] Preserve form drafts when saves fail and guard navigation with unsaved work
+- [x] Allow corrections to completed distance runs without resetting
+- [x] Keep confirmed SQL scores fixed until deliberate reconfirmation
+- [x] Complete TDD regression coverage, fictional database rehearsal and browser validation
+- [ ] Owner manual review (explicitly deferred in [the review record](V1_4_DEFERRED_REVIEW.md))
+- [x] Fresh production backup, restore test and score comparison: 44 awards, no differences
+- [x] Include the stability changes in the approved v1.5 release
+
+## v1.5 — Tournament view
+
+The owner selected a read-only app for participants and spectators showing the currently active Sports Day.
+See [v1.5 plan](V1_5_PLAN.md).
+
+- [x] Participant list and team display
+- [x] Confirmed leaderboard
+- [x] Individual event results with confirmation state
+- [x] Phone-friendly navigation and refresh
+- [x] Dedicated GET-only read response and database-enforced read-only transaction
+- [x] Fictional local tests and phone-sized browser validation
+- [x] Owner selected public links with no viewing code and participant names
+- [x] Set an existing Sports Day current in organiser Settings without changing its records
+- [x] Owner approved merging the combined v1.4/v1.5 changes
+- [x] Fresh private backup, restore test, additive migration and both API deployments
+- [x] Publish the release through the existing main-branch Pages workflow
+
+See [the release report](V1_5_RELEASE_REPORT.md) and
+[the Tournament view implementation report](V1_5_PARTICIPANT_REPORT.md).
+
+## v1.3.1 — Disabled event warnings
+
+- [x] Hide disabled events from tab banners and their own run warnings
+- [x] Preserve progress, results, revisions and confirmed scores on disable/re-enable
+- [x] Merge, deploy and verify the patch; owner confirmed the fix works
+
 ## v1.3 — Manual-testing improvements
 
 - [x] Match competitor and competition gender when a direct match exists

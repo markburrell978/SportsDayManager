@@ -1,3 +1,29 @@
+# v1.5.0 — Tournament view and stability — 2026-10-06
+
+- Add a separate phone-friendly read-only tournament view for participants and spectators following the active Sports Day
+- Show confirmed leaderboard, filtered participant names and individual event team awards/progress
+- Refresh visible pages every 30 seconds, retain the last successful view after connection failures and clear revoked access
+- Reuse organiser confirmed scoring and coloured team labels
+- Add a dedicated GET-only minimal data endpoint with database-enforced read-only transactions
+- Open tournament links without login/viewing codes, including participant names, as selected by the owner
+- Add an organiser Settings action to make an existing Sports Day current while preserving its records
+- Record explicitly deferred v1.4 owner checks and verify a private source checkpoint before starting v1.5
+
+---
+
+# v1.4 — Stability — included in v1.5.0
+
+- Preserve race heat/final, distance and event-setting drafts after rejected saves
+- Show nearby form feedback and distinguish saved writes from subsequent refresh failures
+- Guard event/category/tab/Sports Day navigation, sign-out, reset/confirmation and reload with unsaved entries; block navigation/repeated saves during pending writes
+- Add deliberate corrections to completed distance runs without reset or loss of the other category
+- Freeze SQL leaderboard/history awards until reconfirmation; profile scoring changes mark affected scored current runs through database triggers
+- Preserve the retained Google profile-based scoring behavior and generated adapter checks
+- Add a read-only score reconciliation query; existing backup rehearsal found no differences across 44 awards in nine runs
+- Reserve v1.5 for the participant-facing active Sports Day application
+
+---
+
 # v1.3.1 — Disabled event warning fix — 2026-10-06
 
 - Excluded disabled events from Events and Leaderboard confirmation warnings and their own run notices

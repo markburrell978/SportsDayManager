@@ -731,7 +731,7 @@ Payload:
 }
 ```
 
-Completed distance runs cannot be edited. Corrections require the existing Reset Event workflow.
+v1.4 allows category corrections to the completed current distance run. All four active teams and unique positions remain required. Completion status, timestamp, the other category and official Results are preserved; changed engine rows require reconfirmation. Previous reset-created runs stay read-only.
 
 ---
 
@@ -816,9 +816,9 @@ Response data:
 
 Every active team is returned, including teams with zero points. Inactive teams are excluded. Rows are sorted by points descending and then team name ascending; equal totals share a competition-ranking position.
 
-Totals are calculated when requested from confirmed `Results.Position` rows belonging to each event's current Event Run and the event's current point profile. `Results.PointsAwarded` is not the general source of truth. Historical run results remain stored but do not count, and point-profile edits affect the next response without reconfirmation.
+In v1.4 SQL, totals sum `Results.PointsAwarded` from each event's current run for active teams. Historical run results remain stored but do not count. Profile edits or event-profile assignment changes require reconfirmation and do not alter official totals in the meantime. The retained Google backend keeps its earlier profile-based calculation for rollback compatibility.
 
-For round-robin ties, rows sharing a position occupy that position and the following places. Each tied team receives the rounded-up average of the current profile points for those occupied places.
+For round-robin ties, rows sharing a position occupy that position and the following places. At confirmation, each tied team receives the rounded-up average of the current profile points for those occupied places. That award stays fixed until reconfirmation in v1.4 SQL.
 
 ---
 
@@ -884,8 +884,45 @@ Response data is equivalent to:
 
 Runs are ordered by RunNumber descending and include both the current and previous runs. `Outcomes` contains a concise event-type-specific summary assembled from Matches, RaceResults, DistanceResults or DoubleTeamMatches for that EventRunID.
 
-Results are official only when saved Results rows exist. Unconfirmed runs may still contain engine outcomes but use `ResultStatus: "NOT_CONFIRMED"`. Displayed points are recalculated from saved Position and the event's current point profile; the saved PointsAwarded snapshot is not authoritative. Round-robin tied groups reuse the live leaderboard's occupied-place averaging logic.
+Results are official only when saved Results rows exist. Unconfirmed runs may still contain engine outcomes but use `ResultStatus: "NOT_CONFIRMED"`. In v1.4 SQL, displayed points use the saved `PointsAwarded` values, including the tied awards calculated at confirmation. Updating a shared profile does not rewrite historical awards.
 
 For Heat & Final and Distance, `Category` is populated only when Results rows align deterministically with the run's ordered engine rows. Otherwise category is blank, engine outcomes remain separated into Male and Female sections, and confirmed Results remain one combined list.
 
 This action does not expose write, restore, confirmation, deletion or current-run selection operations.
+
+---
+
+# Tournament view — v1.5
+
+`GET /functions/v1/sports-day-view` is a separate read-only endpoint. It accepts no
+organiser action, selected Sports Day, historical-edit flag or mutation payload.
+The server always resolves the active Sports Day from one SQL snapshot inside a
+read-only transaction. POST is rejected with 405; query parameters with 400.
+
+It returns the usual envelope containing `sportsDay`, minimal `teams`, optional
+`participants` (name/team only), `participantNamesVisible`, confirmed `leaderboard`
+and `events` (format, status, enabled/confirmation state and official team awards).
+Race/distance awards combine both categories per team; no unconfirmed engine data
+is exposed. Age, gender, competitor IDs, profiles, historical runs and credentials
+are excluded.
+
+Server configuration: `SPORTS_DAY_VIEW_ACCESS` is `disabled` (default) or `public`.
+Public reads require no login or viewing code. Participant names require
+`SPORTS_DAY_VIEW_NAMES=true` and are hidden otherwise. CORS uses the existing exact
+allowed-origin list. Responses are `no-store`; internal errors are hidden. The
+organiser endpoint's Supabase authentication/allow-list remains unchanged.
+
+The owner selected public participant viewing including names on 2026-10-06.
+The approved release enables public viewing and names. See
+[the release report](V1_5_RELEASE_REPORT.md) and
+[the tournament view implementation report](V1_5_PARTICIPANT_REPORT.md).
+
+## setCurrentSportsDay — organiser only
+
+`POST /functions/v1/sports-day-api` with action `setCurrentSportsDay` and payload
+`{ "sportsDayId": "existing-day-identifier" }` activates an existing day without
+copying, deleting or resetting records. It requires organiser authentication and
+runs under the existing mutation lock/transaction. Missing/invalid IDs are rejected.
+Selecting the already-current day changes nothing. The response contains `ID`,
+`Name`, `Active` and the canonical `SportsDays` list. The previous active day becomes
+historical/read-only by default. The participant endpoint cannot call this action.

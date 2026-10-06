@@ -9,6 +9,7 @@ import {
   deleteSportsDay,
   getSportsDay,
   getSportsDays,
+  setCurrentSportsDay,
   SportsDayValidationError,
 } from './sports_days.js';
 
@@ -24,6 +25,7 @@ export const actions = new Set([
   'getSportsDays',
   'createSportsDay',
   'deleteSportsDay',
+  'setCurrentSportsDay',
   ...pageActions,
 ]);
 export const getActions = new Set([
@@ -62,6 +64,13 @@ export async function executeInTransaction(transaction, request, options = {}) {
       success: true,
       message: '',
       data: await getSportsDays(transaction),
+    };
+  }
+  if (request.action === 'setCurrentSportsDay') {
+    return {
+      success: true,
+      message: 'Current Sports Day updated.',
+      data: await setCurrentSportsDay(transaction, request.payload),
     };
   }
   if (request.action === 'createSportsDay') {
@@ -108,10 +117,6 @@ export async function executeInTransaction(transaction, request, options = {}) {
       ),
     };
   }
-  const previousEvent =
-    request.action === 'updateEvent'
-      ? repository.findById('Events', request.payload.ID)
-      : null;
   const response = dispatch(request, services, ServiceUtilities);
   if (!response.success) {
     throw new ValidationError(response.message);
@@ -126,23 +131,6 @@ export async function executeInTransaction(transaction, request, options = {}) {
     );
   }
   await repository.flush();
-  if (
-    request.action === 'updateEvent' &&
-    previousEvent?.PointsProfileID !== response.data.PointsProfileID
-  ) {
-    await transaction`
-      update public.event_runs event_run
-      set results_revision = results_revision + 1
-      where event_run.event_id = ${response.data.ID}
-        and event_run.sports_day_id = ${sportsDay.id}
-        and event_run.is_current
-        and exists (
-          select 1 from public.results result
-          where result.event_run_id = event_run.id
-            and result.sports_day_id = event_run.sports_day_id
-        )
-    `;
-  }
   if (request.action === 'confirmEventResults') {
     const runIdentifier =
       request.payload.eventRunId || request.payload.EventRunID;

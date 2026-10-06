@@ -130,7 +130,7 @@ Migration `202609230001_confirmation_revisions.sql` tracks meaningful current-ru
 | `event_run_id` | text | yes | Same-Event run reference |
 | `team_id` | text | yes | References `teams.id` |
 | `position` | integer | yes | Positive authoritative placing |
-| `points_awarded` | integer | yes | Compatibility snapshot only |
+| `points_awarded` | integer | yes | Official confirmed award in v1.4 SQL |
 | `sequence_number` | integer | yes | Positive and unique per run |
 | `created_at` | timestamptz | yes | Database maintained |
 | `updated_at` | timestamptz | yes | Database maintained |
@@ -191,11 +191,11 @@ Reserved compatibility table for the optional unused Attempts sheet. It preserve
 
 ### Leaderboard
 
-Totals join active teams to confirmed Results from each Event's current run and the Event's current point profile. Ordinary placing points are dynamic. Round-robin tied rows use the ceiling of the mean points across occupied places. Competition ranking is assigned after totals; alphabetical ordering only stabilizes display.
+In v1.4 SQL, totals sum saved confirmed awards for active teams from each Event's current run. At confirmation, round-robin tied rows receive the ceiling of the mean profile points across occupied places. Profile changes do not alter official awards until reconfirmation. Competition ranking is assigned after totals; alphabetical ordering only stabilizes display.
 
 ### Event History
 
-History joins every Event Run to its engine rows and Results, newest first. It is not a snapshot table. Historical displayed points use the Event's current point profile. It exposes no restore/edit/delete action.
+History joins every Event Run to its engine rows and Results, newest first. It is not a snapshot table. In v1.4 SQL, historical displayed points use the stored confirmed awards. It exposes no restore/edit/delete action.
 
 ### Transactions required in later API stages
 

@@ -74,6 +74,21 @@ changes after confirmation. The API acknowledges the current revision in the
 same transaction that replaces official Results. This drives the frontend
 pending-result notices without altering the original action response shapes.
 
+## v1.4 SQL scoring extension (local, unreleased)
+
+The original Stage 4 profile-based behavior below is migration history. In v1.4,
+SQL leaderboard and History use saved `PointsAwarded` until reconfirmation. The
+retained Google backend keeps its earlier calculation. Adapter generation still
+checks the maintained shared services; the API regression explicitly tests the
+intentional scoring difference rather than dropping parity coverage.
+
+Migration `202610060001_scoring_configuration_revisions.sql` marks affected scored
+current runs when profile point values or event profile assignments change. It
+replaces the API's previous assignment-only revision update. The database migration
+must precede the API release. The Deno test task includes `stability_test.js` for
+completed-distance corrections, transactional rollback and scoring reconciliation.
+See [the v1.4 report](../V1_4_STABILITY_REPORT.md).
+
 ## Access boundary
 
 The handler validates bearer tokens with Supabase Auth's `/auth/v1/user`

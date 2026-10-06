@@ -1,7 +1,7 @@
 # Local practice website
 
-Status: working local frontend and organiser sign-in, validated on 2026-09-23.
-The live GitHub Pages site still uses Apps Script. Hosted staging is documented
+Status: working local organiser and tournament preview, validated on 2026-10-06.
+The live GitHub Pages site uses released v1.5.0 with Supabase. Hosted staging is documented
 separately in `docs/STAGING_REPORT.md`.
 
 ## Try it
@@ -29,8 +29,9 @@ events explain what must be finished first.
 
 Warnings survive a page reload because pending changes are tracked in the
 database. Saving the same result again does not create a warning. Empty
-fixtures, entrant registration and point-profile edits do not create
-pending-result warnings. Resetting starts a new run; warnings concern current
+fixtures and entrant registration do not create pending-result warnings. In local
+v1.4, changes to scoring values flag affected scored runs for reconfirmation;
+profile name edits and unchanged values do not. Resetting starts a new run; warnings concern current
 runs only. The retained Apps Script backend does not provide this metadata.
 
 ## Start or restart
@@ -45,7 +46,7 @@ python3 supabase/scripts/practice.py
 
 Keep that terminal running. Stop any separate `supabase functions serve`
 process before starting the launcher. The launcher serves the website only on
-this computer, starts the local Edge Function, and creates or reuses one
+this computer, starts both local Edge Functions, and creates or reuses one
 fictional organiser account.
 
 Ctrl+C stops the practice website and function server; the local Supabase
@@ -63,7 +64,7 @@ private sign-in file.
 ## Connection and session behavior
 
 - `web/js/config.js` retains the production Apps Script endpoint.
-- `web/js/runtime-config.js` defaults to Apps Script. The practice server
+- `web/js/runtime-config.js` defaults to production Supabase. The practice server
   replaces this response with public local Supabase settings.
 - Provider selection is centralized in `web/js/api.js`; a URL parameter or
   browser-storage value cannot change it.
@@ -111,3 +112,17 @@ temporary databases, which were then removed.
 The local practice milestone is complete. The remaining work is tracked in
 `docs/TODO.md` and focuses on the exact production website origin, the failing
 Apps Script leaderboard rollback path, deployment review and live cutover.
+
+## Tournament preview — local v1.5
+
+Open http://127.0.0.1:8080/participants.html directly. No login or viewing code is
+required. The tournament view follows the current Sports Day rather than whichever
+historical day the organiser is viewing. In the organiser app, select a day in the
+header and choose **Settings → Current Sports Day → Make current**. All records
+are preserved; the tournament view follows on refresh (automatically every 30 seconds
+while visible).
+
+Local practice enables public viewing and fictional names. The separate endpoint
+returns minimal read-only data; mutations, demographics and historical selection
+are unavailable. Organiser writes still require sign-in. The owner chose public
+links/names for the approved v1.5 release. Practice remains isolated from production.

@@ -416,3 +416,7 @@ enabled = true
 # The handler verifies Supabase Auth and an explicit organiser allow-list.
 [functions.sports-day-api]
 verify_jwt = false
+
+# Dedicated participant reads use explicit server-side viewing access, disabled by default.
+[functions.sports-day-view]
+verify_jwt = false
