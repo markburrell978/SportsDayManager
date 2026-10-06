@@ -755,6 +755,12 @@ Method: `GET`. Requires the same verified organiser access as other actions. Ret
 
 `ResultsConfirmed` means official Results already exist; `NeedsConfirmation` means saved engine changes are newer than the last confirmation, or a complete run has never been confirmed. Both can be true. `CanConfirm` requires completion. Current unfinished runs with saved results can need confirmation without being ready to confirm. Empty fixtures/entrants and no-op saves do not create warnings. Reconfirmation acknowledges the revision in the same transaction as Results replacement. Reset creates a clean new current run.
 
+Each row also includes `Enabled`. Disabled events remain visible with their saved
+status and confirmation history, but `NeedsConfirmation` and `CanConfirm` are
+false and their warning banners and run notices are hidden. Disabling an event
+does not reset runs, fixtures, results or revision metadata. Re-enabling it restores
+any outstanding warnings. Existing confirmed leaderboard points are preserved.
+
 This endpoint powers the Events and Leaderboard notices and the prominent confirmation button. It does not change scores or the original 28 response shapes. The frontend skips this call for Apps Script.
 
 ## confirmEventResults

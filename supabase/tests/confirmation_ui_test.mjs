@@ -140,6 +140,45 @@ test('record identifiers stay in data attributes instead of executable handlers'
   assert.doesNotMatch(matchMarkup, /saveMatchWinner\('/);
 });
 
+test('disabled events retain run progress without confirmation warnings', () => {
+  const container = { innerHTML: '' };
+  context.document = { getElementById: () => container };
+  for (const progress of ['IN_PROGRESS', 'COMPLETE']) {
+    eventView.renderEventDetails(
+      {
+        ID: 'DISABLED',
+        Name: 'Paused event',
+        EventType: 'ROUND_ROBIN',
+        Enabled: false,
+      },
+      null,
+      [],
+      [],
+      false,
+      '',
+      false,
+      {
+        RunNumber: 2,
+        Status: progress,
+        NeedsConfirmation: true,
+        ResultsConfirmed: false,
+      },
+    );
+    assert.match(container.innerHTML, new RegExp(progress));
+    assert.match(container.innerHTML, /event-disabled-notice/);
+    assert.doesNotMatch(
+      container.innerHTML,
+      /id="confirmation-help"|confirmation-button-pending|id="btn-confirm-results"/,
+    );
+  }
+  assert.equal(
+    eventView.renderConfirmationBanner([
+      { EventName: 'Paused event', Enabled: false, NeedsConfirmation: true },
+    ]),
+    '',
+  );
+});
+
 test('heat winners are selected by team and saved with one batch control', () => {
   const teams = [
     { ID: 'TEAM_ONE', Name: 'One' },
