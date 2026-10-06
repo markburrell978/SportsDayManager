@@ -104,6 +104,51 @@ test('participant screens escape names, reuse team colours and show confirmed re
   );
 });
 
+test('Tournament view hides disabled events and shows them again when enabled without changing scores', async () => {
+  const { ParticipantView } = await components();
+  const snapshot = page();
+  snapshot.events[0].name = 'Enabled distance';
+  snapshot.events.push({
+    ...snapshot.events[0],
+    identifier: 'DISABLED_EVENT',
+    name: 'Disabled tournament',
+    enabled: false,
+    format: 'TOURNAMENT',
+    needsConfirmation: false,
+  });
+  const originalSnapshot = structuredClone(snapshot);
+  const originalLeaderboard = ParticipantView.render(snapshot, {
+    tab: 'leaderboard',
+  });
+  const markup = ParticipantView.render(snapshot, { tab: 'events' });
+  assert.match(markup, /Enabled distance/);
+  assert.doesNotMatch(markup, /Disabled tournament|DISABLED_EVENT/);
+  assert.deepEqual(snapshot, originalSnapshot);
+  assert.equal(
+    ParticipantView.render(snapshot, { tab: 'leaderboard' }),
+    originalLeaderboard,
+  );
+  snapshot.events[1].enabled = true;
+  assert.match(
+    ParticipantView.render(snapshot, { tab: 'events' }),
+    /Disabled tournament/,
+  );
+});
+
+test('Tournament view explains when no enabled events are available', async () => {
+  const { ParticipantView } = await components();
+  const snapshot = page();
+  snapshot.events[0].enabled = false;
+  const markup = ParticipantView.render(snapshot, { tab: 'events' });
+  assert.match(markup, /No enabled events are available/);
+  assert.doesNotMatch(markup, /data-participant-event|confirmed team results/i);
+  snapshot.events = [];
+  assert.match(
+    ParticipantView.render(snapshot, { tab: 'events' }),
+    /No enabled events are available/,
+  );
+});
+
 test('participant transport sends an anonymous read without organiser credentials', async () => {
   const calls = [];
   const context = await components(async (address, options) => {

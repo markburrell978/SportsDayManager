@@ -5,7 +5,7 @@ A reusable, mobile-friendly web application for running an annual Sports Day.
 ## Release and migration status
 
 - **Production:** GitHub Pages + Supabase, deployed and verified on 2026-10-02.
-- **Production release:** v1.5.0 adds the public read-only Tournament view and current Sports Day controls, together with the v1.4 stability improvements; approved on 2026-10-06.
+- **Production release:** v1.5.1 adds the public read-only Tournament view and current Sports Day controls, together with the v1.4 stability improvements. The v1.5.1 patch hides disabled events from Tournament view; approved on 2026-10-06.
 - The schema, transactional API, organiser sign-in, migrated data, least-privilege role and exact GitHub Pages CORS origin are validated.
 - The preserved v1.0.0 Apps Script deployment, Google Sheet and private backups remain available during the rollback period; its known leaderboard failure was accepted for cutover.
 
