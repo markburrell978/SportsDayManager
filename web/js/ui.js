@@ -190,9 +190,9 @@ ${this.renderEventHistory(eventHistory, historyLoading, historyError)}`
     : `
 ${this.renderEventConfiguration(event, availablePointProfiles, requestPending)}
 
-${!eventEnabled ? '<p class="event-disabled-notice">This event is disabled. Enable it in Event settings before entering results.</p>' : ''}
+${!eventEnabled ? '<p class="event-disabled-notice">This event is disabled. Its progress is preserved and unfinished-results warnings are hidden. Enable it in Event settings to resume.</p>' : ''}
 
-${this.renderEventRun(eventRun, eventControlsDisabled)}
+${this.renderEventRun(eventRun, eventControlsDisabled, eventEnabled)}
 
 ${this.renderPointsProfile(pointsProfile)}
 
@@ -700,7 +700,10 @@ ${outcomes.Fixtures.length > 1 ? `<h5>Fixture ${index + 1}</h5>` : ''}
       return `<div class="confirmation-banner confirmation-banner-error" role="status">${this.escapeHtml(error)}</div>`;
     }
     const pending = (statuses || []).filter(
-      (status) => status.NeedsConfirmation,
+      (status) =>
+        status.NeedsConfirmation &&
+        status.Enabled !== false &&
+        status.Enabled !== 'FALSE',
     );
     if (!pending.length) {
       return '';
@@ -720,14 +723,15 @@ ${outcomes.Fixtures.length > 1 ? `<h5>Fixture ${index + 1}</h5>` : ''}
   },
 
   /** Render run controls and emphasize confirmation when saved results changed. */
-  renderEventRun(eventRun, requestPending) {
+  renderEventRun(eventRun, requestPending, eventEnabled = true) {
     if (!eventRun) {
       return '';
     }
     const resultsConfirmed = eventRun.ResultsConfirmed === true;
-    const canConfirm = eventRun.Status === 'COMPLETE';
+    const canConfirm = eventEnabled && eventRun.Status === 'COMPLETE';
     const needsConfirmation =
-      eventRun.NeedsConfirmation ?? (canConfirm && !resultsConfirmed);
+      eventEnabled &&
+      (eventRun.NeedsConfirmation ?? (canConfirm && !resultsConfirmed));
     const pendingMessage = !canConfirm
       ? 'Results have changed. Finish the event, then confirm them to update the leaderboard.'
       : resultsConfirmed

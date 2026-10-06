@@ -1,3 +1,11 @@
+# v1.3.1 — Disabled event warning fix — 2026-10-06
+
+- Excluded disabled events from Events and Leaderboard confirmation warnings and their own run notices
+- Preserved progress, fixtures, results and confirmation revisions when disabling or re-enabling events
+- Explained disabled state beside the preserved run status and covered all five event formats with regression tests
+
+---
+
 # v1.3 manual-testing improvements — 2026-10-06
 
 - Added guarded Sports Day deletion with exact-name confirmation, last-entry protection and automatic reactivation of the newest remaining Sports Day

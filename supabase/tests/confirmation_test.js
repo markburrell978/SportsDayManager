@@ -13,7 +13,7 @@ const databaseConnection = postgres(requestAddress, { prepare: false, max: 1 });
 const rollback = new Error('rollback confirmation fixtures');
 
 Deno.test(
-  'confirmation notices track all five engines, ignore no-op saves and clear only on confirmation/reset',
+  'confirmation notices track all engines and exclude disabled events without changing saved progress',
   async () => {
     try {
       await databaseConnection.begin(async (transaction) => {
@@ -54,6 +54,77 @@ Deno.test(
             eventId: eventIdentifier,
             eventRunId: eventRunIdentifier,
           };
+          /** Verify a disable/re-enable round trip preserves progress, revisions and scores. */
+          async function assertDisabledEventPreservesProgress() {
+            const revisionsBeforeDisabling = await transaction`
+            select * from public.event_runs where id = ${eventRunIdentifier}
+          `;
+            const leaderboardBeforeDisabling = await call('getLeaderboard');
+            const runBeforeDisabling = await call(
+              'getCurrentEventRun',
+              eventPayload,
+            );
+            const repositoryBeforeDisabling = await call(
+              'getEventsPage',
+              eventPayload,
+            );
+            const savedResultsBeforeDisabling = await transaction`
+            select * from public.results where event_run_id = ${eventRunIdentifier} order by id
+          `;
+            await call('updateEvent', { ID: eventIdentifier, Enabled: false });
+            const disabledStatus = await status(eventIdentifier);
+            assert.equal(disabledStatus.Enabled, false);
+            assert.equal(disabledStatus.NeedsConfirmation, false);
+            assert.equal(disabledStatus.CanConfirm, false);
+            assert.deepEqual(
+              await call('getCurrentEventRun', eventPayload),
+              runBeforeDisabling,
+            );
+            const disabledPage = await call('getEventsPage', eventPayload);
+            assert.equal(disabledPage.selectedEvent.Enabled, false);
+            assert.equal(
+              disabledPage.selectedEvent.Status,
+              repositoryBeforeDisabling.selectedEvent.Status,
+            );
+            for (const field of [
+              'matches',
+              'race',
+              'doubleTeamMatch',
+              'distance',
+            ]) {
+              assert.deepEqual(
+                disabledPage[field],
+                repositoryBeforeDisabling[field],
+              );
+            }
+            assert.deepEqual(
+              await transaction`
+            select * from public.results where event_run_id = ${eventRunIdentifier} order by id
+          `,
+              savedResultsBeforeDisabling,
+            );
+            assert.equal(
+              (await call('getLeaderboardPage')).confirmationStatus.find(
+                (row) => row.EventID === eventIdentifier,
+              ).NeedsConfirmation,
+              false,
+            );
+            assert.deepEqual(
+              await transaction`
+            select * from public.event_runs where id = ${eventRunIdentifier}
+          `,
+              revisionsBeforeDisabling,
+            );
+            assert.deepEqual(
+              await call('getLeaderboard'),
+              leaderboardBeforeDisabling,
+            );
+            await call('updateEvent', { ID: eventIdentifier, Enabled: true });
+            assert.equal(
+              (await status(eventIdentifier)).NeedsConfirmation,
+              true,
+            );
+          }
           await transaction`insert into public.events(id,name,event_type,point_profile_id,display_order) values(${eventIdentifier},${type},${type},${profile},99)`;
           await transaction`insert into public.event_runs(id,event_id,run_number) values(${eventRunIdentifier},${eventIdentifier},1)`;
           assert.equal(
@@ -81,6 +152,9 @@ Deno.test(
                 winnerId: fixture.Team1ID,
                 eventRunId: eventRunIdentifier,
               });
+              if (fixture.ID === fixtures[0].ID) {
+                await assertDisabledEventPreservesProgress();
+              }
             }
             for (const fixture of await call(
               'getMatchesForEvent',
@@ -124,6 +198,9 @@ Deno.test(
                   teamId: team,
                   competitorId: team + gender,
                 });
+                if (gender === 'Male' && team === teams[0]) {
+                  await assertDisabledEventPreservesProgress();
+                }
               }
               assert.equal(
                 (await status(eventIdentifier)).NeedsConfirmation,
@@ -166,6 +243,9 @@ Deno.test(
                   position: itemIndex + 1,
                 })),
               });
+              if (gender === 'Male') {
+                await assertDisabledEventPreservesProgress();
+              }
               const pending = await status(eventIdentifier);
               assert.equal(pending.NeedsConfirmation, true);
               assert.equal(
@@ -200,6 +280,7 @@ Deno.test(
             true,
             type + ' awaiting first confirmation',
           );
+          await assertDisabledEventPreservesProgress();
           await call('confirmEventResults', eventPayload);
           assert.equal(
             (await status(eventIdentifier)).NeedsConfirmation,
@@ -219,6 +300,7 @@ Deno.test(
               true,
               type + ' edited after confirmation',
             );
+            await assertDisabledEventPreservesProgress();
             // A fresh read recovers the pending state without any browser memory.
             assert.equal(
               (await status(eventIdentifier)).ResultsConfirmed,
