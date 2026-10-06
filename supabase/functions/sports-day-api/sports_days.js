@@ -30,6 +30,35 @@ export async function getSportsDay(transaction, requestedIdentifier) {
   return rows[0] || null;
 }
 
+/** Activate an existing Sports Day without copying, deleting or resetting its records. */
+export async function setCurrentSportsDay(transaction, payload) {
+  const sportsDayIdentifier = payload.sportsDayId || payload.SportsDayID;
+  if (typeof sportsDayIdentifier !== 'string' || !sportsDayIdentifier.trim()) {
+    throw new SportsDayValidationError(
+      'Select the Sports Day to make current.',
+    );
+  }
+  const [sportsDay] = await transaction`
+    select id, name, is_active from public.sports_days
+    where id = ${sportsDayIdentifier} for update
+  `;
+  if (!sportsDay) {
+    throw new SportsDayValidationError(
+      'The selected Sports Day does not exist.',
+    );
+  }
+  if (!sportsDay.is_active) {
+    await transaction`update public.sports_days set is_active = false where is_active`;
+    await transaction`update public.sports_days set is_active = true where id = ${sportsDay.id}`;
+  }
+  return {
+    ID: sportsDay.id,
+    Name: sportsDay.name,
+    Active: true,
+    SportsDays: await getSportsDays(transaction),
+  };
+}
+
 /** Create a clean active Sports Day by copying reusable setup only. */
 export async function createSportsDay(
   transaction,

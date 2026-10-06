@@ -411,18 +411,14 @@ databaseTest(
           }
           await call('completeDistanceEventRun', eventPayload);
           await call('completeDistanceEventRun', eventPayload);
-          await call(
-            'saveDistanceCategoryPositions',
-            {
-              ...eventPayload,
-              competitionGender: 'Male',
-              positions: teams.map((teamIdentifier, itemIndex) => ({
-                teamId: teamIdentifier,
-                position: itemIndex + 1,
-              })),
-            },
-            false,
-          );
+          await call('saveDistanceCategoryPositions', {
+            ...eventPayload,
+            competitionGender: 'Male',
+            positions: teams.map((teamIdentifier, itemIndex) => ({
+              teamId: teamIdentifier,
+              position: itemIndex + 1,
+            })),
+          });
         } else {
           assert.equal(
             await call('getDoubleTeamMatchForEvent', eventPayload),
@@ -448,7 +444,16 @@ databaseTest(
         await call('getEventHistory', { eventId: eventIdentifier });
         await call('getLeaderboard');
       }
-      // Profile edits recalculate saved placings, including historical display points.
+      // v1.4 intentionally freezes SQL awards until reconfirmation. The retained
+      // Google calculation below remains an independent check of that divergence.
+      const confirmedBoard = await call('getLeaderboard');
+      const confirmedHistories = new Map();
+      for (const eventIdentifier of eventIdentifiers) {
+        confirmedHistories.set(
+          eventIdentifier,
+          await call('getEventHistory', { eventId: eventIdentifier }),
+        );
+      }
       await call('updatePointProfile', {
         ID: 'PP_STANDARD',
         Name: 'Negative',
@@ -457,10 +462,30 @@ databaseTest(
         Third: -4,
         Fourth: -5,
       });
-      const board = await call('getLeaderboard');
-      assert.ok(board.some((team) => team.Points < 0));
+      const board = (
+        await executeInTransaction(transaction, {
+          action: 'getLeaderboard',
+          payload: {},
+        })
+      ).data;
+      assert.deepEqual(board, confirmedBoard);
+      assert.notDeepEqual(
+        board,
+        reference.call({ action: 'getLeaderboard', payload: {} }).data,
+      );
       for (const eventIdentifier of eventIdentifiers) {
-        await call('getEventHistory', { eventId: eventIdentifier });
+        const history = (
+          await executeInTransaction(transaction, {
+            action: 'getEventHistory',
+            payload: { eventId: eventIdentifier },
+          })
+        ).data;
+        assert.deepEqual(
+          history.Runs.map((run) => run.Results),
+          confirmedHistories
+            .get(eventIdentifier)
+            .Runs.map((run) => run.Results),
+        );
       }
       const actualRows = (await loadRepository(transaction)).rows;
       const sortRows = (rows) =>

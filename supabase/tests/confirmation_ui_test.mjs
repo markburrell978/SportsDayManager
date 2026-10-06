@@ -292,3 +292,38 @@ test('event configuration exposes profile and enabled controls while format stay
   assert.match(markup, /event-enabled/);
   assert.match(markup, /Save event settings/);
 });
+
+test('completed distance runs require deliberate correction access and keep saved placings populated', () => {
+  const teams = ['ONE', 'TWO', 'THREE', 'FOUR'].map((identifier) => ({
+    ID: identifier,
+    Name: identifier,
+  }));
+  const distance = {
+    results: ['Male', 'Female'].flatMap((category) =>
+      teams.map((team, index) => ({
+        TeamID: team.ID,
+        CompetitionGender: category,
+        Position: index + 1,
+      })),
+    ),
+  };
+  const render = (pending, correctionEnabled) =>
+    eventView.renderDistance(
+      { EventType: 'DISTANCE' },
+      { Status: 'COMPLETE' },
+      distance,
+      teams,
+      'Male',
+      pending,
+      correctionEnabled,
+    );
+  assert.match(render(false, false), /Correct placings/);
+  assert.match(render(false, false), /id="distance-position-0"\s+disabled/);
+  assert.doesNotMatch(
+    render(false, true),
+    /id="distance-position-0"\s+disabled/,
+  );
+  assert.match(render(true, true), /id="distance-position-0"\s+disabled/);
+  assert.match(render(false, true), /value="1"\s+selected/);
+  assert.match(render(false, true), /official scores stay unchanged/);
+});

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Sports Day — Tournament view</title>
+    <link rel="stylesheet" href="css/main.css?v=1.5.0" />
+    <link rel="stylesheet" href="css/participants.css?v=1.5.0" />
+  </head>
+  <body class="participant-app">
+    <header>
+      <div class="participant-header">
+        <p class="participant-eyebrow">Sports Day · Tournament view</p>
+        <h1 id="participant-day-name">Sports Day</h1>
+        <p>Teams, confirmed scores and event results.</p>
+      </div>
+    </header>
+    <div id="participant-practice-banner" class="historical-banner" hidden>
+      Practice · Changes here do not affect the live Sports Day.
+    </div>
+    <main class="participant-main">
+      <div class="participant-refresh-bar">
+        <p id="participant-refresh-status" role="status" aria-live="polite">
+          Loading results…
+        </p>
+        <button id="participant-refresh" type="button">Refresh</button>
+      </div>
+      <nav id="participant-navigation" aria-label="Tournament pages">
+        <button
+          type="button"
+          data-participant-tab="leaderboard"
+          aria-pressed="true"
+        >
+          Leaderboard
+        </button>
+        <button
+          type="button"
+          data-participant-tab="participants"
+          aria-pressed="false"
+        >
+          Participants
+        </button>
+        <button
+          type="button"
+          data-participant-tab="events"
+          aria-pressed="false"
+        >
+          Events
+        </button>
+      </nav>
+      <div id="participant-filters" class="participant-filters" hidden>
+        <label for="participant-team-filter"
+          >Team<select id="participant-team-filter">
+            <option value="">All teams</option>
+          </select></label
+        >
+        <label for="participant-search"
+          >Find a participant<input
+            id="participant-search"
+            type="search"
+            placeholder="Search names"
+        /></label>
+      </div>
+      <section
+        id="participant-content"
+        aria-label="Sports Day information"
+        aria-busy="false"
+      ></section>
+    </main>
+    <script src="js/runtime-config.js?v=1.5.0"></script>
+    <script src="js/ui.js?v=1.5.0"></script>
+    <script src="js/participant-api.js?v=1.5.0"></script>
+    <script src="js/participant-view.js?v=1.5.0"></script>
+    <script src="js/participant-app.js?v=1.5.0"></script>
+  </body>
+</html>

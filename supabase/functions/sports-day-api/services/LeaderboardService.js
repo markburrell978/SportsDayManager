@@ -57,7 +57,10 @@ export function createLeaderboardService({
 
       let profilesByIdentifier = {};
 
-      if (currentEventIdentifiers.length) {
+      if (
+        currentEventIdentifiers.length &&
+        Database.usesConfirmedPointSnapshots !== true
+      ) {
         services.PointProfileService.ensureCurrentSchema();
 
         profilesByIdentifier = this.groupById(
@@ -72,6 +75,15 @@ export function createLeaderboardService({
       });
 
       currentEventIdentifiers.forEach((eventIdentifier) => {
+        const eventResults = currentResultsByEventIdentifier[eventIdentifier];
+
+        if (Database.usesConfirmedPointSnapshots === true) {
+          eventResults.forEach((result) => {
+            totals[result.TeamID] += Number(result.PointsAwarded);
+          });
+          return;
+        }
+
         const event = eventsByIdentifier[eventIdentifier];
 
         const matchingProfiles =
@@ -101,8 +113,6 @@ export function createLeaderboardService({
             `Event ${event.Name || event.ID} has an invalid point profile: ${error.message}`,
           );
         }
-
-        const eventResults = currentResultsByEventIdentifier[eventIdentifier];
 
         if (event.EventType === EVENT_TYPES.ROUND_ROBIN) {
           this.addRoundRobinPoints(totals, eventResults, profile);

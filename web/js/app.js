@@ -17,6 +17,7 @@ const ApplicationState = {
   sportsDays: [],
 
   currentSportsDay: null,
+  sportsDayRequestPending: false,
 
   competitors: [],
 
@@ -74,6 +75,10 @@ const ApplicationState = {
 
   distanceCategory: 'Male',
 
+  distanceCorrectionEnabled: false,
+
+  eventFormFeedback: {},
+
   raceCategory: 'Male',
 
   eventRequestPending: false,
@@ -97,6 +102,8 @@ async function initialise() {
 
   registerSportsDayEvents();
 
+  registerEventDraftProtection();
+
   await Session.start(async (sportsDays) => {
     setSportsDays(
       sportsDays || [{ ID: 'legacy', Name: 'SportsDay2026', Active: true }],
@@ -104,7 +111,7 @@ async function initialise() {
     document.getElementById('btn-create-sports-day').hidden =
       !ApplicationInterface.requiresSignIn;
     await showPage('leaderboard');
-  });
+  }, allowEventNavigation);
 }
 
 /** Populate the annual Sports Day selector and select the active entry. */
@@ -122,6 +129,89 @@ function setSportsDays(sportsDays, selectedIdentifier = null) {
   selector.value = ApplicationState.currentSportsDay?.ID || '';
   updateHistoricalEditingControls();
   updateSportsDayDeletionControls();
+  updateCurrentSportsDayControls();
+}
+
+/** Distinguish the day being viewed from the day shared with participants. */
+function updateCurrentSportsDayControls() {
+  const settings = document.getElementById('current-sports-day-settings');
+  if (!settings) {
+    return;
+  }
+  const selected = ApplicationState.currentSportsDay;
+  const active = ApplicationState.sportsDays.find(
+    (sportsDay) => sportsDay.Active,
+  );
+  settings.hidden = !ApplicationInterface.requiresSignIn;
+  document.getElementById('current-sports-day-name').textContent =
+    active?.Name || 'None';
+  document.getElementById('selected-sports-day-name').textContent =
+    selected?.Name || 'None';
+  const button = document.getElementById('btn-set-current-sports-day');
+  button.disabled =
+    !ApplicationInterface.requiresSignIn ||
+    !selected ||
+    selected.Active ||
+    ApplicationState.sportsDayRequestPending;
+  button.textContent = selected?.Active
+    ? 'This Sports Day is current'
+    : 'Make current';
+}
+
+/** Activate the selected existing day and retain acknowledged state if refreshing fails. */
+async function makeSelectedSportsDayCurrent() {
+  if (
+    !allowEventNavigation() ||
+    !ApplicationInterface.requiresSignIn ||
+    !ApplicationState.currentSportsDay ||
+    ApplicationState.currentSportsDay.Active
+  ) {
+    return;
+  }
+  const message = document.getElementById('current-sports-day-message');
+  const selectedName = ApplicationState.currentSportsDay.Name;
+  const controls = [
+    'sports-day-selector',
+    'btn-create-sports-day',
+    'btn-delete-sports-day',
+    'btn-toggle-historical-editing',
+  ]
+    .map((identifier) => document.getElementById(identifier))
+    .filter(Boolean);
+  const previousDisabled = new Map(
+    controls.map((control) => [control, control.disabled]),
+  );
+  let acknowledged = false;
+  ApplicationState.sportsDayRequestPending = true;
+  for (const control of controls) {
+    control.disabled = true;
+  }
+  updateCurrentSportsDayControls();
+  message.className = '';
+  message.textContent = 'Updating current Sports Day...';
+  try {
+    const updated = await ApplicationInterface.setCurrentSportsDay();
+    acknowledged = true;
+    setSportsDays(updated.SportsDays, updated.ID);
+    clearSportsDayState();
+    await loadPointProfiles();
+    message.className = 'success';
+    message.textContent = `${selectedName} is now current. The tournament view will show it on the next refresh.`;
+  } catch (error) {
+    message.className = 'error';
+    message.textContent = acknowledged
+      ? `${selectedName} is now current. The refreshed view could not be loaded. Refresh this tab to check it.`
+      : error.message;
+  } finally {
+    ApplicationState.sportsDayRequestPending = false;
+    for (const control of controls) {
+      control.disabled = previousDisabled.get(control);
+    }
+    if (acknowledged) {
+      updateSportsDayDeletionControls();
+    }
+    updateCurrentSportsDayControls();
+  }
 }
 
 /** Report whether the selected historical Sports Day is protected from edits. */
@@ -159,6 +249,9 @@ function updateHistoricalEditingControls() {
 
 /** Toggle temporary correction access without changing the current Sports Day. */
 function toggleHistoricalEditing() {
+  if (!allowEventNavigation()) {
+    return;
+  }
   if (
     ApplicationState.currentSportsDay?.Active !== false ||
     !ApplicationInterface.requiresSignIn
@@ -170,10 +263,17 @@ function toggleHistoricalEditing() {
   );
   updateHistoricalEditingControls();
   renderPointProfiles();
+  if (ApplicationState.currentEvent) {
+    renderEvents();
+  }
 }
 
 /** Clear screen caches when switching annual Sports Days. */
 function clearSportsDayState() {
+  EventDrafts.discard(document);
+  EventDrafts.unbind();
+  ApplicationState.distanceCorrectionEnabled = false;
+  ApplicationState.eventFormFeedback = {};
   ApplicationState.competitors = [];
   ApplicationState.filteredCompetitors = [];
   ApplicationState.lastCreatedCompetitorTeamIdentifier = null;
@@ -218,11 +318,18 @@ function protectHistoricalSportsDay() {
 /** Register annual Sports Day selection and creation controls. */
 function registerSportsDayEvents() {
   document
+    .getElementById('btn-set-current-sports-day')
+    .addEventListener('click', makeSelectedSportsDayCurrent);
+  document
     .getElementById('btn-toggle-historical-editing')
     .addEventListener('click', toggleHistoricalEditing);
   document
     .getElementById('sports-day-selector')
     .addEventListener('change', async (event) => {
+      if (!allowEventNavigation()) {
+        event.target.value = ApplicationState.currentSportsDay?.ID || '';
+        return;
+      }
       setSportsDays(ApplicationState.sportsDays, event.target.value);
       clearSportsDayState();
       await showPage(ApplicationState.currentPage);
@@ -270,6 +377,9 @@ function updateSportsDayDeletionConfirmation() {
 
 /** Delete the selected Sports Day and switch to the remaining active entry. */
 async function deleteSelectedSportsDay() {
+  if (!allowEventNavigation()) {
+    return;
+  }
   const input = document.getElementById('delete-sports-day-name');
   const button = document.getElementById('btn-delete-sports-day');
   const message = document.getElementById('delete-sports-day-message');
@@ -296,6 +406,9 @@ async function deleteSelectedSportsDay() {
 
 /** Create a clean active Sports Day from the selected reusable setup. */
 async function createNewSportsDay() {
+  if (!allowEventNavigation()) {
+    return;
+  }
   const input = document.getElementById('new-sports-day-name');
   const button = document.getElementById('btn-create-sports-day');
   const message = document.getElementById('sports-day-message');
@@ -341,6 +454,9 @@ function registerNavigation() {
 
 /** Display the requested tab and load the data it needs. */
 async function showPage(page) {
+  if (!allowEventNavigation()) {
+    return false;
+  }
   ApplicationState.currentPage = page;
 
   document.querySelectorAll('.page').forEach((section) => {
@@ -366,6 +482,7 @@ async function showPage(page) {
   if (page === 'settings') {
     await loadPointProfiles();
   }
+  return true;
 }
 
 /**
@@ -427,7 +544,9 @@ function currentRunWithConfirmation() {
 
 /** Open an affected event and focus its available confirmation action. */
 async function openPendingEvent(eventIdentifier) {
-  await showPage('events');
+  if (!(await showPage('events'))) {
+    return;
+  }
   await selectEvent(eventIdentifier);
   document.getElementById('event-details').scrollIntoView({ block: 'start' });
   document
@@ -582,6 +701,10 @@ async function loadEvents() {
 
 /** Apply one combined Events response to the existing rendering state. */
 function applyEventsPageData(pageData) {
+  if (ApplicationState.currentEventRun?.ID !== pageData.currentEventRun?.ID) {
+    ApplicationState.distanceCorrectionEnabled = false;
+    ApplicationState.eventFormFeedback = {};
+  }
   ApplicationState.events = pageData.events;
   ApplicationState.teams = pageData.teams;
   ApplicationState.pointProfiles = pageData.pointProfiles;
@@ -623,6 +746,9 @@ async function refreshSelectedEventPage() {
 
 /** Render the event list and the selected current or historical run. */
 function renderEvents() {
+  EventDrafts.capture(document);
+  const settingsExpanded =
+    document.getElementById('event-configuration')?.open === true;
   EventView.renderEventTable(
     ApplicationState.events,
     ApplicationState.currentEvent,
@@ -648,8 +774,19 @@ function renderEvents() {
     ApplicationState.eventHistoryLoading,
     ApplicationState.eventHistoryError,
     ApplicationState.pointProfiles,
+    ApplicationState.distanceCorrectionEnabled,
   );
 
+  bindEventDrafts();
+  const settings = document.getElementById('event-configuration');
+  if (settings) {
+    settings.open = settingsExpanded || EventDrafts.hasDraft('settings');
+  }
+  for (const [name, feedback] of Object.entries(
+    ApplicationState.eventFormFeedback,
+  )) {
+    renderEventFormMessage(name, feedback);
+  }
   protectHistoricalSportsDay();
 }
 
@@ -727,30 +864,28 @@ async function selectEventAfterRefresh(eventIdentifier) {
 
 /** Save the selected event's editable name, profile and enabled state. */
 async function saveEventConfiguration() {
-  if (!ApplicationState.currentEvent) {
+  if (!ApplicationState.currentEvent || ApplicationState.eventRequestPending) {
     return;
   }
-
   const eventUpdates = {
     ID: ApplicationState.currentEvent.ID,
     Name: document.getElementById('event-name').value.trim(),
     PointsProfileID: document.getElementById('event-point-profile').value,
     Enabled: document.getElementById('event-enabled').checked,
   };
-  try {
-    setEventRequestPending(true);
-    await ApplicationInterface.updateEvent(eventUpdates);
-    await refreshSelectedEventPage();
-    showEventMessage('Event settings saved.');
-  } catch (error) {
-    showEventMessage(error.message, true);
-  } finally {
-    await setEventRequestPending(false);
-  }
+  await saveEventForm(
+    'settings',
+    () => ApplicationInterface.updateEvent(eventUpdates),
+    'Event settings saved.',
+  );
 }
 
 /** Clear the previous selection and load all data for the chosen event. */
 async function selectEvent(identifier) {
+  if (!allowEventNavigation()) {
+    return;
+  }
+  ApplicationState.distanceCorrectionEnabled = false;
   const event = ApplicationState.events.find((item) => item.ID === identifier);
 
   if (!event) {
@@ -808,7 +943,7 @@ function showCurrentEventView() {
 
 /** Load read-only history with explicit loading and retry feedback. */
 async function openEventHistory() {
-  if (!ApplicationState.currentEvent) {
+  if (!allowEventNavigation() || !ApplicationState.currentEvent) {
     return;
   }
 
@@ -838,7 +973,11 @@ async function openEventHistory() {
 
 /** Switch the visible distance category and clear previous feedback. */
 function selectDistanceCategory(category) {
-  if (!['Male', 'Female'].includes(category)) {
+  if (
+    category === ApplicationState.distanceCategory ||
+    !['Male', 'Female'].includes(category) ||
+    !allowEventNavigation()
+  ) {
     return;
   }
 
@@ -849,46 +988,50 @@ function selectDistanceCategory(category) {
   renderEvents();
 }
 
-/** Validate and save the selected category’s team placings. */
+/** Validate and save the selected category's team placings without losing drafts. */
 async function saveDistanceCategoryPositions() {
   if (
     !ApplicationState.currentEvent ||
     !ApplicationState.currentEventRun ||
-    !ApplicationState.currentDistance
+    !ApplicationState.currentDistance ||
+    ApplicationState.eventRequestPending
   ) {
     return;
   }
-
   const positions = ApplicationState.teams.map((team, index) => ({
     teamId: team.ID,
-
     position: Number(
       document.getElementById(`distance-position-${index}`).value,
     ),
   }));
-
   try {
     validateDistancePositions(positions);
-
-    setEventRequestPending(true);
-
-    await ApplicationInterface.saveDistanceCategoryPositions(
-      ApplicationState.currentEvent.ID,
-      ApplicationState.currentEventRun.ID,
-      ApplicationState.distanceCategory,
-      positions,
-    );
-
-    await refreshSelectedEventPage();
-
-    showEventMessage(
-      `${ApplicationState.distanceCategory} team placings saved.`,
-    );
   } catch (error) {
-    showEventMessage(error.message, true);
-  } finally {
-    await setEventRequestPending(false);
+    showEventFormMessage('distance', error.message, true);
+    renderEvents();
+    return;
   }
+  await saveEventForm(
+    'distance',
+    () =>
+      ApplicationInterface.saveDistanceCategoryPositions(
+        ApplicationState.currentEvent.ID,
+        ApplicationState.currentEventRun.ID,
+        ApplicationState.distanceCategory,
+        positions,
+      ),
+    `${ApplicationState.distanceCategory} team placings saved.`,
+  );
+}
+
+/** Deliberately open the completed current run for placing corrections. */
+function beginDistanceCorrection() {
+  if (ApplicationState.eventRequestPending || isHistoricalSportsDayReadOnly()) {
+    return;
+  }
+  ApplicationState.distanceCorrectionEnabled = true;
+  renderEvents();
+  document.getElementById('distance-position-0')?.focus();
 }
 
 /** Require all four distinct finishing positions before saving. */
@@ -915,7 +1058,7 @@ async function completeDistanceEventRun() {
 
   if (
     !window.confirm(
-      'Mark this distance event complete? Corrections will require resetting the event.',
+      'Mark this distance event complete? You can correct placings later without resetting the event.',
     )
   ) {
     return;
@@ -1058,7 +1201,11 @@ async function saveDoubleTeamWinner() {
 
 /** Switch the visible race category and clear previous feedback. */
 function selectRaceCategory(category) {
-  if (!['Male', 'Female'].includes(category)) {
+  if (
+    category === ApplicationState.raceCategory ||
+    !['Male', 'Female'].includes(category) ||
+    !allowEventNavigation()
+  ) {
     return;
   }
 
@@ -1098,15 +1245,15 @@ async function startRaceEvent() {
   }
 }
 
-/** Save all selected team heat winners for the visible race category. */
+/** Save selected heat winners while keeping failed or unrelated drafts intact. */
 async function saveRaceHeatWinners() {
   if (
     !ApplicationState.currentEvent ||
-    ApplicationState.currentEvent.EventType !== 'HEAT_FINAL'
+    ApplicationState.currentEvent.EventType !== 'HEAT_FINAL' ||
+    ApplicationState.eventRequestPending
   ) {
     return;
   }
-
   const winners = Array.from(
     document.querySelectorAll('.race-heat-control select'),
   )
@@ -1115,93 +1262,62 @@ async function saveRaceHeatWinners() {
       teamId: select.dataset.teamIdentifier,
       competitorId: select.value,
     }));
-
   if (!winners.length) {
-    showEventMessage('Choose at least one heat winner to save.', true);
-
+    showEventFormMessage(
+      'race-heats',
+      'Choose at least one heat winner to save.',
+      true,
+    );
     return;
   }
-
-  try {
-    setEventRequestPending(true);
-
-    ApplicationState.currentRace =
-      await ApplicationInterface.saveRaceHeatWinners(
+  await saveEventForm(
+    'race-heats',
+    () =>
+      ApplicationInterface.saveRaceHeatWinners(
         ApplicationState.currentEvent.ID,
         ApplicationState.currentEventRun.ID,
         ApplicationState.raceCategory,
         winners,
-      );
-
-    await refreshSelectedEventPage();
-
-    showEventMessage(
-      `${winners.length} heat winner${winners.length === 1 ? '' : 's'} saved.`,
-    );
-  } catch (error) {
-    showEventMessage(error.message, true);
-  } finally {
-    await setEventRequestPending(false);
-  }
+      ),
+    `${winners.length} heat winner${winners.length === 1 ? '' : 's'} saved.`,
+  );
 }
 
-/** Validate and save the selected category’s final placings. */
+/** Validate and save final placings, retaining entries on all failure paths. */
 async function saveRaceFinalPositions() {
-  if (!ApplicationState.currentEvent || !ApplicationState.currentRace) {
+  if (
+    !ApplicationState.currentEvent ||
+    !ApplicationState.currentRace ||
+    ApplicationState.eventRequestPending
+  ) {
     return;
   }
-
   const finalists = ApplicationState.currentRace.results.filter(
     (result) => result.CompetitionGender === ApplicationState.raceCategory,
   );
-
   const positions = finalists.map((result) => ({
     competitorId: result.CompetitorID,
-
     finalPosition: Number(
       document.getElementById(`race-final-position-${result.ID}`).value,
     ),
   }));
-
   try {
     validateRaceFinalPositions(positions);
   } catch (error) {
-    showEventMessage(error.message, true);
-    showRaceFinalMessage(error.message, true);
+    showEventFormMessage('race-final', error.message, true);
     return;
   }
-
-  try {
-    setEventRequestPending(true);
-
-    await ApplicationInterface.saveRaceFinalPositions(
-      ApplicationState.currentEvent.ID,
-      ApplicationState.currentEventRun.ID,
-      ApplicationState.raceCategory,
-      positions,
-    );
-
-    await refreshSelectedEventPage();
-
-    showEventMessage(`${ApplicationState.raceCategory} final positions saved.`);
-    showRaceFinalMessage('Final positions saved.');
-  } catch (error) {
-    showEventMessage(error.message, true);
-  } finally {
-    await setEventRequestPending(false);
-  }
-}
-
-/** Show race-final feedback beside the position selectors without rerendering. */
-function showRaceFinalMessage(message, isError = false) {
-  const container = document.getElementById('race-final-message');
-
-  if (!container) {
-    return;
-  }
-
-  container.textContent = message;
-  container.className = `race-final-message ${isError ? 'error' : 'success'}`;
+  await saveEventForm(
+    'race-final',
+    () =>
+      ApplicationInterface.saveRaceFinalPositions(
+        ApplicationState.currentEvent.ID,
+        ApplicationState.currentEventRun.ID,
+        ApplicationState.raceCategory,
+        positions,
+      ),
+    `${ApplicationState.raceCategory} final positions saved.`,
+  );
 }
 
 /** Require all four distinct final positions before saving. */
@@ -1347,6 +1463,188 @@ async function saveMatchWinner(matchIdentifier, winnerIdentifier) {
   }
 }
 
+/** Define the currently visible forms using their stable field identities. */
+function bindEventDrafts() {
+  if (
+    !ApplicationState.currentEvent ||
+    !ApplicationState.currentEventRun ||
+    ApplicationState.eventViewMode !== 'current'
+  ) {
+    EventDrafts.unbind();
+    return;
+  }
+  const groups = [
+    {
+      name: 'settings',
+      fields: [
+        { identifier: 'event-name', property: 'value' },
+        { identifier: 'event-point-profile', property: 'value' },
+        { identifier: 'event-enabled', property: 'checked' },
+      ],
+    },
+  ];
+  if (ApplicationState.currentEvent.EventType === 'DISTANCE') {
+    groups.push({
+      name: 'distance',
+      category: ApplicationState.distanceCategory,
+      fields: ApplicationState.teams.map((team, index) => ({
+        identifier: `distance-position-${index}`,
+        property: 'value',
+        identity: team.ID,
+      })),
+    });
+  }
+  if (ApplicationState.currentEvent.EventType === 'HEAT_FINAL') {
+    groups.push({
+      name: 'race-heats',
+      category: ApplicationState.raceCategory,
+      fields: ApplicationState.teams
+        .map((team, index) => ({
+          identifier: `race-heat-winner-${index}`,
+          property: 'value',
+          identity: team.ID,
+        }))
+        .filter((field) => document.getElementById(field.identifier)),
+    });
+    groups.push({
+      name: 'race-final',
+      category: ApplicationState.raceCategory,
+      fields: (ApplicationState.currentRace?.results || [])
+        .filter(
+          (result) =>
+            result.CompetitionGender === ApplicationState.raceCategory,
+        )
+        .map((result) => ({
+          identifier: `race-final-position-${result.ID}`,
+          property: 'value',
+          identity: result.CompetitorID,
+        })),
+    });
+  }
+  EventDrafts.bind(
+    {
+      sportsDayIdentifier: ApplicationState.currentSportsDay?.ID || 'legacy',
+      eventIdentifier: ApplicationState.currentEvent.ID,
+      runIdentifier: ApplicationState.currentEventRun.ID,
+    },
+    groups,
+    document,
+  );
+}
+
+/** Ask before discarding unsaved event entries, and block navigation during saves. */
+function allowEventNavigation() {
+  if (
+    ApplicationState.eventRequestPending ||
+    ApplicationState.sportsDayRequestPending
+  ) {
+    return false;
+  }
+  if (!EventDrafts.hasChanges(document)) {
+    return true;
+  }
+  if (
+    !window.confirm(
+      'You have unsaved event entries. Discard them and continue? Choose Cancel to keep working.',
+    )
+  ) {
+    return false;
+  }
+  EventDrafts.discard(document);
+  return true;
+}
+
+/** Capture edits as they happen and guard reloads or closing the browser tab. */
+function registerEventDraftProtection() {
+  const container = document.getElementById('event-details');
+  for (const eventName of ['input', 'change']) {
+    container.addEventListener(eventName, () => EventDrafts.capture(document));
+  }
+  window.addEventListener('beforeunload', (event) => {
+    if (
+      ApplicationState.eventRequestPending ||
+      EventDrafts.hasChanges(document)
+    ) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  });
+}
+
+/** Render escaped text feedback beside the corresponding form. */
+function renderEventFormMessage(name, feedback) {
+  const identifiers = {
+    settings: 'event-configuration-message',
+    distance: 'distance-message',
+    'race-heats': 'race-heat-message',
+    'race-final': 'race-final-message',
+  };
+  const container = document.getElementById(identifiers[name]);
+  if (container) {
+    container.textContent = feedback.message;
+    container.className = `event-form-message ${feedback.isError ? 'error' : 'success'}`;
+  }
+}
+
+/** Retain nearby feedback through pending-state redraws. */
+function showEventFormMessage(name, message, isError = false) {
+  const feedback = { message, isError };
+  ApplicationState.eventFormFeedback[name] = feedback;
+  showEventMessage(message, isError);
+  renderEventFormMessage(name, feedback);
+}
+
+/** Keep acknowledged form data visible even if the following page refresh fails. */
+function applyAcknowledgedEventForm(name, savedData) {
+  if (!savedData) {
+    return;
+  }
+  if (name === 'settings') {
+    ApplicationState.currentEvent = savedData;
+    ApplicationState.currentPointsProfile =
+      ApplicationState.pointProfilesByIdentifier[savedData.PointsProfileID] ||
+      null;
+    ApplicationState.events = ApplicationState.events.map((event) =>
+      event.ID === savedData.ID ? savedData : event,
+    );
+  } else if (name === 'distance') {
+    ApplicationState.currentDistance = savedData;
+  } else {
+    ApplicationState.currentRace = savedData;
+  }
+}
+
+/** Save one form and distinguish a rejected write from a failed subsequent refresh. */
+async function saveEventForm(name, save, successMessage) {
+  if (ApplicationState.eventRequestPending) {
+    return;
+  }
+  EventDrafts.capture(document);
+  let acknowledged = false;
+  await setEventRequestPending(true);
+  try {
+    const savedData = await save();
+    acknowledged = true;
+    applyAcknowledgedEventForm(name, savedData);
+    EventDrafts.accept(name, document);
+    if (name === 'distance') {
+      ApplicationState.distanceCorrectionEnabled = false;
+    }
+    await refreshSelectedEventPage();
+    showEventFormMessage(name, successMessage);
+  } catch (error) {
+    showEventFormMessage(
+      name,
+      acknowledged
+        ? `${successMessage} The refreshed view could not be loaded. Refresh this tab to check the saved values.`
+        : error.message,
+      true,
+    );
+  } finally {
+    await setEventRequestPending(false);
+  }
+}
+
 /** Disable event controls and refresh warnings after an incomplete request. */
 async function setEventRequestPending(isPending) {
   if (!isPending && !ApplicationState.eventPageRefreshedDuringRequest) {
@@ -1379,6 +1677,7 @@ function showEventMessage(message, isError = false) {
 
 /** Clear prior event feedback before another interaction. */
 function clearEventMessage() {
+  ApplicationState.eventFormFeedback = {};
   ApplicationState.eventMessage = '';
 
   ApplicationState.eventMessageIsError = false;
@@ -1386,7 +1685,11 @@ function clearEventMessage() {
 
 /** Confirm the reset with the organiser and load the new current run. */
 async function resetCurrentEvent() {
-  if (!ApplicationState.currentEvent || !ApplicationState.currentEventRun) {
+  if (
+    !allowEventNavigation() ||
+    !ApplicationState.currentEvent ||
+    !ApplicationState.currentEventRun
+  ) {
     return;
   }
 
@@ -1420,6 +1723,9 @@ async function resetCurrentEvent() {
 
 /** Publish the current run’s placings and refresh confirmation feedback. */
 async function confirmCurrentEventResults() {
+  if (!allowEventNavigation()) {
+    return;
+  }
   if (
     !ApplicationState.currentEvent ||
     !ApplicationState.currentEventRun ||

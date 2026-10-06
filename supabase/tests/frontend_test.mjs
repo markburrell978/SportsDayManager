@@ -25,9 +25,10 @@ test('published assets use a release version so browsers do not mix frontend ver
     'js/session.js',
     'js/ui.js',
     'js/form.js',
+    'js/drafts.js',
     'js/app.js',
   ]) {
-    assert.match(documentMarkup, new RegExp(`${assetPath}\\?v=1\\.3\\.1`));
+    assert.match(documentMarkup, new RegExp(`${assetPath}\\?v=1\\.5\\.0`));
   }
 });
 
@@ -632,3 +633,30 @@ if (process.env.SPORTS_DAY_PRACTICE_TEST === '1') {
     assert.equal(hidden.status, 404);
   });
 }
+
+test('sign-out keeps the session and screen when the navigation guard refuses', async () => {
+  let logoutRequests = 0;
+  const { context, Authentication } = await client(async (requestAddress) => {
+    if (requestAddress.includes('/logout')) {
+      logoutRequests += 1;
+    }
+    return requestAddress.includes('/auth/')
+      ? response(sessionValue())
+      : response({ success: true, data: [{ ID: 'DAY', Active: true }] });
+  });
+  const { element, classes } = page(context);
+  await Authentication.signIn('test@example.test', 'password');
+  virtualMachine.runInContext(
+    await readFile(new URL('js/session.js', web), 'utf8'),
+    context,
+  );
+  await context.Session.start(
+    async () => {},
+    () => false,
+  );
+  await element('btn-sign-out').handlers.click();
+  assert.ok(Authentication.user);
+  assert.equal(logoutRequests, 0);
+  assert.equal(classes.has('auth-pending'), false);
+  assert.equal(element('btn-sign-out').disabled, false);
+});

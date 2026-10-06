@@ -256,7 +256,7 @@ const EventHistoryService = {
     };
   },
 
-  /** Decorate confirmed placings with team names and current-profile points. */
+  /** Decorate placings with confirmed SQL awards or the legacy profile calculation. */
   buildResults(eventType, resultRows, teamsByIdentifier, profile, categories) {
     const roundRobinPoints =
       profile && eventType === EVENT_TYPES.ROUND_ROBIN
@@ -271,9 +271,12 @@ const EventHistoryService = {
 
         const positionKey = position === null ? 'invalid' : String(position);
 
-        let points = null;
+        let points =
+          Database.usesConfirmedPointSnapshots === true
+            ? Number(result.PointsAwarded)
+            : null;
 
-        if (profile) {
+        if (profile && Database.usesConfirmedPointSnapshots !== true) {
           points =
             eventType === EVENT_TYPES.ROUND_ROBIN
               ? roundRobinPoints[positionKey]

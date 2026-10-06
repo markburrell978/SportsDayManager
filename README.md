@@ -5,12 +5,18 @@ A reusable, mobile-friendly web application for running an annual Sports Day.
 ## Release and migration status
 
 - **Production:** GitHub Pages + Supabase, deployed and verified on 2026-10-02.
-- **Production release:** v1.2 adds named annual Sports Days and reduces API latency; deployed and verified on 2026-10-05.
+- **Production release:** v1.5.0 adds the public read-only Tournament view and current Sports Day controls, together with the v1.4 stability improvements; approved on 2026-10-06.
 - The schema, transactional API, organiser sign-in, migrated data, least-privilege role and exact GitHub Pages CORS origin are validated.
 - The preserved v1.0.0 Apps Script deployment, Google Sheet and private backups remain available during the rollback period; its known leaderboard failure was accepted for cutover.
 
-See the [hosted staging report](docs/STAGING_REPORT.md) for what was deployed,
-what was tested and the exact next steps.
+See the [v1.5 release report](docs/V1_5_RELEASE_REPORT.md) and
+[changelog](docs/CHANGELOG.md) for released changes. The
+[v1.4 report](docs/V1_4_STABILITY_REPORT.md) describes the stability implementation
+and review steps. The [v1.5 implementation report](docs/V1_5_PARTICIPANT_REPORT.md)
+describes the Tournament view and each file's purpose.
+The owner has [deferred some v1.4 manual checks](docs/V1_4_DEFERRED_REVIEW.md)
+to keep development moving; this does not mark them accepted. The [hosted staging report](docs/STAGING_REPORT.md) records
+the earlier migration rehearsals.
 
 The repeatable backup, Google Sheets export and transactional Supabase import
 workflow is documented in the
@@ -23,16 +29,22 @@ and successful production cutover.
 
 ## Current features
 
-- Team and competitor management
+- Competitor management and coloured team display
 - Round Robin, Tournament, Heat & Final, Distance and Double Team events
 - Resettable, historical Event Runs
 - Explicit Confirm Results and Update Confirmed Results workflows
 - Reusable one-row point profiles with signed integer points
-- Dynamic organiser leaderboard using current point-profile values
+- Organiser leaderboard with confirmed team scores
+- Public [Tournament view](https://markburrell978.github.io/SportsDayManager/participants.html) with participants, leaderboard and event results
+- Set the current Sports Day in organiser Settings
+- Preserve unsaved event drafts after rejected saves and guard navigation
+- Correct completed distance placings without resetting; official awards stay fixed until reconfirmation
 - Read-only Event History for current and previous runs
 - Named annual Sports Days with a current/historical selector
 - One-step new-year setup that copies teams, point profiles and event definitions, while starting with no competitors or results
-- Read-only protection for previous Sports Days
+- Temporary historical Sports Day editing, returning to read-only on switching or refresh
+- Event creation, name/profile/enabled settings and disabled-event warning suppression
+- Sports Day deletion with exact-name confirmation and last-entry protection
 
 ## Architecture
 
@@ -100,11 +112,13 @@ See [Supabase local setup](docs/SUPABASE_LOCAL_SETUP.md),
 ## Test websites
 
 The local Practice website runs entirely against local Supabase. See
-[practice setup and sign-in](docs/PRACTICE.md).
+[practice setup and sign-in](docs/PRACTICE.md). The local tournament preview is
+`http://127.0.0.1:8080/participants.html` and opens without a login or viewing code.
+Use organiser Settings to make the selected Sports Day current for participants.
 
 The Staging website serves the same frontend locally while using the isolated
 hosted Supabase project. See the [staging report](docs/STAGING_REPORT.md). The
-published GitHub Pages configuration continues to use Apps Script.
+published GitHub Pages configuration uses production Supabase.
 
 ## Code quality
 

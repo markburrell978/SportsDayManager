@@ -123,6 +123,7 @@ const EventView = {
    * @param {boolean} historyLoading
    * @param {string} historyError
    * @param {Object[]} availablePointProfiles
+   * @param {boolean} distanceCorrectionEnabled
    */
   renderEventDetails(
     event,
@@ -143,6 +144,7 @@ const EventView = {
     historyLoading = false,
     historyError = '',
     availablePointProfiles = [],
+    distanceCorrectionEnabled = false,
   ) {
     const container = document.getElementById('event-details');
 
@@ -213,6 +215,7 @@ ${this.renderDistance(
   teams,
   distanceCategory,
   eventControlsDisabled,
+  distanceCorrectionEnabled,
 )}
 `
 }
@@ -226,7 +229,7 @@ ${this.renderDistance(
   renderEventConfiguration(event, pointProfiles, requestPending) {
     const enabled = event.Enabled === true || event.Enabled === 'TRUE';
 
-    return `<details class="event-configuration">
+    return `<details id="event-configuration" class="event-configuration">
 <summary>Event settings</summary>
 <div class="event-configuration-fields">
 <label for="event-name">Name
@@ -249,6 +252,7 @@ ${pointProfiles
 <input id="event-enabled" type="checkbox" ${enabled ? 'checked' : ''} ${requestPending ? 'disabled' : ''} />
 Enabled
 </label>
+<p id="event-configuration-message" role="status" aria-live="polite"></p>
 <button type="button" onclick="saveEventConfiguration()" ${requestPending ? 'disabled' : ''}>Save event settings</button>
 </div>
 </details>`;
@@ -1303,6 +1307,7 @@ ${eligibleCompetitors
 
     if (!complete) {
       markup += `
+<p id="race-heat-message" role="status" aria-live="polite"></p>
 <button class="save-heat-winners" onclick="saveRaceHeatWinners()"
         ${requestPending ? 'disabled' : ''}>
     Save selected heat winners
@@ -1624,7 +1629,15 @@ ${[1, 2, 3, 4]
   },
 
   /** Render category placings and the explicit event completion action. */
-  renderDistance(event, eventRun, distance, teams, category, requestPending) {
+  renderDistance(
+    event,
+    eventRun,
+    distance,
+    teams,
+    category,
+    requestPending,
+    correctionEnabled = false,
+  ) {
     if (event.EventType !== 'DISTANCE') {
       return '';
     }
@@ -1648,6 +1661,7 @@ ${[1, 2, 3, 4]
     }
 
     const completed = eventRun.Status === 'COMPLETE';
+    const placingsReadOnly = completed && !correctionEnabled;
 
     const categoryResults = distance.results.filter(
       (result) => result.CompetitionGender === category,
@@ -1693,7 +1707,7 @@ ${['Male', 'Female']
 <label for="distance-position-${index}">
 <span>${this.renderTeamLabel(team)}</span>
 <select id="distance-position-${index}"
-        ${requestPending || completed ? 'disabled' : ''}>
+        ${requestPending || placingsReadOnly ? 'disabled' : ''}>
     <option value="">Choose position</option>
     ${[1, 2, 3, 4]
       .map(
@@ -1710,8 +1724,9 @@ ${['Male', 'Female']
 
     markup += `
 </div>
+<p id="distance-message" role="status" aria-live="polite"></p>
 <button onclick="saveDistanceCategoryPositions()"
-        ${requestPending || completed ? 'disabled' : ''}>
+        ${requestPending || placingsReadOnly ? 'disabled' : ''}>
     Save ${this.escapeHtml(category)} Placings
 </button>`;
 
@@ -1738,8 +1753,9 @@ ${orderedResults
     if (completed) {
       markup += `
 <p class="distance-complete-message">
-    This distance event is complete. Reset the event to record a new run.
-</p>`;
+    This distance event is complete. Corrections stay in this run and require reconfirmation; official scores stay unchanged until then.
+</p>
+<button type="button" onclick="beginDistanceCorrection()" ${requestPending || correctionEnabled ? 'disabled' : ''}>Correct placings</button>`;
     } else {
       markup += `
 <button class="distance-complete-button"

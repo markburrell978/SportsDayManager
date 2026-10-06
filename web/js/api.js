@@ -221,6 +221,11 @@ const ApplicationInterface = {
     return await this.get('getSportsDays');
   },
 
+  /** Make the selected existing Sports Day current without changing its records. */
+  async setCurrentSportsDay() {
+    return await this.post('setCurrentSportsDay');
+  },
+
   /** Start a clean Sports Day from the selected reusable setup. */
   async createSportsDay(name) {
     return await this.post('createSportsDay', {

@@ -3,6 +3,6 @@
   "compilerOptions": { "checkJs": false },
   "fmt": { "indentWidth": 4 },
   "tasks": {
-    "test": "deno test --allow-env --allow-net --allow-read ../../tests/api_test.js ../../tests/http_test.js ../../tests/confirmation_test.js"
+    "test": "deno test --allow-env --allow-net --allow-read ../../tests/api_test.js ../../tests/http_test.js ../../tests/confirmation_test.js ../../tests/stability_test.js ../../tests/participant_database_test.js"
   }
 }

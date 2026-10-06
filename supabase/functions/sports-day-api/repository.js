@@ -168,6 +168,9 @@ function toDatabaseRecord(mapping, record) {
 export class UnitOfWork {
   /** Isolate request data from the caller and start an empty write journal. */
   constructor(rows) {
+    // SQL official scores use the awards saved at confirmation. Apps Script
+    // retains its previous profile-based calculation for rollback compatibility.
+    this.usesConfirmedPointSnapshots = true;
     this.rows = structuredClone(rows);
     this.operations = [];
   }

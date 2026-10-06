@@ -2,7 +2,7 @@
 
 window.Session = {
   /** Gate the application behind organiser sign-in when the backend requires it. */
-  async start(onReady) {
+  async start(onReady, canLeave = () => true) {
     const panel = document.getElementById('sign-in-panel');
     const form = document.getElementById('sign-in-form');
     const message = document.getElementById('sign-in-message');
@@ -94,6 +94,9 @@ window.Session = {
     document
       .getElementById('btn-sign-out')
       .addEventListener('click', async () => {
+        if (!canLeave()) {
+          return;
+        }
         document.body.classList.add('auth-pending');
         document.getElementById('btn-sign-out').disabled = true;
         await Authentication.signOut();

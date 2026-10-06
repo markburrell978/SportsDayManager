@@ -46,22 +46,27 @@ export function createDistanceService({
         eventRunIdentifier,
       );
 
-      if (eventRun.Status === EVENT_STATUS.COMPLETE) {
-        throw new Error(
-          'Completed distance events cannot be changed. Reset the event to make corrections.',
-        );
-      }
-
       this.validateCategory(competitionGender);
 
       const activeTeams = services.TeamService.getAll();
 
       this.validatePositions(activeTeams, positions);
 
-      const existingResults = this.getResults(
-        eventIdentifier,
-        eventRunIdentifier,
-      ).filter((result) => result.CompetitionGender === competitionGender);
+      const results = this.getResults(eventIdentifier, eventRunIdentifier);
+
+      if (
+        results.some(
+          (result) => !activeTeams.some((team) => team.ID === result.TeamID),
+        )
+      ) {
+        throw new Error(
+          'The active teams have changed since these placings were recorded. Restore the original teams or reset the event to start a new run.',
+        );
+      }
+
+      const existingResults = results.filter(
+        (result) => result.CompetitionGender === competitionGender,
+      );
 
       positions.forEach((position) => {
         const teamIdentifier = position.teamId || position.TeamID;
@@ -95,11 +100,14 @@ export function createDistanceService({
         }
       });
 
-      services.EventRunService.updateStatus(
-        eventIdentifier,
-        eventRunIdentifier,
-        EVENT_STATUS.IN_PROGRESS,
-      );
+      // Corrections retain completion timestamps and do not create another run.
+      if (eventRun.Status !== EVENT_STATUS.COMPLETE) {
+        services.EventRunService.updateStatus(
+          eventIdentifier,
+          eventRunIdentifier,
+          EVENT_STATUS.IN_PROGRESS,
+        );
+      }
 
       return this.getForEventRun(eventIdentifier, eventRunIdentifier);
     },

@@ -20,6 +20,10 @@ test('event settings save the entered values before the pending-state render', a
     },
   });
   virtualMachine.runInContext(
+    await readFile(new URL('../../web/js/drafts.js', import.meta.url), 'utf8'),
+    context,
+  );
+  virtualMachine.runInContext(
     await readFile(new URL('../../web/js/app.js', import.meta.url), 'utf8'),
     context,
   );

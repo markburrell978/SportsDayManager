@@ -175,9 +175,13 @@ class PracticeRequestHandler(SimpleHTTPRequestHandler):
                 + ");\n"
             ).encode()
             content_type = "application/javascript"
-        elif request_path in ("/", "/index.html"):
+        elif request_path in ("/", "/index.html", "/participants.html"):
             response_body = (
-                WEBSITE_DIRECTORY.joinpath("index.html")
+                WEBSITE_DIRECTORY.joinpath(
+                    "participants.html"
+                    if request_path == "/participants.html"
+                    else "index.html"
+                )
                 .read_text()
                 .replace(
                     "</head>",
@@ -235,6 +239,8 @@ write_private_file(
         f'SPORTS_DAY_ORGANISER_IDS={PRACTICE_ACCOUNT["id"]}\n'
         f"SPORTS_DAY_ALLOWED_ORIGINS=http://127.0.0.1:{WEBSITE_PORT},"
         f"http://localhost:{WEBSITE_PORT}\n"
+        "SPORTS_DAY_VIEW_ACCESS=public\n"
+        "SPORTS_DAY_VIEW_NAMES=true\n"
     ),
 )
 FUNCTION_LOG_FILE = REPOSITORY_ROOT / "supabase/.temp/practice-functions.log"
@@ -248,7 +254,6 @@ try:
             + [
                 "functions",
                 "serve",
-                "sports-day-api",
                 "--env-file",
                 str(FUNCTION_SETTINGS_FILE),
             ],
@@ -287,6 +292,11 @@ try:
         print(
             "Practice organiser credentials are in .env.practice.json "
             "(private, ignored by Git).",
+            flush=True,
+        )
+        print(
+            "Tournament view: http://127.0.0.1:8080/participants.html; "
+            "opens directly without a viewing code.",
             flush=True,
         )
         print(

@@ -2,7 +2,32 @@
 
 Project: Sports Day Manager
 
-Production version: v1.1 Supabase cutover, commit `cebaaad`, 2026-10-02
+Production release: v1.5.0, approved 2026-10-06; includes v1.4 stability and
+v1.5 Tournament view. Previous release: v1.3.1, merge commit `e422c8d`.
+See `docs/V1_5_RELEASE_REPORT.md` for backup, deployment and recovery evidence.
+
+Review status: v1.4 stability is implemented and automatically tested; the
+owner explicitly deferred completing its manual review and asked to proceed with
+v1.5 on 2026-10-06. Do not treat deferral as user acceptance. See
+`docs/V1_4_DEFERRED_REVIEW.md`, including the verified private source checkpoint in
+`backups/v1.4-before-v1.5-20261006/`. The owner approved merging the combined
+release from `v1.5-participant-view`. Backend deployment precedes the main-branch
+merge, which publishes the frontend through the existing Pages workflow.
+
+The v1.5 Tournament view is available at `/participants.html`. It uses a
+separate GET-only `sports-day-view` function, a minimal active-day snapshot, reused
+confirmed scoring, a SQL read-only transaction and no organiser mutation dispatch.
+The owner selected public tournament links with no login/viewing code on
+2026-10-06. Approved production and local practice enable public viewing and
+participant names; unconfigured deployments still default to disabled/hidden. Organiser Settings can
+make a selected existing Sports Day current using an authenticated atomic POST;
+records are preserved, and the tournament view follows the active flag. See `docs/V1_5_PARTICIPANT_REPORT.md` and
+`docs/V1_5_PLAN.md`. Race/distance official awards are aggregated by team rather than
+inventing confirmed category/competitor metadata absent from stored awards.
+
+A fresh private production backup in `backups/v1.5-predeploy-20261006/` was
+checksum-verified and restored into a disposable local database. All 44 awards
+across nine runs matched previous scores. The rehearsal database was removed.
 
 Development status: Supabase schema, transactional API, organiser sign-in,
 hosted fictional validation, repeatable data-migration tooling, a restricted
@@ -44,8 +69,9 @@ hosted Supabase PostgreSQL
 The published runtime configuration selects Supabase. `web/js/config.js`
 retains the Apps Script provider configuration for the documented rollback.
 
-The production project reference is `jnzyedbrkxxaqxgsaavc`. All migrations and
-the `sports-day-api` function are deployed. It contains the migrated restricted
+The production project reference is `jnzyedbrkxxaqxgsaavc`. All released migrations and
+both v1.5 Edge Functions are deployed, including the scoring-configuration
+revision migration (`202610060001`). It contains the migrated restricted
 production data and must be treated as private. Only the allow-listed organiser
 can use the application API.
 
@@ -53,8 +79,17 @@ The v1.2 release adds named annual Sports Days. Existing production
 records become `SportsDay2026`. Starting a new Sports Day copies teams, point
 profiles and event definitions, creates a clean first run for each event, and
 copies no competitors, engine records or results. Earlier Sports Days remain
-selectable and read-only. The production backup was restore-tested and the
+selectable and read-only by default. The production backup was restore-tested and the
 schema, function and frontend were deployed on 2026-10-05.
+
+The v1.3 release adds one-read main-tab loading, event creation/configuration,
+competitor entry defaults, heat-winner batch saving, coloured team labels and
+round-robin standings. Settings can delete a Sports Day with exact-name/last-entry
+protection or temporarily enable historical editing. That edit permission resets
+on selection changes or reload and does not change which Sports Day is current.
+Previous reset-created event runs remain read-only. In v1.3.1, disabled events
+retain their progress/results but do not produce confirmation warnings; enabling
+them again restores any outstanding warnings. The owner confirmed the live fix.
 
 ## Source layout
 
@@ -89,7 +124,8 @@ schema, function and frontend were deployed on 2026-10-05.
 - The organiser explicitly confirms completed current-run results.
 - Reconfirmation replaces only Results for that current run.
 - `Results.Position` is authoritative.
-- `Results.PointsAwarded` is a compatibility snapshot.
+- In v1.4 SQL, `Results.PointsAwarded` is the authoritative confirmed award.
+  The retained Google backend continues its earlier profile-based calculation.
 - Positions above fourth award zero.
 - Heat & Final and Distance categories may produce repeated team rows.
 - Each Double Team member receives the full points for its side's placing.
@@ -101,7 +137,9 @@ schema, function and frontend were deployed on 2026-10-05.
   `Fourth`; all four points are required signed integers.
 - The leaderboard includes active teams, including zero/negative totals, and
   excludes inactive teams and historical runs.
-- Scores recalculate from confirmed positions and the current point profile.
+- In v1.4 SQL, scores and history sum confirmed awards. Profile edits or
+  assignment changes flag affected scored current runs for reconfirmation;
+  names, enable/disable and unchanged saves do not dirty scores.
 - Competition ranking determines positions; alphabetic order is display-only.
 - Round Robin ties receive the ceiling of the average points for their occupied
   positions.
@@ -111,7 +149,7 @@ schema, function and frontend were deployed on 2026-10-05.
 - History is read-only and newest-run-first.
 - It is reconstructed from Event Runs, engine rows and Results.
 - It includes current/previous runs and confirmation state.
-- Displayed historical points use the event's current point profile.
+- In v1.4 SQL, displayed historical points use the saved confirmed awards.
 - Historical runs cannot be edited, restored, confirmed, reset or deleted.
 
 ## PostgreSQL and API decisions
@@ -179,10 +217,11 @@ On 2026-10-02, the dedicated `sports_day_api` role passed local, disposable and
 hosted boundary checks. The Edge Function loaded the restricted-data leaderboard
 through both that role and a timed managed-connection fallback, then returned to
 the dedicated role without data changes. The frontend rollback rehearsal found
-that the live Apps Script `getLeaderboard` action currently ends on Google's
-page-not-found response after 28–40 seconds, while `getTeams` still succeeds.
-The branch prepares the public runtime for Supabase; `main` remains on Apps
-Script. See `docs/migration/PRODUCTION_READINESS_REHEARSAL_2026-10-02.md`.
+that the live Apps Script `getLeaderboard` action ended on Google's
+page-not-found response after 28–40 seconds, while `getTeams` still succeeded.
+At that rehearsal the branch prepared the public runtime for Supabase and `main`
+still used Apps Script. The subsequent cutover replaced that production provider.
+See `docs/migration/PRODUCTION_READINESS_REHEARSAL_2026-10-02.md`.
 
 During initial staging setup, a CLI command unexpectedly printed a legacy
 service-role key. It was never written to the repository. The code was moved to
@@ -203,7 +242,7 @@ of `docs/STAGING_REPORT.md`.
   switch endpoints unless the owner explicitly instructs it.
 - Do not reset staging or the owner's local practice database merely to rerun
   seed tests.
-- Offline mode, dynamic events and public sharing remain deferred.
+- Persistent offline mode, registration and participant result submission remain deferred.
 
 ## Current working state and next actions
 
@@ -223,3 +262,11 @@ The v1.2 release was delivered through pull request #3. Migration
 in that order and passed the post-deployment smoke test. Keep the preserved Apps
 Script, Sheet and private backups until the owner explicitly approves their
 deletion.
+
+Pull requests #5 and #6 delivered v1.3 and v1.3.1, with passing CI, API deployment,
+versioned frontend publication and live read checks. Tags `v1.3.0` and `v1.3.1`
+preserve the releases. A private production backup beneath the ignored `backups/`
+directory was checksum-verified and application-restore-tested before v1.3.
+The owner selected stability first for v1.4 after reviewing the upgrade options.
+Consult the new plan and the top of `docs/TODO.md` before interpreting the older migration
+milestone headings as outstanding work.

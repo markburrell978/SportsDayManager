@@ -6,6 +6,7 @@ Production consists of:
 
 - static `web/` files deployed by `.github/workflows/pages.yml` to GitHub Pages;
 - the authenticated `sports-day-api` Supabase Edge Function;
+- the public GET-only `sports-day-view` Edge Function for Tournament view;
 - Supabase PostgreSQL protected by the dedicated least-privilege role and RLS.
 
 The Pages workflow runs on pushes to `main` and uploads only `web/`. The
