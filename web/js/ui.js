@@ -122,6 +122,7 @@ const EventView = {
    * @param {Object|null} eventHistory
    * @param {boolean} historyLoading
    * @param {string} historyError
+   * @param {Object[]} availablePointProfiles
    */
   renderEventDetails(
     event,
@@ -141,6 +142,7 @@ const EventView = {
     eventHistory = null,
     historyLoading = false,
     historyError = '',
+    availablePointProfiles = [],
   ) {
     const container = document.getElementById('event-details');
 
@@ -149,6 +151,9 @@ const EventView = {
 
       return;
     }
+
+    const eventEnabled = event.Enabled === true || event.Enabled === 'TRUE';
+    const eventControlsDisabled = requestPending || !eventEnabled;
 
     container.innerHTML = `
 
@@ -163,7 +168,7 @@ const EventView = {
 
 <p>
     <strong>Points Profile:</strong>
-    ${this.escapeHtml(event.PointsProfileID)}
+    ${this.escapeHtml(pointsProfile?.Name || event.PointsProfileID)}
 </p>
 
 <p>
@@ -183,19 +188,23 @@ ${
     ? `
 ${this.renderEventHistory(eventHistory, historyLoading, historyError)}`
     : `
-${this.renderEventRun(eventRun, requestPending)}
+${this.renderEventConfiguration(event, availablePointProfiles, requestPending)}
+
+${!eventEnabled ? '<p class="event-disabled-notice">This event is disabled. Enable it in Event settings before entering results.</p>' : ''}
+
+${this.renderEventRun(eventRun, eventControlsDisabled)}
 
 ${this.renderPointsProfile(pointsProfile)}
 
 ${this.renderEventMessage(message, messageIsError)}
 
-${this.renderRoundRobin(event, matches, teams, requestPending)}
+${this.renderRoundRobin(event, matches, teams, eventControlsDisabled)}
 
-${this.renderTournament(event, matches, teams, requestPending)}
+${this.renderTournament(event, matches, teams, eventControlsDisabled)}
 
-${this.renderRace(event, race, teams, raceCategory, requestPending)}
+${this.renderRace(event, race, teams, raceCategory, eventControlsDisabled)}
 
-${this.renderDoubleTeam(event, doubleTeamMatch, teams, requestPending)}
+${this.renderDoubleTeam(event, doubleTeamMatch, teams, eventControlsDisabled)}
 
 ${this.renderDistance(
   event,
@@ -203,7 +212,7 @@ ${this.renderDistance(
   distance,
   teams,
   distanceCategory,
-  requestPending,
+  eventControlsDisabled,
 )}
 `
 }
@@ -211,6 +220,38 @@ ${this.renderDistance(
 </div>
 
 `;
+  },
+
+  /** Render editable name, point profile and availability for one event. */
+  renderEventConfiguration(event, pointProfiles, requestPending) {
+    const enabled = event.Enabled === true || event.Enabled === 'TRUE';
+
+    return `<details class="event-configuration">
+<summary>Event settings</summary>
+<div class="event-configuration-fields">
+<label for="event-name">Name
+<input id="event-name" type="text" maxlength="100" value="${this.escapeHtml(event.Name)}" ${requestPending ? 'disabled' : ''} />
+</label>
+<label for="event-format-display">Event format
+<input id="event-format-display" type="text" value="${this.escapeHtml(event.EventType)}" disabled />
+</label>
+<label for="event-point-profile">Points profile
+<select id="event-point-profile" ${requestPending ? 'disabled' : ''}>
+${pointProfiles
+  .map(
+    (profile) =>
+      `<option value="${this.escapeHtml(profile.ID)}" ${profile.ID === event.PointsProfileID ? 'selected' : ''}>${this.escapeHtml(profile.Name)}</option>`,
+  )
+  .join('')}
+</select>
+</label>
+<label class="event-enabled-control" for="event-enabled">
+<input id="event-enabled" type="checkbox" ${enabled ? 'checked' : ''} ${requestPending ? 'disabled' : ''} />
+Enabled
+</label>
+<button type="button" onclick="saveEventConfiguration()" ${requestPending ? 'disabled' : ''}>Save event settings</button>
+</div>
+</details>`;
   },
 
   /** Build controls for switching between the current run and history. */
@@ -609,14 +650,33 @@ ${outcomes.Fixtures.length > 1 ? `<h5>Fixture ${index + 1}</h5>` : ''}
             </span>`;
     }
 
-    const colour = /^#[0-9a-fA-F]{6}$/.test(team.TeamColour || '')
-      ? team.TeamColour
+    return this.renderTeamLabel(team);
+  },
+
+  /** Render a team name with its validated colour marker. */
+  renderTeamLabel(team) {
+    if (!team) {
+      return '<span class="history-unavailable">Unavailable</span>';
+    }
+    const name = team.Name || team.TeamName || team.ID || team.TeamID;
+    const storedColour = team.Colour || team.TeamColour || '';
+    const colour = /^#[0-9a-fA-F]{6}$/.test(storedColour)
+      ? storedColour
       : '#777777';
 
-    return `<span class="history-team">
+    return `<span class="team-label">
             <span class="team-colour" style="background-color: ${colour}"></span>
-            ${this.escapeHtml(team.TeamName)}
+            ${this.escapeHtml(name)}
         </span>`;
+  },
+
+  /** Resolve and render a team, retaining an identifier fallback. */
+  renderTeamLabelByIdentifier(teams, teamIdentifier) {
+    const team = teams.find((item) => item.ID === teamIdentifier);
+
+    return team
+      ? this.renderTeamLabel(team)
+      : this.escapeHtml(teamIdentifier || '—');
   },
 
   /** Convert stored status values into readable history labels. */
@@ -836,7 +896,55 @@ Generate Fixtures
       (match) => `Round ${match.Round}`,
     );
 
+    markup += this.renderRoundRobinPlacings(matches, teams);
+
     return markup;
+  },
+
+  /** Show final round-robin rankings once every fixture has a winner. */
+  renderRoundRobinPlacings(matches, teams) {
+    if (
+      !matches.length ||
+      !matches.every((match) => this.isMatchComplete(match))
+    ) {
+      return '';
+    }
+    const participatingTeamIdentifiers = [
+      ...new Set(matches.flatMap((match) => [match.Team1ID, match.Team2ID])),
+    ];
+    const standings = participatingTeamIdentifiers
+      .map((teamIdentifier) => ({
+        teamIdentifier,
+        wins: matches.filter((match) => match.WinnerID === teamIdentifier)
+          .length,
+      }))
+      .sort((firstStanding, secondStanding) => {
+        const winsDifference = secondStanding.wins - firstStanding.wins;
+        return (
+          winsDifference ||
+          this.getTeamName(teams, firstStanding.teamIdentifier).localeCompare(
+            this.getTeamName(teams, secondStanding.teamIdentifier),
+          )
+        );
+      });
+
+    return `<div class="round-robin-placings">
+<h5>Final placings</h5>
+<ol>
+${standings
+  .map((standing, index) => {
+    const position =
+      index > 0 && standings[index - 1].wins === standing.wins
+        ? standings.findIndex((item) => item.wins === standing.wins) + 1
+        : index + 1;
+    return `<li value="${position}">${this.renderTeamLabelByIdentifier(
+      teams,
+      standing.teamIdentifier,
+    )} <span class="wins">${standing.wins} win${standing.wins === 1 ? '' : 's'}</span></li>`;
+  })
+  .join('')}
+</ol>
+</div>`;
   },
 
   /**
@@ -1013,9 +1121,9 @@ Generate Fixtures
       markup += `
 <tr>
 <td>${this.escapeHtml(getRoundName(match, index))}</td>
-<td>${this.escapeHtml(this.getTeamName(teams, match.Team1ID))}</td>
-<td>${this.escapeHtml(this.getTeamName(teams, match.Team2ID))}</td>
-<td>${complete ? this.escapeHtml(this.getTeamName(teams, match.WinnerID)) : '—'}</td>
+<td>${this.renderTeamLabelByIdentifier(teams, match.Team1ID)}</td>
+<td>${this.renderTeamLabelByIdentifier(teams, match.Team2ID)}</td>
+<td>${complete ? this.renderTeamLabelByIdentifier(teams, match.WinnerID) : '—'}</td>
 <td>${this.formatMatchStatus(match)}</td>
 <td>
 <select data-match-identifier="${this.escapeHtml(match.ID)}" onchange="saveMatchWinner(this.dataset.matchIdentifier, this.value)"
@@ -1067,10 +1175,10 @@ ${this.renderWinnerOption(teams, match.Team2ID, match.WinnerID)}
 <div class="tournament-placings">
 <h5>Final placings</h5>
 <ol>
-<li>${this.escapeHtml(this.getTeamName(teams, finalMatch.WinnerID))}</li>
-<li>${this.escapeHtml(this.getTeamName(teams, finalLoser))}</li>
-<li>${this.escapeHtml(this.getTeamName(teams, thirdPlaceMatch.WinnerID))}</li>
-<li>${this.escapeHtml(this.getTeamName(teams, thirdPlaceLoser))}</li>
+<li>${this.renderTeamLabelByIdentifier(teams, finalMatch.WinnerID)}</li>
+<li>${this.renderTeamLabelByIdentifier(teams, finalLoser)}</li>
+<li>${this.renderTeamLabelByIdentifier(teams, thirdPlaceMatch.WinnerID)}</li>
+<li>${this.renderTeamLabelByIdentifier(teams, thirdPlaceLoser)}</li>
 </ol>
 </div>`;
   },
@@ -1146,7 +1254,7 @@ ${['Male', 'Female']
 
       markup += `
 <div class="race-heat-card">
-<h6>${this.escapeHtml(team.Name)}</h6>`;
+<h6>${this.renderTeamLabel(team)}</h6>`;
 
       if (!eligibleCompetitors.length) {
         markup += `
@@ -1156,7 +1264,9 @@ ${['Male', 'Female']
       } else {
         markup += `
 <div class="race-heat-control">
-<select id="${selectIdentifier}" ${requestPending || complete ? 'disabled' : ''}>
+<select id="${selectIdentifier}"
+        data-team-identifier="${this.escapeHtml(team.ID)}"
+        ${requestPending || complete ? 'disabled' : ''}>
 <option value="">Choose heat winner</option>
 ${eligibleCompetitors
   .map(
@@ -1168,10 +1278,6 @@ ${eligibleCompetitors
   )
   .join('')}
 </select>
-<button data-team-identifier="${this.escapeHtml(team.ID)}" data-select-identifier="${this.escapeHtml(selectIdentifier)}" onclick="saveRaceHeatWinner(this.dataset.teamIdentifier, this.dataset.selectIdentifier)"
-        ${requestPending || complete ? 'disabled' : ''}>
-    Save Winner
-</button>
 </div>`;
       }
 
@@ -1190,6 +1296,14 @@ ${eligibleCompetitors
 
       markup += `</div>`;
     });
+
+    if (!complete) {
+      markup += `
+<button class="save-heat-winners" onclick="saveRaceHeatWinners()"
+        ${requestPending ? 'disabled' : ''}>
+    Save selected heat winners
+</button>`;
+    }
 
     markup += this.renderRaceFinal(
       categoryResults,
@@ -1241,7 +1355,7 @@ ${orderedResults
     (result) => `
 <li>
     ${this.escapeHtml(this.getCompetitorName(competitors, result.CompetitorID))}
-    — ${this.escapeHtml(this.getTeamName(teams, result.TeamID))}
+    — ${this.renderTeamLabelByIdentifier(teams, result.TeamID)}
 </li>`,
   )
   .join('')}
@@ -1277,7 +1391,7 @@ ${this.renderRaceFinalPositionControls(
 <label for="race-final-position-${this.escapeHtml(result.ID)}">
 <span>
     ${this.escapeHtml(this.getCompetitorName(competitors, result.CompetitorID))}
-    <small>${this.escapeHtml(this.getTeamName(teams, result.TeamID))}</small>
+    <small>${this.renderTeamLabelByIdentifier(teams, result.TeamID)}</small>
 </span>
 <select id="race-final-position-${this.escapeHtml(result.ID)}"
         ${requestPending ? 'disabled' : ''}>
@@ -1297,6 +1411,7 @@ ${[1, 2, 3, 4]
 
     markup += `
 </div>
+<p id="race-final-message" class="race-final-message" role="status" aria-live="polite"></p>
 <button onclick="saveRaceFinalPositions()" ${requestPending ? 'disabled' : ''}>
     Save Final Positions
 </button>`;
@@ -1392,7 +1507,7 @@ ${[1, 2, 3, 4]
 <div class="double-team-side double-team-preview">
 <h5>Side 2</h5>
 <p id="double-team-side-2-preview">
-    ${this.escapeHtml(side2Teams.map((team) => team.Name).join(' + '))}
+    ${side2Teams.map((team) => this.renderTeamLabel(team)).join(' + ')}
 </p>
 </div>
 </div>
@@ -1426,19 +1541,21 @@ ${[1, 2, 3, 4]
 <div class="double-team-fixture ${complete ? 'double-team-complete' : ''}">
 <h5>Saved fixture</h5>
 <div class="double-team-versus">
-<strong>${this.escapeHtml(side1Name)}</strong>
+<strong>${this.renderCombinedSide(teams, match.Side1Team1ID, match.Side1Team2ID)}</strong>
 <span>versus</span>
-<strong>${this.escapeHtml(side2Name)}</strong>
+<strong>${this.renderCombinedSide(teams, match.Side2Team1ID, match.Side2Team2ID)}</strong>
 </div>
 <p><strong>Status:</strong> ${complete ? 'Complete' : 'In progress'}</p>`;
 
     if (complete) {
-      const winningName =
-        Number(match.WinnerSide) === 1 ? side1Name : side2Name;
+      const winningSide =
+        Number(match.WinnerSide) === 1
+          ? [match.Side1Team1ID, match.Side1Team2ID]
+          : [match.Side2Team1ID, match.Side2Team2ID];
 
       markup += `
 <p class="double-team-winner">
-    <strong>Winner:</strong> ${this.escapeHtml(winningName)}
+    <strong>Winner:</strong> ${this.renderCombinedSide(teams, winningSide[0], winningSide[1])}
 </p>`;
     }
 
@@ -1491,6 +1608,15 @@ ${[1, 2, 3, 4]
       this.getTeamName(teams, firstTeamIdentifier),
       this.getTeamName(teams, secondTeamIdentifier),
     ].join(' + ');
+  },
+
+  /** Render both coloured team labels forming a combined side. */
+  renderCombinedSide(teams, firstTeamIdentifier, secondTeamIdentifier) {
+    return [firstTeamIdentifier, secondTeamIdentifier]
+      .map((teamIdentifier) =>
+        this.renderTeamLabelByIdentifier(teams, teamIdentifier),
+      )
+      .join(' + ');
   },
 
   /** Render category placings and the explicit event completion action. */
@@ -1561,7 +1687,7 @@ ${['Male', 'Female']
 
       markup += `
 <label for="distance-position-${index}">
-<span>${this.escapeHtml(team.Name)}</span>
+<span>${this.renderTeamLabel(team)}</span>
 <select id="distance-position-${index}"
         ${requestPending || completed ? 'disabled' : ''}>
     <option value="">Choose position</option>
@@ -1598,7 +1724,7 @@ ${['Male', 'Female']
 ${orderedResults
   .map(
     (result) => `
-<li>${this.escapeHtml(this.getTeamName(teams, result.TeamID))}</li>`,
+<li>${this.renderTeamLabelByIdentifier(teams, result.TeamID)}</li>`,
   )
   .join('')}
 </ol>

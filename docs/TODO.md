@@ -1,5 +1,22 @@
 # Sports Day Manager Roadmap
 
+## v1.3 — Manual-testing improvements
+
+- [x] Match competitor and competition gender when a direct match exists
+- [x] Reuse the previously selected team for the next new competitor
+- [x] Allow every tournament slot to return to `Choose team`
+- [x] Generate new point-profile identifiers in the backend
+- [x] Delete a selected Sports Day with exact-name confirmation and last-entry protection
+- [x] Save one or more heat winners as one transactional batch
+- [x] Reduce every main-tab load and post-write Events refresh to one scoped read request
+- [x] Reuse the previous competitor age during repetitive entry
+- [x] Show completed round-robin standings and team colours throughout current views
+- [x] Preserve invalid race-final drafts and show validation beside the controls
+- [x] Create events and edit their names, point profiles and enabled state
+- [x] Temporarily edit selected historical Sports Days through Settings without changing the current day; restore read-only mode on switching or reload
+- [x] Pass browser, service and database/API regression tests locally
+- [x] Complete the production backup, review and release
+
 ## v1.2 — Named annual Sports Days and faster loading
 
 - [x] Preserve existing production records as `SportsDay2026`

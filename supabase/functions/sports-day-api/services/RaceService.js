@@ -193,6 +193,71 @@ export function createRaceService({ Database, ServiceUtilities, services }) {
       return this.getForEvent(eventIdentifier, eventRunIdentifier);
     },
 
+    /** Validate and save several team heat winners as one request. */
+    saveHeatWinners(
+      eventIdentifier,
+      eventRunIdentifier,
+      competitionGender,
+      winners,
+    ) {
+      this.getRaceEvent(eventIdentifier);
+      services.EventRunService.assertCurrent(
+        eventIdentifier,
+        eventRunIdentifier,
+      );
+      this.validateCategory(competitionGender);
+
+      if (!Array.isArray(winners) || !winners.length) {
+        throw new Error('Choose at least one heat winner to save.');
+      }
+
+      const teamIdentifiers = winners.map(
+        (winner) => winner.teamId || winner.TeamID,
+      );
+
+      if (
+        teamIdentifiers.some((identifier) => !identifier) ||
+        new Set(teamIdentifiers).size !== teamIdentifiers.length
+      ) {
+        throw new Error('Each team can have only one selected heat winner.');
+      }
+
+      const eligibleCompetitors = this.getEligibleCompetitors(
+        eventIdentifier,
+        eventRunIdentifier,
+      );
+
+      winners.forEach((winner) => {
+        const teamIdentifier = winner.teamId || winner.TeamID;
+        const competitorIdentifier = winner.competitorId || winner.CompetitorID;
+        const competitor = eligibleCompetitors.find(
+          (item) => item.ID === competitorIdentifier,
+        );
+
+        if (
+          !competitor ||
+          competitor.TeamID !== teamIdentifier ||
+          competitor.CompetitionGender !== competitionGender
+        ) {
+          throw new Error(
+            'Every selected winner must be eligible for their team and race category.',
+          );
+        }
+      });
+
+      winners.forEach((winner) => {
+        this.saveHeatWinner(
+          eventIdentifier,
+          eventRunIdentifier,
+          competitionGender,
+          winner.teamId || winner.TeamID,
+          winner.competitorId || winner.CompetitorID,
+        );
+      });
+
+      return this.getForEvent(eventIdentifier, eventRunIdentifier);
+    },
+
     /**
      * Saves positions for the four selected finalists.
      *

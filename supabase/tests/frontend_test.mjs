@@ -24,9 +24,10 @@ test('published assets use a release version so browsers do not mix frontend ver
     'js/api.js',
     'js/session.js',
     'js/ui.js',
+    'js/form.js',
     'js/app.js',
   ]) {
-    assert.match(documentMarkup, new RegExp(`${assetPath}\\?v=1\\.2\\.0`));
+    assert.match(documentMarkup, new RegExp(`${assetPath}\\?v=1\\.3\\.0`));
   }
 });
 
@@ -160,6 +161,87 @@ test('Supabase requests carry the selected Sports Day without changing Apps Scri
     sourceSportsDayId: 'SPORTS_DAY_2027',
     sportsDayId: 'SPORTS_DAY_2027',
   });
+});
+
+test('historical write permission is explicit and cleared on Sports Day selection', async () => {
+  const calls = [];
+  const { ApplicationInterface, Authentication } = await client(
+    async (requestAddress, options) => {
+      if (requestAddress.includes('/auth/')) {
+        return response(sessionValue());
+      }
+      calls.push({ url: requestAddress, options });
+      return response({ success: true, data: [] });
+    },
+  );
+  await Authentication.signIn('test@example.test', 'password');
+  ApplicationInterface.selectSportsDay('OLD');
+  ApplicationInterface.setHistoricalEditing(true);
+  await ApplicationInterface.getTeams();
+  await ApplicationInterface.updateCompetitor({ ID: 'one', Name: 'Corrected' });
+  assert.equal(
+    new URL(calls[0].url).searchParams.has('allowHistoricalEditing'),
+    false,
+  );
+  assert.deepEqual(JSON.parse(calls[1].options.body.get('payload')), {
+    ID: 'one',
+    Name: 'Corrected',
+    sportsDayId: 'OLD',
+    allowHistoricalEditing: true,
+  });
+  ApplicationInterface.setHistoricalEditing(false);
+  await ApplicationInterface.updateCompetitor({ ID: 'one' });
+  ApplicationInterface.setHistoricalEditing(true);
+  ApplicationInterface.selectSportsDay('NEW');
+  await ApplicationInterface.updateCompetitor({ ID: 'one' });
+  ApplicationInterface.selectSportsDay('OLD');
+  await ApplicationInterface.updateCompetitor({ ID: 'one' });
+  for (const call of calls.slice(2)) {
+    assert.equal(
+      Object.hasOwn(
+        JSON.parse(call.options.body.get('payload')),
+        'allowHistoricalEditing',
+      ),
+      false,
+    );
+  }
+  assert.equal(
+    JSON.parse(calls[3].options.body.get('payload')).sportsDayId,
+    'NEW',
+  );
+});
+
+test('Supabase page loaders use one scoped request per visible tab', async () => {
+  const calls = [];
+  const { ApplicationInterface, Authentication } = await client(
+    async (requestAddress) => {
+      calls.push(requestAddress);
+      return requestAddress.includes('/auth/')
+        ? response(sessionValue())
+        : response({ success: true, data: {} });
+    },
+    { practice: false },
+  );
+  await Authentication.signIn('test@example.test', 'password');
+  ApplicationInterface.selectSportsDay('SPORTS_DAY_2026');
+
+  await ApplicationInterface.getLeaderboardPage();
+  await ApplicationInterface.getCompetitorsPage();
+  await ApplicationInterface.getEventsPage('EVENT_ONE');
+
+  const applicationCalls = calls
+    .filter((requestAddress) => requestAddress.includes('/functions/v1/'))
+    .map((requestAddress) => new URL(requestAddress).searchParams);
+  assert.deepEqual(
+    applicationCalls.map((parameters) => parameters.get('action')),
+    ['getLeaderboardPage', 'getCompetitorsPage', 'getEventsPage'],
+  );
+  assert.ok(
+    applicationCalls.every(
+      (parameters) => parameters.get('sportsDayId') === 'SPORTS_DAY_2026',
+    ),
+  );
+  assert.equal(applicationCalls[2].get('eventId'), 'EVENT_ONE');
 });
 
 test('practice fails closed when its runtime configuration is missing or remote', async () => {

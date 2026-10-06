@@ -132,3 +132,72 @@ export async function createSportsDay(
   `;
   return { ID: sportsDayIdentifier, Name: name, Active: true };
 }
+
+/** Delete one named Sports Day and reactivate the newest remaining entry. */
+export async function deleteSportsDay(transaction, payload) {
+  const sportsDayIdentifier =
+    payload.sportsDayId || payload.SportsDayID || payload.id || payload.ID;
+  const confirmationName = String(
+    payload.confirmationName || payload.ConfirmationName || '',
+  );
+  const [sportsDay] = await transaction`
+    select id, name, is_active
+    from public.sports_days
+    where id = ${sportsDayIdentifier}
+    for update
+  `;
+  if (!sportsDay) {
+    throw new SportsDayValidationError(
+      'The selected Sports Day does not exist.',
+    );
+  }
+  if (confirmationName !== sportsDay.name) {
+    throw new SportsDayValidationError(
+      'Type the exact Sports Day name to confirm deletion.',
+    );
+  }
+  const [{ count }] =
+    await transaction`select count(*)::int as count from public.sports_days`;
+  if (count <= 1) {
+    throw new SportsDayValidationError(
+      'The only remaining Sports Day cannot be deleted.',
+    );
+  }
+
+  await transaction`delete from public.attempts where sports_day_id = ${sportsDay.id}`;
+  await transaction`delete from public.distance_results where sports_day_id = ${sportsDay.id}`;
+  await transaction`delete from public.double_team_matches where sports_day_id = ${sportsDay.id}`;
+  await transaction`delete from public.race_results where sports_day_id = ${sportsDay.id}`;
+  await transaction`delete from public.event_competitors where sports_day_id = ${sportsDay.id}`;
+  await transaction`delete from public.matches where sports_day_id = ${sportsDay.id}`;
+  await transaction`delete from public.results where sports_day_id = ${sportsDay.id}`;
+  await transaction`delete from public.event_runs where sports_day_id = ${sportsDay.id}`;
+  await transaction`delete from public.competitors where sports_day_id = ${sportsDay.id}`;
+  await transaction`delete from public.events where sports_day_id = ${sportsDay.id}`;
+  await transaction`delete from public.point_profiles where sports_day_id = ${sportsDay.id}`;
+  await transaction`delete from public.teams where sports_day_id = ${sportsDay.id}`;
+  await transaction`delete from public.sports_days where id = ${sportsDay.id}`;
+
+  let activeSportsDay;
+  if (sportsDay.is_active) {
+    [activeSportsDay] = await transaction`
+      update public.sports_days
+      set is_active = true
+      where id = (
+        select id from public.sports_days
+        order by source_order desc
+        limit 1
+      )
+      returning id
+    `;
+  } else {
+    [activeSportsDay] =
+      await transaction`select id from public.sports_days where is_active`;
+  }
+
+  return {
+    DeletedID: sportsDay.id,
+    DeletedName: sportsDay.name,
+    ActiveSportsDayID: activeSportsDay.id,
+  };
+}

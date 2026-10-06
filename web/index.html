@@ -7,7 +7,7 @@
 
     <title>Sports Day Manager</title>
 
-    <link rel="stylesheet" href="css/main.css?v=1.2.0" />
+    <link rel="stylesheet" href="css/main.css?v=1.3.0" />
   </head>
 
   <body class="auth-pending">
@@ -133,6 +133,10 @@
       <section id="page-events" class="page hidden">
         <h2>Events</h2>
 
+        <div class="toolbar">
+          <button id="btn-add-event" type="button">➕ Add Event</button>
+        </div>
+
         <div id="events-confirmation-notice" aria-live="polite"></div>
 
         <div id="events">Loading events...</div>
@@ -147,6 +151,33 @@
       <section id="page-settings" class="page hidden">
         <h2>Settings</h2>
 
+        <div
+          id="historical-editing-settings"
+          class="card historical-editing-settings"
+          hidden
+        >
+          <h3>Edit selected historical Sports Day</h3>
+          <p>
+            Make corrections to <strong id="historical-editing-name"></strong>.
+          </p>
+          <button
+            id="btn-toggle-historical-editing"
+            type="button"
+            role="switch"
+            aria-checked="false"
+            aria-label="Edit selected historical Sports Day"
+            aria-describedby="historical-editing-description"
+          >
+            Editing off — enable editing
+          </button>
+          <p id="historical-editing-description">
+            Editing is temporary. Turn it off, switch Sports Days or refresh the
+            page to restore read-only mode. Your current Sports Day stays
+            current. Confirm any corrected event results to update the
+            leaderboard.
+          </p>
+        </div>
+
         <div class="card sports-day-manager">
           <h3>Start a new Sports Day</h3>
           <p>
@@ -159,6 +190,33 @@
             Start New Sports Day
           </button>
           <p id="sports-day-message" role="status" aria-live="polite"></p>
+        </div>
+
+        <div id="sports-day-danger-zone" class="card danger-zone" hidden>
+          <h3>Delete selected Sports Day</h3>
+          <p>
+            This permanently deletes the selected Sports Day and all of its
+            competitors, events and results. Other Sports Days are unaffected.
+          </p>
+          <p>
+            Type <strong id="delete-sports-day-confirmation-name"></strong> to
+            confirm.
+          </p>
+          <label for="delete-sports-day-name">Sports Day name</label>
+          <input
+            id="delete-sports-day-name"
+            type="text"
+            maxlength="80"
+            autocomplete="off"
+          />
+          <button id="btn-delete-sports-day" type="button" disabled>
+            Delete Sports Day
+          </button>
+          <p
+            id="delete-sports-day-message"
+            role="status"
+            aria-live="polite"
+          ></p>
         </div>
 
         <p>Manage reusable point profiles.</p>
@@ -219,12 +277,46 @@
       </div>
     </div>
 
-    <script src="js/config.js?v=1.2.0"></script>
-    <script src="js/runtime-config.js?v=1.2.0"></script>
-    <script src="js/auth.js?v=1.2.0"></script>
-    <script src="js/api.js?v=1.2.0"></script>
-    <script src="js/session.js?v=1.2.0"></script>
-    <script src="js/ui.js?v=1.2.0"></script>
-    <script src="js/app.js?v=1.2.0"></script>
+    <div id="event-modal" class="modal hidden">
+      <div class="modal-content">
+        <h2>Add Event</h2>
+
+        <label for="new-event-name">Name</label>
+        <input id="new-event-name" type="text" maxlength="100" />
+
+        <label for="new-event-format">Event format</label>
+        <select id="new-event-format">
+          <option value="ROUND_ROBIN">Round robin</option>
+          <option value="TOURNAMENT">Tournament</option>
+          <option value="HEAT_FINAL">Heats and final</option>
+          <option value="DISTANCE">Distance</option>
+          <option value="DOUBLE_TEAM">Double team</option>
+        </select>
+
+        <label for="new-event-point-profile">Points profile</label>
+        <select id="new-event-point-profile"></select>
+
+        <label class="checkbox-label" for="new-event-enabled">
+          <input id="new-event-enabled" type="checkbox" checked />
+          Enabled
+        </label>
+
+        <p id="new-event-message" role="status" aria-live="polite"></p>
+
+        <div class="modal-buttons">
+          <button id="btn-cancel-event" type="button">Cancel</button>
+          <button id="btn-save-event" type="button">Add Event</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/config.js?v=1.3.0"></script>
+    <script src="js/runtime-config.js?v=1.3.0"></script>
+    <script src="js/auth.js?v=1.3.0"></script>
+    <script src="js/api.js?v=1.3.0"></script>
+    <script src="js/session.js?v=1.3.0"></script>
+    <script src="js/ui.js?v=1.3.0"></script>
+    <script src="js/form.js?v=1.3.0"></script>
+    <script src="js/app.js?v=1.3.0"></script>
   </body>
 </html>

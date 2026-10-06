@@ -52,6 +52,10 @@ export const APPLICATION_ACTIONS = Object.freeze({
 
   GET_EVENTS: 'getEvents',
 
+  CREATE_EVENT: 'createEvent',
+
+  UPDATE_EVENT: 'updateEvent',
+
   GET_POINT_PROFILE: 'getPointProfile',
 
   GET_POINT_PROFILES: 'getPointProfiles',
@@ -73,6 +77,8 @@ export const APPLICATION_ACTIONS = Object.freeze({
   START_RACE_EVENT: 'startRaceEvent',
 
   SAVE_RACE_HEAT_WINNER: 'saveRaceHeatWinner',
+
+  SAVE_RACE_HEAT_WINNERS: 'saveRaceHeatWinners',
 
   SAVE_RACE_FINAL_POSITIONS: 'saveRaceFinalPositions',
 

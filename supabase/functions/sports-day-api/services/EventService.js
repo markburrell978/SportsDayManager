@@ -21,15 +21,104 @@ export function createEventService({ Database, ServiceUtilities, services }) {
   });
 
   const EventService = {
-    /**
-     * Returns enabled events.
-     *
-     * @returns {Object[]}
-     */
+    /** Return every configured event so disabled events can be managed. */
     getAll() {
-      return Database.get(TABLES.EVENTS).filter(
-        (event) => event.Enabled === true || event.Enabled === 'TRUE',
+      return Database.get(TABLES.EVENTS).sort(
+        (firstEvent, secondEvent) =>
+          Number(firstEvent.DisplayOrder) - Number(secondEvent.DisplayOrder),
       );
+    },
+
+    /** Create an event and its initial empty run using a server-owned ID. */
+    create(input) {
+      const event = this.validateAndNormalise(input);
+
+      event.ID = ServiceUtilities.uuid();
+
+      event.Status = EVENT_STATUS.NOT_STARTED;
+
+      event.DisplayOrder =
+        this.getAll().reduce(
+          (highestOrder, currentEvent) =>
+            Math.max(highestOrder, Number(currentEvent.DisplayOrder) || 0),
+          0,
+        ) + 1;
+
+      Database.insert(TABLES.EVENTS, event);
+
+      services.EventRunService.getCurrent(event.ID);
+
+      return event;
+    },
+
+    /** Update editable event setup while preserving format and run state. */
+    update(input) {
+      const existing = this.getById(input.ID);
+
+      if (!existing) {
+        throw new Error('Event not found.');
+      }
+
+      if (input.EventType && input.EventType !== existing.EventType) {
+        throw new Error('Event format cannot be changed after creation.');
+      }
+
+      const event = Object.assign(
+        {},
+        existing,
+        this.validateAndNormalise(input, existing),
+      );
+
+      if (!Database.update(TABLES.EVENTS, existing.ID, event)) {
+        throw new Error('Event could not be updated.');
+      }
+
+      return event;
+    },
+
+    /** Validate user-editable event setup and normalize stored values. */
+    validateAndNormalise(input, existing = null) {
+      const name = String(input.Name ?? existing?.Name ?? '').trim();
+
+      const eventType = input.EventType || existing?.EventType;
+
+      const pointProfileIdentifier =
+        input.PointsProfileID || existing?.PointsProfileID;
+
+      if (!name) {
+        throw new Error('Event name is required.');
+      }
+
+      if (!Object.values(EVENT_TYPES).includes(eventType)) {
+        throw new Error('Choose a valid event format.');
+      }
+
+      if (!services.PointProfileService.getById(pointProfileIdentifier)) {
+        throw new Error('Choose an existing point profile.');
+      }
+
+      const duplicate = this.getAll().find(
+        (event) =>
+          event.ID !== existing?.ID &&
+          String(event.Name).trim().toLowerCase() === name.toLowerCase(),
+      );
+
+      if (duplicate) {
+        throw new Error('An event with this name already exists.');
+      }
+
+      return {
+        Name: name,
+
+        EventType: eventType,
+
+        PointsProfileID: pointProfileIdentifier,
+
+        Enabled:
+          input.Enabled === undefined
+            ? existing?.Enabled !== false && existing?.Enabled !== 'FALSE'
+            : input.Enabled === true || input.Enabled === 'TRUE',
+      };
     },
 
     /**

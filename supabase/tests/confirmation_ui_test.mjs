@@ -139,3 +139,117 @@ test('record identifiers stay in data attributes instead of executable handlers'
   assert.match(matchMarkup, /saveMatchWinner\(this\.dataset\.matchIdentifier/);
   assert.doesNotMatch(matchMarkup, /saveMatchWinner\('/);
 });
+
+test('heat winners are selected by team and saved with one batch control', () => {
+  const teams = [
+    { ID: 'TEAM_ONE', Name: 'One' },
+    { ID: 'TEAM_TWO', Name: 'Two' },
+  ];
+  const markup = eventView.renderRace(
+    { EventType: 'HEAT_FINAL' },
+    {
+      entrantsExplicit: true,
+      entrantCount: 2,
+      results: [],
+      eligibleCompetitors: [
+        {
+          ID: 'COMPETITOR_ONE',
+          Name: 'First runner',
+          TeamID: 'TEAM_ONE',
+          CompetitionGender: 'Female',
+        },
+        {
+          ID: 'COMPETITOR_TWO',
+          Name: 'Second runner',
+          TeamID: 'TEAM_TWO',
+          CompetitionGender: 'Female',
+        },
+      ],
+    },
+    teams,
+    'Female',
+    false,
+  );
+
+  assert.equal((markup.match(/data-team-identifier=/g) || []).length, 2);
+  assert.equal((markup.match(/Save selected heat winners/g) || []).length, 1);
+  assert.match(markup, /onclick="saveRaceHeatWinners\(\)"/);
+  assert.doesNotMatch(markup, /saveRaceHeatWinner\(/);
+});
+
+test('completed round robin shows ranked team placings with colours', () => {
+  const teams = [
+    { ID: 'RED', Name: 'Red', Colour: '#ff0000' },
+    { ID: 'BLUE', Name: 'Blue', Colour: '#0000ff' },
+    { ID: 'GREEN', Name: 'Green', Colour: '#00ff00' },
+  ];
+  const matches = [
+    { Team1ID: 'RED', Team2ID: 'BLUE', WinnerID: 'RED', Complete: true },
+    { Team1ID: 'RED', Team2ID: 'GREEN', WinnerID: 'RED', Complete: true },
+    { Team1ID: 'BLUE', Team2ID: 'GREEN', WinnerID: 'BLUE', Complete: true },
+  ];
+
+  const markup = eventView.renderRoundRobin(
+    { EventType: 'ROUND_ROBIN' },
+    matches,
+    teams,
+    false,
+  );
+
+  assert.match(markup, /Final placings/);
+  assert.ok(markup.indexOf('Red') < markup.indexOf('Blue'));
+  assert.ok(markup.indexOf('Blue') < markup.indexOf('Green'));
+  assert.match(markup, /background-color: #ff0000/);
+});
+
+test('race final keeps a nearby validation message target', () => {
+  const teams = [
+    { ID: 'ONE', Name: 'One', Colour: '#111111' },
+    { ID: 'TWO', Name: 'Two', Colour: '#222222' },
+    { ID: 'THREE', Name: 'Three', Colour: '#333333' },
+    { ID: 'FOUR', Name: 'Four', Colour: '#444444' },
+  ];
+  const competitors = teams.map((team) => ({
+    ID: `COMPETITOR_${team.ID}`,
+    Name: team.Name,
+  }));
+  const results = teams.map((team, index) => ({
+    ID: `RESULT_${index}`,
+    TeamID: team.ID,
+    CompetitorID: competitors[index].ID,
+    FinalPosition: '',
+  }));
+
+  const markup = eventView.renderRaceFinal(
+    results,
+    competitors,
+    teams,
+    'Male',
+    false,
+  );
+  assert.match(markup, /id="race-final-message"/);
+  assert.match(markup, /team-colour/);
+});
+
+test('event configuration exposes profile and enabled controls while format stays fixed', () => {
+  const markup = eventView.renderEventConfiguration(
+    {
+      ID: 'EVENT',
+      Name: 'Relay',
+      EventType: 'HEAT_FINAL',
+      PointsProfileID: 'STANDARD',
+      Enabled: false,
+    },
+    [
+      { ID: 'STANDARD', Name: 'Standard' },
+      { ID: 'BONUS', Name: 'Bonus' },
+    ],
+    false,
+  );
+
+  assert.match(markup, /HEAT_FINAL/);
+  assert.match(markup, /event-point-profile/);
+  assert.match(markup, /Bonus/);
+  assert.match(markup, /event-enabled/);
+  assert.match(markup, /Save event settings/);
+});

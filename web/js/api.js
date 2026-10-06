@@ -14,6 +14,7 @@
 const ApplicationInterface = {
   settings: null,
   selectedSportsDayIdentifier: null,
+  historicalEditingEnabled: false,
 
   /** Configure the backend and enforce local practice connection boundaries. */
   initialise() {
@@ -99,6 +100,17 @@ const ApplicationInterface = {
       this.initialise();
     }
     const supabase = this.requiresSignIn;
+    const scopedPayload = { ...payload };
+    if (
+      supabase &&
+      this.selectedSportsDayIdentifier &&
+      action !== 'getSportsDays'
+    ) {
+      scopedPayload.sportsDayId = this.selectedSportsDayIdentifier;
+      if (method === 'POST' && this.historicalEditingEnabled) {
+        scopedPayload.allowHistoricalEditing = true;
+      }
+    }
     let generation;
     const options = { method };
     if (supabase) {
@@ -112,23 +124,17 @@ const ApplicationInterface = {
         Authorization: `Bearer ${token}`,
       };
     }
-    const scopedPayload = { ...payload };
-    if (
-      supabase &&
-      this.selectedSportsDayIdentifier &&
-      action !== 'getSportsDays'
-    ) {
-      scopedPayload.sportsDayId = this.selectedSportsDayIdentifier;
-    }
     let requestAddress = this.settings.endpoint;
     if (method === 'GET') {
       const parameters = new URLSearchParams({ action });
       if (supabase && this.settings.functionRegion) {
         parameters.set('forceFunctionRegion', this.settings.functionRegion);
       }
-      if (scopedPayload.sportsDayId) {
-        parameters.set('sportsDayId', scopedPayload.sportsDayId);
-      }
+      Object.entries(scopedPayload).forEach(([name, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          parameters.set(name, String(value));
+        }
+      });
       requestAddress += `?${parameters}`;
     } else {
       options.body = new URLSearchParams({
@@ -176,8 +182,8 @@ const ApplicationInterface = {
   },
 
   /** Send a read request through the selected backend. */
-  async get(action) {
-    return await this.request('GET', action);
+  async get(action, payload = {}) {
+    return await this.request('GET', action, payload);
   },
   /** Send a form-encoded request through the selected backend. */
   async post(action, payload) {
@@ -196,9 +202,18 @@ const ApplicationInterface = {
     return await this.get('getConfirmationStatus');
   },
 
-  /** Select the Sports Day used to scope subsequent reads and writes. */
+  /** Select a Sports Day and restore the default historical write protection. */
   selectSportsDay(identifier) {
     this.selectedSportsDayIdentifier = identifier || null;
+    this.historicalEditingEnabled = false;
+  },
+
+  /** Temporarily permit historical writes for this tab's selected Sports Day. */
+  setHistoricalEditing(enabled) {
+    this.historicalEditingEnabled =
+      this.requiresSignIn &&
+      !!this.selectedSportsDayIdentifier &&
+      enabled === true;
   },
 
   /** List named Sports Days, with the current one first. */
@@ -212,6 +227,106 @@ const ApplicationInterface = {
       name,
       sourceSportsDayId: this.selectedSportsDayIdentifier,
     });
+  },
+
+  /** Permanently delete the selected Sports Day after exact-name confirmation. */
+  async deleteSportsDay(confirmationName) {
+    return await this.post('deleteSportsDay', { confirmationName });
+  },
+
+  /** Load leaderboard rows and confirmation state with one Supabase request. */
+  async getLeaderboardPage() {
+    if (!this.requiresSignIn) {
+      return {
+        leaderboard: await this.getLeaderboard(),
+        confirmationStatus: null,
+      };
+    }
+    return await this.get('getLeaderboardPage');
+  },
+
+  /** Load competitors and teams with one Supabase request. */
+  async getCompetitorsPage() {
+    if (!this.requiresSignIn) {
+      const [competitors, teams] = await Promise.all([
+        this.getCompetitors(),
+        this.getTeams(),
+      ]);
+      return { competitors, teams };
+    }
+    return await this.get('getCompetitorsPage');
+  },
+
+  /** Load event navigation and the selected event with one Supabase request. */
+  async getEventsPage(eventIdentifier = '') {
+    if (!this.requiresSignIn) {
+      return await this.getLegacyEventsPage(eventIdentifier);
+    }
+    return await this.get('getEventsPage', { eventId: eventIdentifier });
+  },
+
+  /** Assemble the page through legacy endpoints when rollback mode is active. */
+  async getLegacyEventsPage(eventIdentifier) {
+    const [events, teams, pointProfiles] = await Promise.all([
+      this.getEvents(),
+      this.getTeams(),
+      this.getPointProfiles(),
+    ]);
+    const selectedEvent =
+      events.find((event) => event.ID === eventIdentifier) || events[0] || null;
+    if (!selectedEvent) {
+      return {
+        events,
+        teams,
+        pointProfiles,
+        confirmationStatus: null,
+        selectedEvent: null,
+        currentEventRun: null,
+        currentPointsProfile: null,
+        matches: [],
+        race: null,
+        doubleTeamMatch: null,
+        distance: null,
+      };
+    }
+    const currentEventRun = await this.getCurrentEventRun(selectedEvent.ID);
+    const eventRunIdentifier = currentEventRun.ID;
+    return {
+      events,
+      teams,
+      pointProfiles,
+      confirmationStatus: null,
+      selectedEvent,
+      currentEventRun,
+      currentPointsProfile:
+        pointProfiles.find(
+          (profile) => profile.ID === selectedEvent.PointsProfileID,
+        ) || null,
+      matches: ['ROUND_ROBIN', 'TOURNAMENT'].includes(selectedEvent.EventType)
+        ? await this.getMatchesForEvent(selectedEvent.ID, eventRunIdentifier)
+        : [],
+      race:
+        selectedEvent.EventType === 'HEAT_FINAL'
+          ? await this.getRaceResultsForEvent(
+              selectedEvent.ID,
+              eventRunIdentifier,
+            )
+          : null,
+      doubleTeamMatch:
+        selectedEvent.EventType === 'DOUBLE_TEAM'
+          ? await this.getDoubleTeamMatchForEvent(
+              selectedEvent.ID,
+              eventRunIdentifier,
+            )
+          : null,
+      distance:
+        selectedEvent.EventType === 'DISTANCE'
+          ? await this.getDistanceResultsForEventRun(
+              selectedEvent.ID,
+              eventRunIdentifier,
+            )
+          : null,
+    };
   },
 
   /**
@@ -243,6 +358,16 @@ const ApplicationInterface = {
    */
   async getEvents() {
     return await this.get('getEvents');
+  },
+
+  /** Create a new event in the selected Sports Day. */
+  async createEvent(event) {
+    return await this.post('createEvent', event);
+  },
+
+  /** Update editable setup for an existing event. */
+  async updateEvent(event) {
+    return await this.post('updateEvent', event);
   },
 
   /** Read one point profile by its stable identifier. */
@@ -351,6 +476,21 @@ const ApplicationInterface = {
       teamId: teamIdentifier,
 
       competitorId: competitorIdentifier,
+    });
+  },
+
+  /** Save one or more selected heat winners in one request. */
+  async saveRaceHeatWinners(
+    eventIdentifier,
+    eventRunIdentifier,
+    competitionGender,
+    winners,
+  ) {
+    return await this.post('saveRaceHeatWinners', {
+      eventId: eventIdentifier,
+      eventRunId: eventRunIdentifier,
+      competitionGender,
+      winners,
     });
   },
 

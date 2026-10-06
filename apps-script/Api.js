@@ -73,6 +73,20 @@ function handleRequest(request) {
 
         break;
 
+      case APPLICATION_ACTIONS.CREATE_EVENT:
+        response = ServiceUtilities.success(
+          EventService.create(request.payload),
+        );
+
+        break;
+
+      case APPLICATION_ACTIONS.UPDATE_EVENT:
+        response = ServiceUtilities.success(
+          EventService.update(request.payload),
+        );
+
+        break;
+
       case APPLICATION_ACTIONS.GET_POINT_PROFILE:
         response = ServiceUtilities.success(
           EventService.getPointProfile(
@@ -172,6 +186,19 @@ function handleRequest(request) {
               request.payload.CompetitionGender,
             request.payload.teamId || request.payload.TeamID,
             request.payload.competitorId || request.payload.CompetitorID,
+          ),
+        );
+
+        break;
+
+      case APPLICATION_ACTIONS.SAVE_RACE_HEAT_WINNERS:
+        response = ServiceUtilities.success(
+          RaceService.saveHeatWinners(
+            request.payload.eventId || request.payload.EventID,
+            request.payload.eventRunId || request.payload.EventRunID,
+            request.payload.competitionGender ||
+              request.payload.CompetitionGender,
+            request.payload.winners || request.payload.Winners,
           ),
         );
 

@@ -171,7 +171,7 @@ async function fixture(run) {
 }
 
 databaseTest(
-  'all 28 actions match v1 across complete event workflows, corrections, confirmation and history',
+  'API actions match the retained services across complete event workflows and corrections',
   async () => {
     await fixture(async (transaction) => {
       const reference = await oracle((await loadRepository(transaction)).rows);
@@ -240,6 +240,27 @@ databaseTest(
         Third: 0,
         Fourth: -4,
       });
+      const createdEvent = await call('createEvent', {
+        Name: ' Test Relay ',
+        EventType: 'HEAT_FINAL',
+        PointsProfileID: 'TEST_PROFILE',
+        Enabled: true,
+      });
+      assert.equal(createdEvent.Name, 'Test Relay');
+      assert.equal(createdEvent.Status, 'NOT_STARTED');
+      assert.equal(createdEvent.Enabled, true);
+      assert.ok(createdEvent.ID);
+      await call('updateEvent', {
+        ID: createdEvent.ID,
+        Name: 'Test Relay Updated',
+        PointsProfileID: 'PP_STANDARD',
+        Enabled: false,
+      });
+      const configuredEvents = await call('getEvents');
+      assert.equal(
+        configuredEvents.find((event) => event.ID === createdEvent.ID).Enabled,
+        false,
+      );
       await call(
         'createPointProfile',
         {
@@ -341,14 +362,14 @@ databaseTest(
             const identifiers = teams.map(
               (team) => team.replace('TEAM_', 'COMP_') + '_' + suffix,
             );
-            for (let itemIndex = 0; itemIndex < 4; itemIndex++) {
-              await call('saveRaceHeatWinner', {
-                ...eventPayload,
-                competitionGender: category,
+            await call('saveRaceHeatWinners', {
+              ...eventPayload,
+              competitionGender: category,
+              winners: identifiers.map((identifier, itemIndex) => ({
                 teamId: teams[itemIndex],
-                competitorId: identifiers[itemIndex],
-              });
-            }
+                competitorId: identifier,
+              })),
+            });
             await call('saveRaceFinalPositions', {
               ...eventPayload,
               competitionGender: category,
@@ -455,7 +476,7 @@ databaseTest(
           name + ' persisted state',
         );
       }
-      assert.equal(covered.size, 28);
+      assert.equal(covered.size, 30);
     });
   },
 );
@@ -564,6 +585,12 @@ databaseTest(
   'a new Sports Day copies setup, starts empty, and protects historical records',
   async () => {
     await fixture(async (transaction) => {
+      const [sourceCounts] = await transaction`
+        select
+          (select count(*)::int from public.teams where sports_day_id = 'SPORTS_DAY_2026') as teams,
+          (select count(*)::int from public.point_profiles where sports_day_id = 'SPORTS_DAY_2026') as profiles,
+          (select count(*)::int from public.events where sports_day_id = 'SPORTS_DAY_2026') as events
+      `;
       let nextIdentifier = 0;
       const created = await executeInTransaction(
         transaction,
@@ -596,10 +623,10 @@ databaseTest(
           (select count(*)::int from public.attempts where sports_day_id = ${sportsDayIdentifier}) as attempts
       `;
       assert.deepEqual(counts, {
-        teams: 5,
-        profiles: 2,
-        events: 5,
-        runs: 5,
+        teams: sourceCounts.teams,
+        profiles: sourceCounts.profiles,
+        events: sourceCounts.events,
+        runs: sourceCounts.events,
         competitors: 0,
         results: 0,
         matches: 0,
@@ -666,6 +693,204 @@ databaseTest(
           `
         )[0].name,
         'Alex Alder',
+      );
+
+      const correctionPayload = {
+        sportsDayId: 'SPORTS_DAY_2026',
+        ID: 'COMP_ALPHA_M',
+        Name: 'Corrected Name',
+        Age: 11,
+        Gender: 'Male',
+        CompetitionGender: 'Male',
+        TeamID: 'TEAM_ALPHA',
+        Active: true,
+      };
+      for (const allowHistoricalEditing of [false, 'true', 'false']) {
+        await assert.rejects(
+          executeInTransaction(transaction, {
+            action: 'updateCompetitor',
+            payload: { ...correctionPayload, allowHistoricalEditing },
+          }),
+          /Historical Sports Days are read-only/,
+        );
+      }
+      await executeInTransaction(transaction, {
+        action: 'updateCompetitor',
+        payload: { ...correctionPayload, allowHistoricalEditing: true },
+      });
+      assert.equal(
+        (
+          await transaction`
+        select name from public.competitors where id = 'COMP_ALPHA_M'
+      `
+        )[0].name,
+        'Corrected Name',
+      );
+      const afterCorrection = await executeInTransaction(transaction, {
+        action: 'getSportsDays',
+        payload: {},
+      });
+      assert.equal(afterCorrection.data[0].ID, sportsDayIdentifier);
+      assert.equal(
+        afterCorrection.data.find((day) => day.ID === 'SPORTS_DAY_2026').Active,
+        false,
+      );
+      await assert.rejects(
+        executeInTransaction(transaction, {
+          action: 'confirmEventResults',
+          payload: {
+            sportsDayId: 'SPORTS_DAY_2026',
+            eventId: 'EV_ROUND_ROBIN',
+            eventRunId: 'RUN_RR_2',
+          },
+        }),
+        /Historical Sports Days are read-only/,
+      );
+      const confirmedCorrection = await executeInTransaction(transaction, {
+        action: 'confirmEventResults',
+        payload: {
+          sportsDayId: 'SPORTS_DAY_2026',
+          eventId: 'EV_ROUND_ROBIN',
+          eventRunId: 'RUN_RR_2',
+          allowHistoricalEditing: true,
+        },
+      });
+      assert.equal(confirmedCorrection.success, true);
+      await assert.rejects(
+        executeInTransaction(transaction, {
+          action: 'updateCompetitor',
+          payload: correctionPayload,
+        }),
+        /Historical Sports Days are read-only/,
+      );
+
+      await assert.rejects(
+        executeInTransaction(transaction, {
+          action: 'deleteSportsDay',
+          payload: {
+            sportsDayId: sportsDayIdentifier,
+            confirmationName: 'wrong name',
+          },
+        }),
+        /exact Sports Day name/,
+      );
+
+      const deleted = await executeInTransaction(transaction, {
+        action: 'deleteSportsDay',
+        payload: {
+          sportsDayId: sportsDayIdentifier,
+          confirmationName: 'SportsDay2027',
+        },
+      });
+      assert.equal(deleted.success, true);
+      assert.equal(deleted.data.DeletedName, 'SportsDay2027');
+      assert.equal(deleted.data.ActiveSportsDayID, 'SPORTS_DAY_2026');
+      assert.equal(
+        (
+          await transaction`
+            select count(*)::int as count
+            from public.sports_days
+            where id = ${sportsDayIdentifier}
+          `
+        )[0].count,
+        0,
+      );
+      assert.equal(
+        (
+          await transaction`
+            select is_active from public.sports_days
+            where id = 'SPORTS_DAY_2026'
+          `
+        )[0].is_active,
+        true,
+      );
+
+      await assert.rejects(
+        executeInTransaction(transaction, {
+          action: 'deleteSportsDay',
+          payload: {
+            sportsDayId: 'SPORTS_DAY_2026',
+            confirmationName: 'SportsDay2026',
+          },
+        }),
+        /only remaining Sports Day/,
+      );
+    });
+  },
+);
+
+databaseTest(
+  'page actions return each tab through one transaction',
+  async () => {
+    await fixture(async (transaction) => {
+      const leaderboardPage = await executeInTransaction(transaction, {
+        action: 'getLeaderboardPage',
+        payload: { sportsDayId: 'SPORTS_DAY_2026' },
+      });
+      assert.ok(Array.isArray(leaderboardPage.data.leaderboard));
+      assert.ok(Array.isArray(leaderboardPage.data.confirmationStatus));
+
+      const competitorsPage = await executeInTransaction(transaction, {
+        action: 'getCompetitorsPage',
+        payload: { sportsDayId: 'SPORTS_DAY_2026' },
+      });
+      assert.ok(Array.isArray(competitorsPage.data.competitors));
+      assert.ok(Array.isArray(competitorsPage.data.teams));
+
+      const eventsPage = await executeInTransaction(transaction, {
+        action: 'getEventsPage',
+        payload: {
+          sportsDayId: 'SPORTS_DAY_2026',
+          eventId: 'EV_RACE',
+        },
+      });
+      assert.ok(Array.isArray(eventsPage.data.events));
+      assert.ok(Array.isArray(eventsPage.data.teams));
+      assert.ok(Array.isArray(eventsPage.data.pointProfiles));
+      assert.ok(Array.isArray(eventsPage.data.confirmationStatus));
+      assert.equal(eventsPage.data.selectedEvent.ID, 'EV_RACE');
+      assert.equal(eventsPage.data.selectedEvent.EventType, 'HEAT_FINAL');
+      assert.equal(eventsPage.data.currentEventRun.EventID, 'EV_RACE');
+      assert.equal(eventsPage.data.matches.length, 0);
+      assert.ok(eventsPage.data.race);
+      assert.equal(eventsPage.data.doubleTeamMatch, null);
+      assert.equal(eventsPage.data.distance, null);
+    });
+  },
+);
+
+databaseTest(
+  'changing a scored event profile requires results to be reconfirmed',
+  async () => {
+    await fixture(async (transaction) => {
+      const before = await executeInTransaction(transaction, {
+        action: 'getConfirmationStatus',
+        payload: { sportsDayId: 'SPORTS_DAY_2026' },
+      });
+      assert.equal(
+        before.data.find((status) => status.EventID === 'EV_ROUND_ROBIN')
+          .NeedsConfirmation,
+        false,
+      );
+
+      await executeInTransaction(transaction, {
+        action: 'updateEvent',
+        payload: {
+          sportsDayId: 'SPORTS_DAY_2026',
+          ID: 'EV_ROUND_ROBIN',
+          Name: 'Fictional Round Robin',
+          PointsProfileID: 'PP_CHALLENGE',
+          Enabled: true,
+        },
+      });
+      const after = await executeInTransaction(transaction, {
+        action: 'getConfirmationStatus',
+        payload: { sportsDayId: 'SPORTS_DAY_2026' },
+      });
+      assert.equal(
+        after.data.find((status) => status.EventID === 'EV_ROUND_ROBIN')
+          .NeedsConfirmation,
+        true,
       );
     });
   },

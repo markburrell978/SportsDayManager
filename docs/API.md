@@ -26,7 +26,17 @@ Failed requests return `success: false`, a friendly `message`, and `data: null`.
 
 All legacy actions accept `sportsDayId` in their GET query or POST payload. If
 it is omitted, the API resolves the active Sports Day. Reads may select a
-historical Sports Day; mutations against one are rejected.
+historical Sports Day; mutations against one are rejected by default.
+
+An authenticated organiser can temporarily enable historical editing in Settings.
+The browser adds the JSON boolean `allowHistoricalEditing: true` to writes scoped
+to that selected `sportsDayId`; only the exact boolean `true` permits historical
+mutations, including result confirmation. This does not change the Sports Day's
+`Active` value or relax authentication, validation, transactions or stale-run checks.
+Turning the toggle off, switching Sports Days or reloading clears the browser's
+permission. Existing saved corrections remain; corrected results must still be
+confirmed to update the leaderboard. Permission is held in memory per browser tab,
+not saved in the database or browser storage.
 
 ---
 
@@ -59,6 +69,63 @@ Payload:
   "sourceSportsDayId": "SPORTS_DAY_2026"
 }
 ```
+
+## deleteSportsDay
+
+Permanently deletes the selected Sports Day and all records scoped to it. The
+operation refuses to delete the final remaining Sports Day. If the deleted
+entry was current, the newest remaining Sports Day becomes current.
+
+Method: `POST`
+
+Action: `deleteSportsDay`
+
+Payload:
+
+```json
+{
+  "sportsDayId": "test-sports-day-uuid",
+  "confirmationName": "TestSportsDayV1.3"
+}
+```
+
+`confirmationName` must exactly match the stored name.
+
+---
+
+# Page Data
+
+These Supabase-only read actions combine the data needed by a visible tab into
+one authenticated request and one repository load. The retained Apps Script
+client assembles the same response from its legacy actions.
+
+## getLeaderboardPage
+
+Returns `leaderboard` and `confirmationStatus`.
+
+Method: `GET`
+
+Action: `getLeaderboardPage`
+
+## getCompetitorsPage
+
+Returns `competitors` and `teams`.
+
+Method: `GET`
+
+Action: `getCompetitorsPage`
+
+## getEventsPage
+
+Returns event navigation, shared team and point-profile lookups, confirmation
+status, the selected current run and only the engine data used by that event
+format.
+
+Method: `GET`
+
+Action: `getEventsPage`
+
+Optional query: `eventId`
 
 ---
 
@@ -151,11 +218,56 @@ Competitors are not permanently deleted by the API.
 
 ## getEvents
 
-Returns enabled events.
+Returns all configured events, including disabled events so they can be enabled
+again through the organiser interface.
 
 Method: `GET`
 
 Action: `getEvents`
+
+---
+
+## createEvent
+
+Creates an event and its initial empty run in the selected Sports Day. The
+backend generates the event and run identifiers.
+
+Method: `POST`
+
+Action: `createEvent`
+
+Payload:
+
+```json
+{
+  "Name": "Year 7 Relay",
+  "EventType": "HEAT_FINAL",
+  "PointsProfileID": "PP_STANDARD",
+  "Enabled": true
+}
+```
+
+## updateEvent
+
+Updates an event's name, point profile and enabled state. Event format is fixed
+after creation so existing run data cannot become incompatible. Changing the
+profile of an event with confirmed current results marks those results for
+reconfirmation before the leaderboard adopts the new awards.
+
+Method: `POST`
+
+Action: `updateEvent`
+
+Payload:
+
+```json
+{
+  "ID": "event-id",
+  "Name": "Year 7 Relay",
+  "PointsProfileID": "PP_CHALLENGE",
+  "Enabled": false
+}
+```
 
 ---
 
@@ -201,7 +313,6 @@ Payload:
 
 ```json
 {
-    "ID": "PP_STANDARD",
     "Name": "Standard",
     "First": 10,
     "Second": 7,
@@ -210,7 +321,8 @@ Payload:
 }
 ```
 
-IDs and names are required. All four point values must be integers; negative and zero values are accepted.
+The backend generates the ID. The name is required. All four point values must
+be integers; negative and zero values are accepted.
 
 ---
 
@@ -222,7 +334,8 @@ Method: `POST`
 
 Action: `updatePointProfile`
 
-Payload uses the same shape as `createPointProfile`.
+Payload contains the existing generated `ID` plus the same editable fields as
+`createPointProfile`.
 
 ---
 
@@ -365,6 +478,33 @@ Payload:
 ```
 
 The competitor must be available for events, belong to the selected active team, match the competition category, and satisfy any EventCompetitors restriction. Saving another winner for the same event, category and team updates the existing RaceResults row.
+
+---
+
+## saveRaceHeatWinners
+
+Creates or updates one or more team heat winners in one transaction.
+
+Method: `POST`
+
+Action: `saveRaceHeatWinners`
+
+Payload:
+
+```json
+{
+  "eventId": "EV_EGG_AND_SPOON",
+  "eventRunId": "run-uuid",
+  "competitionGender": "Female",
+  "winners": [
+    { "teamId": "TEAM_RED", "competitorId": "red-competitor-uuid" },
+    { "teamId": "TEAM_BLUE", "competitorId": "blue-competitor-uuid" }
+  ]
+}
+```
+
+Every team may appear once. All selections are validated before saving, and a
+failure rolls back the complete batch.
 
 ---
 
