@@ -2,8 +2,10 @@
 
 Project: Sports Day Manager
 
-Production release: v1.5.0, approved 2026-10-06; includes v1.4 stability and
-v1.5 Tournament view. Previous release: v1.3.1, merge commit `e422c8d`.
+Production release: v1.5.1, approved 2026-10-06; includes v1.4 stability and
+v1.5 Tournament view. The v1.5.1 patch hides disabled events from the public
+event list while preserving saved data and confirmed scores.
+Previous release: v1.5.0, merge commit `772ab51`.
 See `docs/V1_5_RELEASE_REPORT.md` for backup, deployment and recovery evidence.
 
 Review status: v1.4 stability is implemented and automatically tested; the

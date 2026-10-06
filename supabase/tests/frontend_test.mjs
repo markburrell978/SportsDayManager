@@ -28,7 +28,7 @@ test('published assets use a release version so browsers do not mix frontend ver
     'js/drafts.js',
     'js/app.js',
   ]) {
-    assert.match(documentMarkup, new RegExp(`${assetPath}\\?v=1\\.5\\.0`));
+    assert.match(documentMarkup, new RegExp(`${assetPath}\\?v=1\\.5\\.1`));
   }
 });
 

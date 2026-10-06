@@ -50,10 +50,11 @@ window.ParticipantView = {
       }[event.status] || 'Not started'
     );
   },
-  /** Render read-only event details and aggregate official team placings. */
+  /** Render enabled events and aggregate official team placings without changing saved data. */
   events(page) {
-    if (!page.events.length) {
-      return '<h2>Events</h2><p>No events have been added yet.</p>';
+    const enabledEvents = page.events.filter((event) => event.enabled);
+    if (!enabledEvents.length) {
+      return '<h2>Events</h2><p>No enabled events are available.</p>';
     }
     const formats = {
       ROUND_ROBIN: 'Round robin',
@@ -63,7 +64,7 @@ window.ParticipantView = {
       DOUBLE_TEAM: 'Double team',
     };
     return `<h2>Events</h2><p class="view-explanation">Open an event to see its confirmed team results.</p><div class="participant-events">
-      ${page.events
+      ${enabledEvents
         .map(
           (
             event,

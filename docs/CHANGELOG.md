@@ -1,3 +1,11 @@
+# v1.5.1 — Disabled event visibility — 2026-10-06
+
+- Hide disabled events from the Tournament view's event list; re-enabled events appear on refresh
+- Preserve saved progress, results and confirmed leaderboard totals
+- Show a clear empty state when no events are enabled; cover visibility and re-enabling with regression tests
+
+---
+
 # v1.5.0 — Tournament view and stability — 2026-10-06
 
 - Add a separate phone-friendly read-only tournament view for participants and spectators following the active Sports Day
