@@ -59,6 +59,25 @@ header {
   min-width: 220px;
 }
 
+.historical-editing-settings {
+  border: 1px solid #ffecb5;
+  background: #fff9e6;
+}
+
+#btn-toggle-historical-editing {
+  padding: 12px 18px;
+  font-weight: bold;
+  border: 2px solid #664d03;
+  border-radius: 6px;
+  color: #664d03;
+  background: white;
+}
+
+#btn-toggle-historical-editing[aria-checked='true'] {
+  color: white;
+  background: #664d03;
+}
+
 .danger-zone {
   border: 1px solid #b42318;
   background: #fff5f4;
@@ -264,13 +283,17 @@ Leaderboard
 
   height: 14px;
 
-  margin-right: 8px;
+  margin-right: 5px;
 
   border: 1px solid rgba(0, 0, 0, 0.2);
 
   border-radius: 50%;
 
   vertical-align: -1px;
+}
+
+.team-label {
+  white-space: nowrap;
 }
 
 /*
@@ -295,6 +318,89 @@ Event Browser
   padding: 10px;
 
   border-radius: 6px;
+}
+
+.event-configuration {
+  margin: 14px 0;
+  padding: 10px 12px;
+  border: 1px solid #cccccc;
+  border-radius: 6px;
+}
+
+.event-configuration summary {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.event-configuration-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.event-configuration-fields label:not(.event-enabled-control) {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.event-configuration-fields input,
+.event-configuration-fields select {
+  padding: 8px;
+}
+
+.event-enabled-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.event-disabled-notice {
+  padding: 10px;
+  color: #664d03;
+  background: #fff3cd;
+  border-radius: 6px;
+}
+
+.round-robin-placings,
+.tournament-placings {
+  margin-top: 18px;
+  padding: 12px;
+  background: #f7f7f7;
+  border-radius: 6px;
+}
+
+.round-robin-placings .wins {
+  margin-left: 8px;
+  color: #666666;
+  font-size: 13px;
+}
+
+.race-final-message:empty {
+  display: none;
+}
+
+.race-final-message {
+  margin: 10px 0;
+  padding: 8px;
+  border-radius: 5px;
+}
+
+.checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-label input {
+  width: auto;
+}
+
+@media (max-width: 650px) {
+  .event-configuration-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 .event-view-tabs {

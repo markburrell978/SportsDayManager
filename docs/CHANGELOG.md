@@ -1,4 +1,4 @@
-# v1.3 manual-testing improvements — unreleased
+# v1.3 manual-testing improvements — 2026-10-06
 
 - Added guarded Sports Day deletion with exact-name confirmation, last-entry protection and automatic reactivation of the newest remaining Sports Day
 - Added one-request batch saving for one or more heat winners, with one screen refresh after the complete batch
@@ -6,6 +6,17 @@
 - Reused the previous new competitor's team during the current session and reset that preference when changing Sports Days
 - Fixed tournament setup so every slot can return to `Choose team` while selected real teams remain unique
 - Generated new point-profile identifiers in the backend instead of asking the organiser to enter internal IDs
+- Consolidated Leaderboard, Competitors and Events tab loading into one authenticated database transaction per tab
+- Reused the combined Events response after result entry, fixture changes, resets and confirmation instead of repeating two to four database loads
+- Reused the previous new competitor's age as well as their team to speed up repetitive entry
+- Added visible final round-robin standings with wins, tied placings and team colours
+- Kept unsaved race-final selections in place after duplicate-position validation and added feedback beside the controls
+- Added per-event name, point-profile and enabled settings while keeping event format immutable after creation and requiring reconfirmation after scored profile changes
+- Preserved entered event settings before the saving-state redraw
+- Added current-Sports-Day event creation with backend-generated event and run identifiers
+- Restored Add Event availability when switching from a historical Sports Day to the current one
+- Added a temporary historical editing switch in Settings, with explicit authenticated write permission and automatic read-only restoration on selection changes or reload
+- Added reusable coloured team labels across the leaderboard, competitors and current event displays, with tighter marker spacing
 - Added browser, service, API parity and transactional database regression coverage for the new behavior
 
 ---

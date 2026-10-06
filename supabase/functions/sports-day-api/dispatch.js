@@ -23,6 +23,20 @@ export function dispatch(request, services, ServiceUtilities) {
 
         break;
 
+      case APPLICATION_ACTIONS.CREATE_EVENT:
+        response = ServiceUtilities.success(
+          services.EventService.create(request.payload),
+        );
+
+        break;
+
+      case APPLICATION_ACTIONS.UPDATE_EVENT:
+        response = ServiceUtilities.success(
+          services.EventService.update(request.payload),
+        );
+
+        break;
+
       case APPLICATION_ACTIONS.GET_POINT_PROFILE:
         response = ServiceUtilities.success(
           services.EventService.getPointProfile(

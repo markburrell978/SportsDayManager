@@ -26,7 +26,17 @@ Failed requests return `success: false`, a friendly `message`, and `data: null`.
 
 All legacy actions accept `sportsDayId` in their GET query or POST payload. If
 it is omitted, the API resolves the active Sports Day. Reads may select a
-historical Sports Day; mutations against one are rejected.
+historical Sports Day; mutations against one are rejected by default.
+
+An authenticated organiser can temporarily enable historical editing in Settings.
+The browser adds the JSON boolean `allowHistoricalEditing: true` to writes scoped
+to that selected `sportsDayId`; only the exact boolean `true` permits historical
+mutations, including result confirmation. This does not change the Sports Day's
+`Active` value or relax authentication, validation, transactions or stale-run checks.
+Turning the toggle off, switching Sports Days or reloading clears the browser's
+permission. Existing saved corrections remain; corrected results must still be
+confirmed to update the leaderboard. Permission is held in memory per browser tab,
+not saved in the database or browser storage.
 
 ---
 
@@ -80,6 +90,42 @@ Payload:
 ```
 
 `confirmationName` must exactly match the stored name.
+
+---
+
+# Page Data
+
+These Supabase-only read actions combine the data needed by a visible tab into
+one authenticated request and one repository load. The retained Apps Script
+client assembles the same response from its legacy actions.
+
+## getLeaderboardPage
+
+Returns `leaderboard` and `confirmationStatus`.
+
+Method: `GET`
+
+Action: `getLeaderboardPage`
+
+## getCompetitorsPage
+
+Returns `competitors` and `teams`.
+
+Method: `GET`
+
+Action: `getCompetitorsPage`
+
+## getEventsPage
+
+Returns event navigation, shared team and point-profile lookups, confirmation
+status, the selected current run and only the engine data used by that event
+format.
+
+Method: `GET`
+
+Action: `getEventsPage`
+
+Optional query: `eventId`
 
 ---
 
@@ -172,11 +218,56 @@ Competitors are not permanently deleted by the API.
 
 ## getEvents
 
-Returns enabled events.
+Returns all configured events, including disabled events so they can be enabled
+again through the organiser interface.
 
 Method: `GET`
 
 Action: `getEvents`
+
+---
+
+## createEvent
+
+Creates an event and its initial empty run in the selected Sports Day. The
+backend generates the event and run identifiers.
+
+Method: `POST`
+
+Action: `createEvent`
+
+Payload:
+
+```json
+{
+  "Name": "Year 7 Relay",
+  "EventType": "HEAT_FINAL",
+  "PointsProfileID": "PP_STANDARD",
+  "Enabled": true
+}
+```
+
+## updateEvent
+
+Updates an event's name, point profile and enabled state. Event format is fixed
+after creation so existing run data cannot become incompatible. Changing the
+profile of an event with confirmed current results marks those results for
+reconfirmation before the leaderboard adopts the new awards.
+
+Method: `POST`
+
+Action: `updateEvent`
+
+Payload:
+
+```json
+{
+  "ID": "event-id",
+  "Name": "Year 7 Relay",
+  "PointsProfileID": "PP_CHALLENGE",
+  "Enabled": false
+}
+```
 
 ---
 

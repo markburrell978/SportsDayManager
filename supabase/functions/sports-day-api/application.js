@@ -3,6 +3,7 @@ import { APPLICATION_ACTIONS } from './constants.js';
 import { dispatch } from './dispatch.js';
 import { createServices } from './services.js';
 import { loadRepository } from './repository.js';
+import { getPageData, PageDataError } from './page_data.js';
 import {
   createSportsDay,
   deleteSportsDay,
@@ -12,12 +13,18 @@ import {
 } from './sports_days.js';
 
 export class ValidationError extends Error {}
+const pageActions = new Set([
+  'getLeaderboardPage',
+  'getCompetitorsPage',
+  'getEventsPage',
+]);
 export const actions = new Set([
   ...Object.values(APPLICATION_ACTIONS),
   'getConfirmationStatus',
   'getSportsDays',
   'createSportsDay',
   'deleteSportsDay',
+  ...pageActions,
 ]);
 export const getActions = new Set([
   'getTeams',
@@ -27,6 +34,7 @@ export const getActions = new Set([
   'getLeaderboard',
   'getConfirmationStatus',
   'getSportsDays',
+  ...pageActions,
 ]);
 const readOnlyActions = new Set([
   ...getActions,
@@ -86,19 +94,55 @@ export async function executeInTransaction(transaction, request, options = {}) {
   }
   const repository = await loadRepository(transaction, sportsDay.id);
   const { services, ServiceUtilities } = createServices(repository, options);
+  if (pageActions.has(request.action)) {
+    return {
+      success: true,
+      message: '',
+      data: await getPageData(
+        request.action,
+        transaction,
+        sportsDay.id,
+        request.payload,
+        services,
+        ServiceUtilities,
+      ),
+    };
+  }
+  const previousEvent =
+    request.action === 'updateEvent'
+      ? repository.findById('Events', request.payload.ID)
+      : null;
   const response = dispatch(request, services, ServiceUtilities);
   if (!response.success) {
     throw new ValidationError(response.message);
   }
   if (
     !sportsDay.is_active &&
+    request.payload.allowHistoricalEditing !== true &&
     (repository.operations.length || request.action === 'confirmEventResults')
   ) {
     throw new ValidationError(
-      'Historical Sports Days are read-only. Select the active Sports Day to make changes.',
+      'Historical Sports Days are read-only. Enable editing in Settings to make corrections, or select the current Sports Day.',
     );
   }
   await repository.flush();
+  if (
+    request.action === 'updateEvent' &&
+    previousEvent?.PointsProfileID !== response.data.PointsProfileID
+  ) {
+    await transaction`
+      update public.event_runs event_run
+      set results_revision = results_revision + 1
+      where event_run.event_id = ${response.data.ID}
+        and event_run.sports_day_id = ${sportsDay.id}
+        and event_run.is_current
+        and exists (
+          select 1 from public.results result
+          where result.event_run_id = event_run.id
+            and result.sports_day_id = event_run.sports_day_id
+        )
+    `;
+  }
   if (request.action === 'confirmEventResults') {
     const runIdentifier =
       request.payload.eventRunId || request.payload.EventRunID;
@@ -120,6 +164,7 @@ export async function execute(databaseConnection, request, options = {}) {
 export function publicError(error) {
   if (
     error instanceof ValidationError ||
+    error instanceof PageDataError ||
     error instanceof SportsDayValidationError
   ) {
     return error.message;

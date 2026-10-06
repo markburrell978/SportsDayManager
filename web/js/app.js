@@ -24,6 +24,8 @@ const ApplicationState = {
 
   lastCreatedCompetitorTeamIdentifier: null,
 
+  lastCreatedCompetitorAge: null,
+
   teams: [],
 
   leaderboard: [],
@@ -76,6 +78,8 @@ const ApplicationState = {
 
   eventRequestPending: false,
 
+  eventPageRefreshedDuringRequest: false,
+
   eventMessage: '',
 
   eventMessageIsError: false,
@@ -88,6 +92,8 @@ async function initialise() {
   registerNavigation();
 
   registerCompetitorEvents();
+
+  registerEventManagementEvents();
 
   registerSportsDayEvents();
 
@@ -114,11 +120,56 @@ function setSportsDays(sportsDays, selectedIdentifier = null) {
   const selector = document.getElementById('sports-day-selector');
   selector.innerHTML = EventView.renderSportsDayOptions(sportsDays);
   selector.value = ApplicationState.currentSportsDay?.ID || '';
-  document.getElementById('historical-sports-day-banner').hidden =
-    ApplicationState.currentSportsDay?.Active !== false;
-  document.getElementById('btn-add-competitor').disabled =
-    ApplicationState.currentSportsDay?.Active === false;
+  updateHistoricalEditingControls();
   updateSportsDayDeletionControls();
+}
+
+/** Report whether the selected historical Sports Day is protected from edits. */
+function isHistoricalSportsDayReadOnly() {
+  return (
+    ApplicationState.currentSportsDay?.Active === false &&
+    !ApplicationInterface.historicalEditingEnabled
+  );
+}
+
+/** Reflect temporary historical editing in the Settings switch and shared banner. */
+function updateHistoricalEditingControls() {
+  const isHistorical = ApplicationState.currentSportsDay?.Active === false;
+  const editingEnabled =
+    isHistorical && ApplicationInterface.historicalEditingEnabled === true;
+  const banner = document.getElementById('historical-sports-day-banner');
+  banner.hidden = !isHistorical;
+  banner.textContent = editingEnabled
+    ? 'Editing is enabled for this historical Sports Day. Switching Sports Days will restore read-only mode.'
+    : 'You are viewing a historical Sports Day. Its records are read-only. Enable editing in Settings to make corrections.';
+  document.getElementById('historical-editing-settings').hidden =
+    !isHistorical || !ApplicationInterface.requiresSignIn;
+  document.getElementById('historical-editing-name').textContent =
+    ApplicationState.currentSportsDay?.Name || '';
+  const toggle = document.getElementById('btn-toggle-historical-editing');
+  toggle.setAttribute('aria-checked', String(editingEnabled));
+  toggle.textContent = editingEnabled
+    ? 'Editing on — restore read-only'
+    : 'Editing off — enable editing';
+  document.getElementById('btn-add-competitor').disabled =
+    isHistoricalSportsDayReadOnly();
+  document.getElementById('btn-add-event').disabled =
+    isHistoricalSportsDayReadOnly();
+}
+
+/** Toggle temporary correction access without changing the current Sports Day. */
+function toggleHistoricalEditing() {
+  if (
+    ApplicationState.currentSportsDay?.Active !== false ||
+    !ApplicationInterface.requiresSignIn
+  ) {
+    return;
+  }
+  ApplicationInterface.setHistoricalEditing(
+    !ApplicationInterface.historicalEditingEnabled,
+  );
+  updateHistoricalEditingControls();
+  renderPointProfiles();
 }
 
 /** Clear screen caches when switching annual Sports Days. */
@@ -126,12 +177,14 @@ function clearSportsDayState() {
   ApplicationState.competitors = [];
   ApplicationState.filteredCompetitors = [];
   ApplicationState.lastCreatedCompetitorTeamIdentifier = null;
+  ApplicationState.lastCreatedCompetitorAge = null;
   ApplicationState.teams = [];
   ApplicationState.leaderboard = [];
   ApplicationState.confirmationStatus = null;
   ApplicationState.events = [];
   ApplicationState.currentEvent = null;
   ApplicationState.currentEventRun = null;
+  ApplicationState.eventPageRefreshedDuringRequest = false;
   ApplicationState.currentEventHistory = null;
   ApplicationState.pointProfiles = [];
   ApplicationState.pointProfilesByIdentifier = {};
@@ -147,7 +200,7 @@ function clearSportsDayState() {
 
 /** Disable mutation controls while retaining historical navigation and filters. */
 function protectHistoricalSportsDay() {
-  if (ApplicationState.currentSportsDay?.Active !== false) {
+  if (!isHistoricalSportsDayReadOnly()) {
     return;
   }
   document
@@ -164,6 +217,9 @@ function protectHistoricalSportsDay() {
 
 /** Register annual Sports Day selection and creation controls. */
 function registerSportsDayEvents() {
+  document
+    .getElementById('btn-toggle-historical-editing')
+    .addEventListener('click', toggleHistoricalEditing);
   document
     .getElementById('sports-day-selector')
     .addEventListener('change', async (event) => {
@@ -396,11 +452,11 @@ async function loadLeaderboard() {
   renderLeaderboard();
 
   try {
-    const [leaderboard] = await Promise.all([
-      ApplicationInterface.getLeaderboard(),
-      refreshConfirmationStatus(),
-    ]);
-    ApplicationState.leaderboard = leaderboard;
+    const pageData = await ApplicationInterface.getLeaderboardPage();
+    ApplicationState.leaderboard = pageData.leaderboard;
+    ApplicationState.confirmationStatus = pageData.confirmationStatus;
+    ApplicationState.confirmationError = '';
+    renderConfirmationNotices();
   } catch (error) {
     ApplicationState.leaderboardError = error.message;
   } finally {
@@ -475,9 +531,7 @@ function renderLeaderboard() {
 <td>${EventView.escapeHtml(team.Position)}</td>
 
 <td>
-    <span class="team-colour"
-          style="background-color: ${teamColour}"></span>
-    ${EventView.escapeHtml(team.TeamName)}
+    ${EventView.renderTeamLabel({ Name: team.TeamName, Colour: teamColour })}
 </td>
 
 <td>${EventView.escapeHtml(team.Points)}</td>
@@ -509,80 +563,12 @@ function normaliseTeamColour(colour) {
  * Events
  */
 async function loadEvents() {
-  const [events, teams, pointProfiles] = await Promise.all([
-    ApplicationInterface.getEvents(),
-
-    ApplicationInterface.getTeams(),
-
-    ApplicationInterface.getPointProfiles(),
-
-    refreshConfirmationStatus(),
-  ]);
-
-  ApplicationState.events = events;
-
-  ApplicationState.teams = teams;
-
-  ApplicationState.pointProfiles = pointProfiles;
-
-  ApplicationState.pointProfilesByIdentifier = Object.fromEntries(
-    pointProfiles.map((profile) => [profile.ID, profile]),
-  );
-
-  if (!ApplicationState.events.length) {
-    ApplicationState.currentEvent = null;
-
-    ApplicationState.currentEventRun = null;
-
-    ApplicationState.eventViewMode = 'current';
-
-    ApplicationState.currentEventHistory = null;
-
-    ApplicationState.currentPointsProfile = null;
-
-    ApplicationState.currentMatches = [];
-
-    ApplicationState.currentRace = null;
-
-    ApplicationState.currentDoubleTeamMatch = null;
-
-    ApplicationState.currentDistance = null;
-
-    clearEventMessage();
-
-    renderEvents();
-
-    return;
-  }
-
-  if (ApplicationState.currentEvent) {
-    ApplicationState.currentEvent =
-      ApplicationState.events.find(
-        (event) => event.ID === ApplicationState.currentEvent.ID,
-      ) || null;
-  }
-
-  if (
-    !ApplicationState.currentEvent ||
-    !ApplicationState.events.some(
-      (event) => event.ID === ApplicationState.currentEvent.ID,
-    )
-  ) {
-    await selectEvent(ApplicationState.events[0].ID);
-
-    return;
-  }
-
   try {
-    await loadCurrentEventRun();
-
-    await Promise.all([
-      loadCurrentPointsProfile(),
-      loadCurrentMatches(),
-      loadCurrentRace(),
-      loadCurrentDoubleTeamMatch(),
-      loadCurrentDistance(),
-    ]);
+    const pageData = await ApplicationInterface.getEventsPage(
+      ApplicationState.currentEvent?.ID,
+    );
+    applyEventsPageData(pageData);
+    clearEventMessage();
   } catch (error) {
     showEventMessage(`This event could not be loaded: ${error.message}`, true);
   }
@@ -592,6 +578,47 @@ async function loadEvents() {
   if (ApplicationState.eventViewMode === 'history') {
     await openEventHistory();
   }
+}
+
+/** Apply one combined Events response to the existing rendering state. */
+function applyEventsPageData(pageData) {
+  ApplicationState.events = pageData.events;
+  ApplicationState.teams = pageData.teams;
+  ApplicationState.pointProfiles = pageData.pointProfiles;
+  ApplicationState.pointProfilesByIdentifier = Object.fromEntries(
+    pageData.pointProfiles.map((profile) => [profile.ID, profile]),
+  );
+  ApplicationState.confirmationStatus = pageData.confirmationStatus;
+  ApplicationState.confirmationError = '';
+  ApplicationState.currentEvent = pageData.selectedEvent;
+  ApplicationState.currentEventRun = pageData.currentEventRun;
+  ApplicationState.currentPointsProfile = pageData.currentPointsProfile;
+  ApplicationState.currentMatches = pageData.matches;
+  ApplicationState.currentRace = pageData.race;
+  ApplicationState.currentDoubleTeamMatch = pageData.doubleTeamMatch;
+  ApplicationState.currentDistance = pageData.distance;
+  if (ApplicationState.currentEvent && ApplicationState.currentEventRun) {
+    ApplicationState.currentEvent.Status =
+      ApplicationState.currentEventRun.Status;
+  }
+  if (!ApplicationState.currentEvent) {
+    ApplicationState.eventViewMode = 'current';
+    ApplicationState.currentEventHistory = null;
+  }
+  renderConfirmationNotices();
+}
+
+/** Refresh the selected event and all supporting data with one API request. */
+async function refreshSelectedEventPage() {
+  if (!ApplicationState.currentEvent) {
+    return;
+  }
+
+  const pageData = await ApplicationInterface.getEventsPage(
+    ApplicationState.currentEvent.ID,
+  );
+  applyEventsPageData(pageData);
+  ApplicationState.eventPageRefreshedDuringRequest = true;
 }
 
 /** Render the event list and the selected current or historical run. */
@@ -620,9 +647,106 @@ function renderEvents() {
     ApplicationState.currentEventHistory,
     ApplicationState.eventHistoryLoading,
     ApplicationState.eventHistoryError,
+    ApplicationState.pointProfiles,
   );
 
   protectHistoricalSportsDay();
+}
+
+/** Register event creation controls that are independent of event engines. */
+function registerEventManagementEvents() {
+  document
+    .getElementById('btn-add-event')
+    .addEventListener('click', openEventModal);
+  document
+    .getElementById('btn-cancel-event')
+    .addEventListener('click', closeEventModal);
+  document
+    .getElementById('btn-save-event')
+    .addEventListener('click', createEvent);
+}
+
+/** Open a clean event form using the currently loaded point profiles. */
+function openEventModal() {
+  const profileSelect = document.getElementById('new-event-point-profile');
+  profileSelect.innerHTML = ApplicationState.pointProfiles
+    .map(
+      (profile) =>
+        `<option value="${EventView.escapeHtml(profile.ID)}">${EventView.escapeHtml(profile.Name)}</option>`,
+    )
+    .join('');
+  document.getElementById('new-event-name').value = '';
+  document.getElementById('new-event-format').value = 'ROUND_ROBIN';
+  document.getElementById('new-event-enabled').checked = true;
+  document.getElementById('new-event-message').textContent = '';
+  document.getElementById('event-modal').classList.remove('hidden');
+}
+
+/** Close the event creation form. */
+function closeEventModal() {
+  document.getElementById('event-modal').classList.add('hidden');
+}
+
+/** Validate and create an event in the selected Sports Day. */
+async function createEvent() {
+  const saveButton = document.getElementById('btn-save-event');
+  const message = document.getElementById('new-event-message');
+  const event = {
+    Name: document.getElementById('new-event-name').value.trim(),
+    EventType: document.getElementById('new-event-format').value,
+    PointsProfileID: document.getElementById('new-event-point-profile').value,
+    Enabled: document.getElementById('new-event-enabled').checked,
+  };
+
+  if (!event.Name || !event.PointsProfileID) {
+    message.className = 'error';
+    message.textContent = 'Enter a name and choose a point profile.';
+    return;
+  }
+
+  try {
+    saveButton.disabled = true;
+    const createdEvent = await ApplicationInterface.createEvent(event);
+    closeEventModal();
+    await selectEventAfterRefresh(createdEvent.ID);
+    showEventMessage('Event created.');
+    renderEvents();
+  } catch (error) {
+    message.className = 'error';
+    message.textContent = error.message;
+  } finally {
+    saveButton.disabled = false;
+  }
+}
+
+/** Refresh Events and retain a requested selection. */
+async function selectEventAfterRefresh(eventIdentifier) {
+  const pageData = await ApplicationInterface.getEventsPage(eventIdentifier);
+  applyEventsPageData(pageData);
+}
+
+/** Save the selected event's editable name, profile and enabled state. */
+async function saveEventConfiguration() {
+  if (!ApplicationState.currentEvent) {
+    return;
+  }
+
+  const eventUpdates = {
+    ID: ApplicationState.currentEvent.ID,
+    Name: document.getElementById('event-name').value.trim(),
+    PointsProfileID: document.getElementById('event-point-profile').value,
+    Enabled: document.getElementById('event-enabled').checked,
+  };
+  try {
+    setEventRequestPending(true);
+    await ApplicationInterface.updateEvent(eventUpdates);
+    await refreshSelectedEventPage();
+    showEventMessage('Event settings saved.');
+  } catch (error) {
+    showEventMessage(error.message, true);
+  } finally {
+    await setEventRequestPending(false);
+  }
 }
 
 /** Clear the previous selection and load all data for the chosen event. */
@@ -662,15 +786,8 @@ async function selectEvent(identifier) {
   renderEvents();
 
   try {
-    await loadCurrentEventRun();
-
-    await Promise.all([
-      loadCurrentPointsProfile(),
-      loadCurrentMatches(),
-      loadCurrentRace(),
-      loadCurrentDoubleTeamMatch(),
-      loadCurrentDistance(),
-    ]);
+    const pageData = await ApplicationInterface.getEventsPage(identifier);
+    applyEventsPageData(pageData);
 
     clearEventMessage();
   } catch (error) {
@@ -719,131 +836,6 @@ async function openEventHistory() {
   }
 }
 
-/** Load authoritative run state and refresh pending-result metadata. */
-async function loadCurrentEventRun() {
-  if (!ApplicationState.currentEvent) {
-    ApplicationState.currentEventRun = null;
-
-    return;
-  }
-
-  ApplicationState.currentEventRun =
-    await ApplicationInterface.getCurrentEventRun(
-      ApplicationState.currentEvent.ID,
-    );
-
-  ApplicationState.currentEvent.Status =
-    ApplicationState.currentEventRun.Status;
-
-  await refreshConfirmationStatus();
-}
-
-/** Resolve the selected event’s point profile using the local cache. */
-async function loadCurrentPointsProfile() {
-  if (
-    !ApplicationState.currentEvent ||
-    !ApplicationState.currentEvent.PointsProfileID
-  ) {
-    ApplicationState.currentPointsProfile = null;
-
-    return;
-  }
-
-  const profileIdentifier = ApplicationState.currentEvent.PointsProfileID;
-
-  if (
-    Object.prototype.hasOwnProperty.call(
-      ApplicationState.pointProfilesByIdentifier,
-      profileIdentifier,
-    )
-  ) {
-    ApplicationState.currentPointsProfile =
-      ApplicationState.pointProfilesByIdentifier[profileIdentifier];
-
-    return;
-  }
-
-  ApplicationState.currentPointsProfile =
-    await ApplicationInterface.getPointProfile(profileIdentifier);
-
-  ApplicationState.pointProfilesByIdentifier[profileIdentifier] =
-    ApplicationState.currentPointsProfile;
-}
-
-/** Load fixtures only for match-based event formats. */
-async function loadCurrentMatches() {
-  if (
-    !ApplicationState.currentEvent ||
-    !['ROUND_ROBIN', 'TOURNAMENT'].includes(
-      ApplicationState.currentEvent.EventType,
-    )
-  ) {
-    ApplicationState.currentMatches = [];
-
-    return;
-  }
-
-  ApplicationState.currentMatches =
-    await ApplicationInterface.getMatchesForEvent(
-      ApplicationState.currentEvent.ID,
-      ApplicationState.currentEventRun.ID,
-    );
-}
-
-/** Load race data only when the selected event uses heats and finals. */
-async function loadCurrentRace() {
-  if (
-    !ApplicationState.currentEvent ||
-    ApplicationState.currentEvent.EventType !== 'HEAT_FINAL'
-  ) {
-    ApplicationState.currentRace = null;
-
-    return;
-  }
-
-  ApplicationState.currentRace =
-    await ApplicationInterface.getRaceResultsForEvent(
-      ApplicationState.currentEvent.ID,
-      ApplicationState.currentEventRun.ID,
-    );
-}
-
-/** Load the selected event’s combined-side fixture when applicable. */
-async function loadCurrentDoubleTeamMatch() {
-  if (
-    !ApplicationState.currentEvent ||
-    ApplicationState.currentEvent.EventType !== 'DOUBLE_TEAM'
-  ) {
-    ApplicationState.currentDoubleTeamMatch = null;
-
-    return;
-  }
-
-  ApplicationState.currentDoubleTeamMatch =
-    await ApplicationInterface.getDoubleTeamMatchForEvent(
-      ApplicationState.currentEvent.ID,
-      ApplicationState.currentEventRun.ID,
-    );
-}
-
-/** Load distance placings only for a distance event. */
-async function loadCurrentDistance() {
-  if (
-    !ApplicationState.currentEvent ||
-    ApplicationState.currentEvent.EventType !== 'DISTANCE'
-  ) {
-    ApplicationState.currentDistance = null;
-
-    return;
-  }
-
-  ApplicationState.currentDistance =
-    await ApplicationInterface.getDistanceResultsForEventRun(
-      ApplicationState.currentEvent.ID,
-      ApplicationState.currentEventRun.ID,
-    );
-}
-
 /** Switch the visible distance category and clear previous feedback. */
 function selectDistanceCategory(category) {
   if (!['Male', 'Female'].includes(category)) {
@@ -887,7 +879,7 @@ async function saveDistanceCategoryPositions() {
       positions,
     );
 
-    await refreshDistanceEvent();
+    await refreshSelectedEventPage();
 
     showEventMessage(
       `${ApplicationState.distanceCategory} team placings saved.`,
@@ -937,7 +929,7 @@ async function completeDistanceEventRun() {
       ApplicationState.currentEventRun.ID,
     );
 
-    await refreshDistanceEvent();
+    await refreshSelectedEventPage();
 
     showEventMessage('Distance event marked complete.');
   } catch (error) {
@@ -945,30 +937,6 @@ async function completeDistanceEventRun() {
   } finally {
     await setEventRequestPending(false);
   }
-}
-
-/** Refresh the event list, current run and distance results together. */
-async function refreshDistanceEvent() {
-  const [events, distance, eventRun] = await Promise.all([
-    ApplicationInterface.getEvents(),
-
-    ApplicationInterface.getDistanceResultsForEventRun(
-      ApplicationState.currentEvent.ID,
-      ApplicationState.currentEventRun.ID,
-    ),
-
-    ApplicationInterface.getCurrentEventRun(ApplicationState.currentEvent.ID),
-  ]);
-
-  ApplicationState.events = events;
-
-  ApplicationState.currentEvent =
-    events.find((event) => event.ID === ApplicationState.currentEvent.ID) ||
-    ApplicationState.currentEvent;
-
-  ApplicationState.currentDistance = distance;
-
-  ApplicationState.currentEventRun = eventRun;
 }
 
 /** Show the automatically formed opposing side as selections change. */
@@ -1000,9 +968,9 @@ function updateDoubleTeamPreview() {
   const preview = document.getElementById('double-team-side-2-preview');
 
   if (preview) {
-    preview.textContent =
+    preview.innerHTML =
       side2Teams.length === 2
-        ? side2Teams.map((team) => team.Name).join(' + ')
+        ? side2Teams.map((team) => EventView.renderTeamLabel(team)).join(' + ')
         : 'Choose two different Side 1 teams';
   }
 }
@@ -1038,7 +1006,7 @@ async function saveDoubleTeamPairing() {
       side1TeamIdentifiers,
     );
 
-    await refreshDoubleTeamEvent();
+    await refreshSelectedEventPage();
 
     showEventMessage('Combined-team pairing saved.');
   } catch (error) {
@@ -1078,7 +1046,7 @@ async function saveDoubleTeamWinner() {
       winnerSide,
     );
 
-    await refreshDoubleTeamEvent();
+    await refreshSelectedEventPage();
 
     showEventMessage('Winning combined side saved.');
   } catch (error) {
@@ -1086,30 +1054,6 @@ async function saveDoubleTeamWinner() {
   } finally {
     await setEventRequestPending(false);
   }
-}
-
-/** Refresh the event list, current run and combined-side fixture together. */
-async function refreshDoubleTeamEvent() {
-  const [events, match, eventRun] = await Promise.all([
-    ApplicationInterface.getEvents(),
-
-    ApplicationInterface.getDoubleTeamMatchForEvent(
-      ApplicationState.currentEvent.ID,
-      ApplicationState.currentEventRun.ID,
-    ),
-
-    ApplicationInterface.getCurrentEventRun(ApplicationState.currentEvent.ID),
-  ]);
-
-  ApplicationState.events = events;
-
-  ApplicationState.currentEvent =
-    events.find((event) => event.ID === ApplicationState.currentEvent.ID) ||
-    ApplicationState.currentEvent;
-
-  ApplicationState.currentDoubleTeamMatch = match;
-
-  ApplicationState.currentEventRun = eventRun;
 }
 
 /** Switch the visible race category and clear previous feedback. */
@@ -1137,13 +1081,15 @@ async function startRaceEvent() {
   try {
     setEventRequestPending(true);
 
-    ApplicationState.currentRace = await ApplicationInterface.startRaceEvent(
+    const race = await ApplicationInterface.startRaceEvent(
       ApplicationState.currentEvent.ID,
       ApplicationState.currentEventRun.ID,
     );
 
+    await refreshSelectedEventPage();
+
     showEventMessage(
-      `${ApplicationState.currentRace.entrantCount} active competitors are entered in this event.`,
+      `${race.entrantCount} active competitors are entered in this event.`,
     );
   } catch (error) {
     showEventMessage(error.message, true);
@@ -1187,7 +1133,7 @@ async function saveRaceHeatWinners() {
         winners,
       );
 
-    await refreshRaceEvent();
+    await refreshSelectedEventPage();
 
     showEventMessage(
       `${winners.length} heat winner${winners.length === 1 ? '' : 's'} saved.`,
@@ -1219,7 +1165,13 @@ async function saveRaceFinalPositions() {
 
   try {
     validateRaceFinalPositions(positions);
+  } catch (error) {
+    showEventMessage(error.message, true);
+    showRaceFinalMessage(error.message, true);
+    return;
+  }
 
+  try {
     setEventRequestPending(true);
 
     await ApplicationInterface.saveRaceFinalPositions(
@@ -1229,14 +1181,27 @@ async function saveRaceFinalPositions() {
       positions,
     );
 
-    await refreshRaceEvent();
+    await refreshSelectedEventPage();
 
     showEventMessage(`${ApplicationState.raceCategory} final positions saved.`);
+    showRaceFinalMessage('Final positions saved.');
   } catch (error) {
     showEventMessage(error.message, true);
   } finally {
     await setEventRequestPending(false);
   }
+}
+
+/** Show race-final feedback beside the position selectors without rerendering. */
+function showRaceFinalMessage(message, isError = false) {
+  const container = document.getElementById('race-final-message');
+
+  if (!container) {
+    return;
+  }
+
+  container.textContent = message;
+  container.className = `race-final-message ${isError ? 'error' : 'success'}`;
 }
 
 /** Require all four distinct final positions before saving. */
@@ -1255,30 +1220,6 @@ function validateRaceFinalPositions(positions) {
   }
 }
 
-/** Refresh the event list, current run and race results together. */
-async function refreshRaceEvent() {
-  const [events, race, eventRun] = await Promise.all([
-    ApplicationInterface.getEvents(),
-
-    ApplicationInterface.getRaceResultsForEvent(
-      ApplicationState.currentEvent.ID,
-      ApplicationState.currentEventRun.ID,
-    ),
-
-    ApplicationInterface.getCurrentEventRun(ApplicationState.currentEvent.ID),
-  ]);
-
-  ApplicationState.events = events;
-
-  ApplicationState.currentEvent =
-    events.find((event) => event.ID === ApplicationState.currentEvent.ID) ||
-    ApplicationState.currentEvent;
-
-  ApplicationState.currentRace = race;
-
-  ApplicationState.currentEventRun = eventRun;
-}
-
 /** Create round-robin fixtures and refresh the event display. */
 async function generateRoundRobinFixtures() {
   if (!ApplicationState.currentEvent) {
@@ -1293,9 +1234,7 @@ async function generateRoundRobinFixtures() {
       ApplicationState.currentEventRun.ID,
     );
 
-    await loadCurrentMatches();
-
-    await loadCurrentEventRun();
+    await refreshSelectedEventPage();
 
     showEventMessage('Round robin fixtures are ready.');
   } catch (error) {
@@ -1332,9 +1271,7 @@ async function generateTournamentFixtures() {
       teamIdentifiers,
     );
 
-    await loadCurrentMatches();
-
-    await loadCurrentEventRun();
+    await refreshSelectedEventPage();
 
     showEventMessage('Tournament semi-finals created.');
   } catch (error) {
@@ -1400,9 +1337,7 @@ async function saveMatchWinner(matchIdentifier, winnerIdentifier) {
       ApplicationState.currentEventRun.ID,
     );
 
-    await loadCurrentMatches();
-
-    await loadCurrentEventRun();
+    await refreshSelectedEventPage();
 
     showEventMessage('Match winner saved.');
   } catch (error) {
@@ -1412,15 +1347,21 @@ async function saveMatchWinner(matchIdentifier, winnerIdentifier) {
   }
 }
 
-/** Disable event controls during writes and refresh warnings afterwards. */
+/** Disable event controls and refresh warnings after an incomplete request. */
 async function setEventRequestPending(isPending) {
-  if (!isPending) {
+  if (!isPending && !ApplicationState.eventPageRefreshedDuringRequest) {
     await refreshConfirmationStatus();
   }
 
   ApplicationState.eventRequestPending = isPending;
 
+  if (!isPending) {
+    ApplicationState.eventPageRefreshedDuringRequest = false;
+  }
+
   if (isPending) {
+    ApplicationState.eventPageRefreshedDuringRequest = false;
+
     ApplicationState.eventMessage = 'Saving changes...';
 
     ApplicationState.eventMessageIsError = false;
@@ -1465,30 +1406,7 @@ async function resetCurrentEvent() {
       ApplicationState.currentEventRun.ID,
     );
 
-    ApplicationState.currentEventRun = newRun;
-
-    ApplicationState.currentMatches = [];
-
-    ApplicationState.currentRace = null;
-
-    ApplicationState.currentDoubleTeamMatch = null;
-
-    ApplicationState.currentDistance = null;
-
-    ApplicationState.events = await ApplicationInterface.getEvents();
-
-    ApplicationState.currentEvent =
-      ApplicationState.events.find(
-        (event) => event.ID === ApplicationState.currentEvent.ID,
-      ) || ApplicationState.currentEvent;
-
-    await loadCurrentMatches();
-
-    await loadCurrentRace();
-
-    await loadCurrentDoubleTeamMatch();
-
-    await loadCurrentDistance();
+    await refreshSelectedEventPage();
 
     showEventMessage(
       `Event reset successfully. Run ${newRun.RunNumber} is ready.`,
@@ -1522,6 +1440,8 @@ async function confirmCurrentEventResults() {
 
     ApplicationState.currentEventRun.ConfirmedResultCount =
       confirmation.resultCount;
+
+    await refreshSelectedEventPage();
 
     showEventMessage(confirmation.message || 'Results confirmed.');
   } catch (error) {
@@ -1748,15 +1668,11 @@ function validatePointProfile(profile) {
  * Competitors
  */
 async function loadCompetitors() {
-  const [competitors, teams] = await Promise.all([
-    ApplicationInterface.getCompetitors(),
+  const pageData = await ApplicationInterface.getCompetitorsPage();
 
-    ApplicationInterface.getTeams(),
-  ]);
+  ApplicationState.competitors = pageData.competitors;
 
-  ApplicationState.competitors = competitors;
-
-  ApplicationState.teams = teams;
+  ApplicationState.teams = pageData.teams;
 
   populateTeamFilter();
 
@@ -1838,7 +1754,11 @@ Restore
 
 <td>${EventView.escapeHtml(person.CompetitionGender ?? '')}</td>
 
-<td>${EventView.escapeHtml(team ? team.Name : person.TeamID)}</td>
+<td>${
+      team
+        ? EventView.renderTeamLabel(team)
+        : EventView.escapeHtml(person.TeamID)
+    }</td>
 
 <td>
 
@@ -1959,7 +1879,8 @@ function openCompetitorModal(person = null) {
 
     document.getElementById('competitor-name').value = '';
 
-    document.getElementById('competitor-age').value = '';
+    document.getElementById('competitor-age').value =
+      FormBehaviour.getPreferredAge(ApplicationState.lastCreatedCompetitorAge);
 
     document.getElementById('competitor-gender').value = 'Male';
 
@@ -2049,6 +1970,8 @@ async function saveCompetitor() {
       await ApplicationInterface.createCompetitor(competitor);
 
       ApplicationState.lastCreatedCompetitorTeamIdentifier = competitor.TeamID;
+
+      ApplicationState.lastCreatedCompetitorAge = competitor.Age;
 
       showCompetitorMessage('Competitor created.');
     }

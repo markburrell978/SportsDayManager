@@ -65,6 +65,10 @@ const APPLICATION_ACTIONS = Object.freeze({
 
   GET_EVENTS: 'getEvents',
 
+  CREATE_EVENT: 'createEvent',
+
+  UPDATE_EVENT: 'updateEvent',
+
   GET_POINT_PROFILE: 'getPointProfile',
 
   GET_POINT_PROFILES: 'getPointProfiles',

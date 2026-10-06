@@ -8,8 +8,14 @@
 - [x] Generate new point-profile identifiers in the backend
 - [x] Delete a selected Sports Day with exact-name confirmation and last-entry protection
 - [x] Save one or more heat winners as one transactional batch
+- [x] Reduce every main-tab load and post-write Events refresh to one scoped read request
+- [x] Reuse the previous competitor age during repetitive entry
+- [x] Show completed round-robin standings and team colours throughout current views
+- [x] Preserve invalid race-final drafts and show validation beside the controls
+- [x] Create events and edit their names, point profiles and enabled state
+- [x] Temporarily edit selected historical Sports Days through Settings without changing the current day; restore read-only mode on switching or reload
 - [x] Pass browser, service and database/API regression tests locally
-- [ ] Complete the production backup, review and release
+- [x] Complete the production backup, review and release
 
 ## v1.2 — Named annual Sports Days and faster loading
 

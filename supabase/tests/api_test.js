@@ -240,6 +240,27 @@ databaseTest(
         Third: 0,
         Fourth: -4,
       });
+      const createdEvent = await call('createEvent', {
+        Name: ' Test Relay ',
+        EventType: 'HEAT_FINAL',
+        PointsProfileID: 'TEST_PROFILE',
+        Enabled: true,
+      });
+      assert.equal(createdEvent.Name, 'Test Relay');
+      assert.equal(createdEvent.Status, 'NOT_STARTED');
+      assert.equal(createdEvent.Enabled, true);
+      assert.ok(createdEvent.ID);
+      await call('updateEvent', {
+        ID: createdEvent.ID,
+        Name: 'Test Relay Updated',
+        PointsProfileID: 'PP_STANDARD',
+        Enabled: false,
+      });
+      const configuredEvents = await call('getEvents');
+      assert.equal(
+        configuredEvents.find((event) => event.ID === createdEvent.ID).Enabled,
+        false,
+      );
       await call(
         'createPointProfile',
         {
@@ -455,7 +476,7 @@ databaseTest(
           name + ' persisted state',
         );
       }
-      assert.equal(covered.size, 28);
+      assert.equal(covered.size, 30);
     });
   },
 );
@@ -674,6 +695,75 @@ databaseTest(
         'Alex Alder',
       );
 
+      const correctionPayload = {
+        sportsDayId: 'SPORTS_DAY_2026',
+        ID: 'COMP_ALPHA_M',
+        Name: 'Corrected Name',
+        Age: 11,
+        Gender: 'Male',
+        CompetitionGender: 'Male',
+        TeamID: 'TEAM_ALPHA',
+        Active: true,
+      };
+      for (const allowHistoricalEditing of [false, 'true', 'false']) {
+        await assert.rejects(
+          executeInTransaction(transaction, {
+            action: 'updateCompetitor',
+            payload: { ...correctionPayload, allowHistoricalEditing },
+          }),
+          /Historical Sports Days are read-only/,
+        );
+      }
+      await executeInTransaction(transaction, {
+        action: 'updateCompetitor',
+        payload: { ...correctionPayload, allowHistoricalEditing: true },
+      });
+      assert.equal(
+        (
+          await transaction`
+        select name from public.competitors where id = 'COMP_ALPHA_M'
+      `
+        )[0].name,
+        'Corrected Name',
+      );
+      const afterCorrection = await executeInTransaction(transaction, {
+        action: 'getSportsDays',
+        payload: {},
+      });
+      assert.equal(afterCorrection.data[0].ID, sportsDayIdentifier);
+      assert.equal(
+        afterCorrection.data.find((day) => day.ID === 'SPORTS_DAY_2026').Active,
+        false,
+      );
+      await assert.rejects(
+        executeInTransaction(transaction, {
+          action: 'confirmEventResults',
+          payload: {
+            sportsDayId: 'SPORTS_DAY_2026',
+            eventId: 'EV_ROUND_ROBIN',
+            eventRunId: 'RUN_RR_2',
+          },
+        }),
+        /Historical Sports Days are read-only/,
+      );
+      const confirmedCorrection = await executeInTransaction(transaction, {
+        action: 'confirmEventResults',
+        payload: {
+          sportsDayId: 'SPORTS_DAY_2026',
+          eventId: 'EV_ROUND_ROBIN',
+          eventRunId: 'RUN_RR_2',
+          allowHistoricalEditing: true,
+        },
+      });
+      assert.equal(confirmedCorrection.success, true);
+      await assert.rejects(
+        executeInTransaction(transaction, {
+          action: 'updateCompetitor',
+          payload: correctionPayload,
+        }),
+        /Historical Sports Days are read-only/,
+      );
+
       await assert.rejects(
         executeInTransaction(transaction, {
           action: 'deleteSportsDay',
@@ -724,6 +814,83 @@ databaseTest(
           },
         }),
         /only remaining Sports Day/,
+      );
+    });
+  },
+);
+
+databaseTest(
+  'page actions return each tab through one transaction',
+  async () => {
+    await fixture(async (transaction) => {
+      const leaderboardPage = await executeInTransaction(transaction, {
+        action: 'getLeaderboardPage',
+        payload: { sportsDayId: 'SPORTS_DAY_2026' },
+      });
+      assert.ok(Array.isArray(leaderboardPage.data.leaderboard));
+      assert.ok(Array.isArray(leaderboardPage.data.confirmationStatus));
+
+      const competitorsPage = await executeInTransaction(transaction, {
+        action: 'getCompetitorsPage',
+        payload: { sportsDayId: 'SPORTS_DAY_2026' },
+      });
+      assert.ok(Array.isArray(competitorsPage.data.competitors));
+      assert.ok(Array.isArray(competitorsPage.data.teams));
+
+      const eventsPage = await executeInTransaction(transaction, {
+        action: 'getEventsPage',
+        payload: {
+          sportsDayId: 'SPORTS_DAY_2026',
+          eventId: 'EV_RACE',
+        },
+      });
+      assert.ok(Array.isArray(eventsPage.data.events));
+      assert.ok(Array.isArray(eventsPage.data.teams));
+      assert.ok(Array.isArray(eventsPage.data.pointProfiles));
+      assert.ok(Array.isArray(eventsPage.data.confirmationStatus));
+      assert.equal(eventsPage.data.selectedEvent.ID, 'EV_RACE');
+      assert.equal(eventsPage.data.selectedEvent.EventType, 'HEAT_FINAL');
+      assert.equal(eventsPage.data.currentEventRun.EventID, 'EV_RACE');
+      assert.equal(eventsPage.data.matches.length, 0);
+      assert.ok(eventsPage.data.race);
+      assert.equal(eventsPage.data.doubleTeamMatch, null);
+      assert.equal(eventsPage.data.distance, null);
+    });
+  },
+);
+
+databaseTest(
+  'changing a scored event profile requires results to be reconfirmed',
+  async () => {
+    await fixture(async (transaction) => {
+      const before = await executeInTransaction(transaction, {
+        action: 'getConfirmationStatus',
+        payload: { sportsDayId: 'SPORTS_DAY_2026' },
+      });
+      assert.equal(
+        before.data.find((status) => status.EventID === 'EV_ROUND_ROBIN')
+          .NeedsConfirmation,
+        false,
+      );
+
+      await executeInTransaction(transaction, {
+        action: 'updateEvent',
+        payload: {
+          sportsDayId: 'SPORTS_DAY_2026',
+          ID: 'EV_ROUND_ROBIN',
+          Name: 'Fictional Round Robin',
+          PointsProfileID: 'PP_CHALLENGE',
+          Enabled: true,
+        },
+      });
+      const after = await executeInTransaction(transaction, {
+        action: 'getConfirmationStatus',
+        payload: { sportsDayId: 'SPORTS_DAY_2026' },
+      });
+      assert.equal(
+        after.data.find((status) => status.EventID === 'EV_ROUND_ROBIN')
+          .NeedsConfirmation,
+        true,
       );
     });
   },

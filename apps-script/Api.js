@@ -73,6 +73,20 @@ function handleRequest(request) {
 
         break;
 
+      case APPLICATION_ACTIONS.CREATE_EVENT:
+        response = ServiceUtilities.success(
+          EventService.create(request.payload),
+        );
+
+        break;
+
+      case APPLICATION_ACTIONS.UPDATE_EVENT:
+        response = ServiceUtilities.success(
+          EventService.update(request.payload),
+        );
+
+        break;
+
       case APPLICATION_ACTIONS.GET_POINT_PROFILE:
         response = ServiceUtilities.success(
           EventService.getPointProfile(
