@@ -926,6 +926,22 @@ Distance Competition Engine
   margin-bottom: 14px;
 }
 
+.distance-team-result {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 6px;
+}
+
+.distance-team-result > span {
+  font-weight: bold;
+}
+
+.distance-positions .distance-team-result label {
+  padding: 0;
+}
+
 .distance-positions label {
   display: flex;
 
@@ -946,6 +962,8 @@ Distance Competition Engine
 
 .distance-positions select {
   padding: 8px;
+  max-width: 65%;
+  min-width: 0;
 }
 
 .distance-standings {

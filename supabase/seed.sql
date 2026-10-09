@@ -334,5 +334,7 @@ update public.event_runs run
 set confirmed_revision = results_revision
 where exists (select 1 from public.results result where result.event_run_id = run.id);
 
+select public.snapshot_event_participants();
+
 commit;
 

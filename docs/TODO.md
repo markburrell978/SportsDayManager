@@ -1,5 +1,27 @@
 # Sports Day Manager Roadmap
 
+## v1.6 — Entry, archives and named category results
+
+The owner replaced the rejected permanent-participant proposal with three smaller
+usability changes. See [the implementation and test guide](V1_6_USABILITY_REPORT.md).
+
+- [x] Hide age from competitor entry/editing/table; keep backend ages optional and preserve existing values
+- [x] Let Tournament viewers choose archived Sports Days, defaulting to current
+- [x] Preserve organiser/public tabs and selected year across refresh; preserve organiser selected event
+- [x] TDD, isolated fictional SQL/API checks and browser validation
+- [x] Back up Practice and apply only the additive nullable-age migration without resetting data
+- [x] Owner manually tested and accepted entry/archive/refresh changes
+- [x] Separate Male/Female final columns and confirmed representative names in Tournament view
+- [x] Transactional finalist snapshots, safe legacy backfill, privacy and regression tests
+- [x] Optional distance participant selectors, retained drafts and named Male/Female confirmed public results
+- [x] Shared snapshots and safe distance backfill; Practice backup/preservation and fictional SQL/privacy regressions
+- [x] Owner review of finalist/distance display and explicit release approval (2026-10-09)
+- [x] Production backup/restore rehearsal, all three migrations, both function deployments and live data/API checks
+- Approved merge publishes versioned frontend assets through the existing Pages workflow; see [release evidence](V1_6_RELEASE_REPORT.md).
+
+The approved production release is v1.6.0. No persistent participant directory/list/history feature
+is included in this replacement v1.6.
+
 ## v1.4 — Stability and reliable corrections
 
 The owner selected stability first. See [v1.4 preparation](V1_4_PLAN.md) for

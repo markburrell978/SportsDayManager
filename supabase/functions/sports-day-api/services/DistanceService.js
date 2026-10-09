@@ -29,6 +29,13 @@ export function createDistanceService({
 
       return {
         results: this.getResults(eventIdentifier, eventRunIdentifier),
+        participantSelectionAvailable: Database.getHeaders(
+          TABLES.DISTANCE_RESULTS,
+        ).includes('CompetitorID'),
+        competitors: this.getParticipantChoices(
+          eventIdentifier,
+          eventRunIdentifier,
+        ),
       };
     },
 
@@ -68,7 +75,15 @@ export function createDistanceService({
         (result) => result.CompetitionGender === competitionGender,
       );
 
-      positions.forEach((position) => {
+      const participantIdentifiers = positions.map((position) =>
+        this.getParticipantIdentifier(
+          position,
+          competitionGender,
+          existingResults,
+        ),
+      );
+
+      positions.forEach((position, index) => {
         const teamIdentifier = position.teamId || position.TeamID;
 
         const finalPosition = Number(position.position || position.Position);
@@ -91,6 +106,12 @@ export function createDistanceService({
           Position: finalPosition,
         };
 
+        if (
+          Database.getHeaders(TABLES.DISTANCE_RESULTS).includes('CompetitorID')
+        ) {
+          result.CompetitorID = participantIdentifiers[index];
+        }
+
         if (existing) {
           if (!Database.update(TABLES.DISTANCE_RESULTS, existing.ID, result)) {
             throw new Error('Distance positions could not be updated.');
@@ -110,6 +131,68 @@ export function createDistanceService({
       }
 
       return this.getForEventRun(eventIdentifier, eventRunIdentifier);
+    },
+
+    /** Return active choices and retain previously selected competitors for corrections. */
+    getParticipantChoices(eventIdentifier, eventRunIdentifier) {
+      if (
+        !Database.getHeaders(TABLES.DISTANCE_RESULTS).includes('CompetitorID')
+      ) {
+        return [];
+      }
+      const savedIdentifiers = this.getResults(
+        eventIdentifier,
+        eventRunIdentifier,
+      ).map((result) => result.CompetitorID);
+      return services.CompetitorService.getAll()
+        .filter(
+          (competitor) =>
+            services.CompetitorService.isAvailableForEvents(competitor) ||
+            savedIdentifiers.includes(competitor.ID),
+        )
+        .map((competitor) => ({
+          ID: competitor.ID,
+          Name: competitor.Name,
+          TeamID: competitor.TeamID,
+          CompetitionGender: competitor.CompetitionGender,
+          Active: services.CompetitorService.isAvailableForEvents(competitor),
+        }));
+    },
+
+    /** Validate an optional new choice while preserving a saved choice omitted by older clients. */
+    getParticipantIdentifier(position, competitionGender, existingResults) {
+      const teamIdentifier = position.teamId || position.TeamID;
+      const existingIdentifier =
+        existingResults.find((result) => result.TeamID === teamIdentifier)
+          ?.CompetitorID || '';
+      const supplied =
+        Object.prototype.hasOwnProperty.call(position, 'competitorId') ||
+        Object.prototype.hasOwnProperty.call(position, 'CompetitorID');
+      const competitorIdentifier = supplied
+        ? String(position.competitorId ?? position.CompetitorID ?? '').trim()
+        : existingIdentifier;
+      if (
+        !competitorIdentifier ||
+        competitorIdentifier === existingIdentifier
+      ) {
+        return competitorIdentifier;
+      }
+      const competitor =
+        services.CompetitorService.getById(competitorIdentifier);
+      if (
+        !Database.getHeaders(TABLES.DISTANCE_RESULTS).includes(
+          'CompetitorID',
+        ) ||
+        !competitor ||
+        !services.CompetitorService.isAvailableForEvents(competitor) ||
+        competitor.TeamID !== teamIdentifier ||
+        competitor.CompetitionGender !== competitionGender
+      ) {
+        throw new Error(
+          'Choose an available participant from this team and competition category, or leave the name blank.',
+        );
+      }
+      return competitorIdentifier;
     },
 
     /** Complete the distance run only after all required placings exist. */

@@ -46,6 +46,28 @@
   background: #1e3a5f;
   color: #fff;
 }
+.participant-day-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+.participant-day-picker label {
+  font-weight: bold;
+}
+.participant-day-picker select {
+  min-height: 44px;
+  width: 100%;
+  padding: 10px;
+  margin: 0;
+  border: 1px solid #aaa;
+  border-radius: 6px;
+}
+.participant-day-picker p {
+  margin: 0;
+  color: #555;
+  font-size: 0.9rem;
+}
 .participant-refresh-bar {
   display: flex;
   align-items: center;
@@ -108,6 +130,12 @@
 .points-total {
   font-weight: bold;
   font-size: 1.2rem;
+}
+.finalist-name {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
 }
 .participant-list {
   list-style: none;

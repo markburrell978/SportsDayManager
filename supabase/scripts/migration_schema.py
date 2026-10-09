@@ -68,7 +68,7 @@ SHEET_SPECIFICATIONS = {
         (
             column("ID", "id"),
             column("Name", "name"),
-            column("Age", "age", "integer"),
+            column("Age", "age", "integer", nullable=True),
             column("Gender", "gender", nullable=True, blank_default=""),
             column("CompetitionGender", "competition_gender"),
             column("TeamID", "team_id"),

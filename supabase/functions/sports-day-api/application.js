@@ -134,6 +134,7 @@ export async function executeInTransaction(transaction, request, options = {}) {
   if (request.action === 'confirmEventResults') {
     const runIdentifier =
       request.payload.eventRunId || request.payload.EventRunID;
+    await transaction`select public.snapshot_event_participants(${runIdentifier})`;
     await transaction`update public.event_runs set confirmed_revision = results_revision where id = ${runIdentifier} and is_current`;
   }
   return response;

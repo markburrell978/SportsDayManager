@@ -100,6 +100,7 @@ export const TABLE_MAPPINGS = {
       CompetitionGender: 'competition_gender',
       TeamID: 'team_id',
       Position: 'position',
+      CompetitorID: 'competitor_id',
     },
     true,
   ),
@@ -129,6 +130,8 @@ export const TABLE_MAPPINGS = {
 };
 /** Columns whose legacy blank values represent SQL nulls. */
 const nullableColumns = new Set([
+  'age',
+  'competitor_id',
   'started_at',
   'completed_at',
   'reset_from_run_id',

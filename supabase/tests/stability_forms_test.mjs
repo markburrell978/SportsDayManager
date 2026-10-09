@@ -11,6 +11,10 @@ async function formFixture(format = 'DISTANCE') {
     ['event-point-profile', { value: 'PROFILE' }],
     ['event-enabled', { checked: true }],
     ...[0, 1, 2, 3].map((index) => [
+      `distance-participant-${index}`,
+      { value: '' },
+    ]),
+    ...[0, 1, 2, 3].map((index) => [
       `distance-position-${index}`,
       { value: String(index + 1) },
     ]),
@@ -309,4 +313,35 @@ test('reload protection warns for drafts and does not warn for unchanged forms',
   controls.get('distance-position-0').value = '4';
   handlers.beforeunload(event);
   assert.equal(prevented, true);
+});
+
+test('optional distance participants are submitted and preserved through failed saves and category redraws', async () => {
+  const { context, controls } = await formFixture();
+  let submitted;
+  context.ApplicationInterface.saveDistanceCategoryPositions = async (
+    eventIdentifier,
+    runIdentifier,
+    category,
+    positions,
+  ) => {
+    submitted = positions;
+    throw new Error('Network unavailable');
+  };
+  controls.get('distance-participant-0').value = 'SELECTED_PERSON';
+  await virtualMachine.runInContext(
+    "selectDistanceCategory('Female')",
+    context,
+  );
+  assert.equal(
+    virtualMachine.runInContext('ApplicationState.distanceCategory', context),
+    'Male',
+  );
+  await virtualMachine.runInContext('saveDistanceCategoryPositions()', context);
+  assert.equal(submitted[0].competitorId, 'SELECTED_PERSON');
+  assert.equal(submitted[1].competitorId, '');
+  assert.equal(controls.get('distance-participant-0').value, 'SELECTED_PERSON');
+  assert.equal(
+    virtualMachine.runInContext('EventDrafts.hasChanges(document)', context),
+    true,
+  );
 });

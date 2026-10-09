@@ -11,9 +11,10 @@ const databaseConnection = postgres(getDatabaseAddress(), {
 });
 Deno.serve(
   createParticipantHandler({
-    /** Read the active day through a database-enforced read-only transaction. */
-    readPage: () =>
+    /** Read the chosen day through a database-enforced read-only transaction. */
+    readPage: (selection) =>
       executeParticipantRead(databaseConnection, {
+        ...selection,
         showParticipantNames: Deno.env.get('SPORTS_DAY_VIEW_NAMES') === 'true',
       }),
     accessMode: Deno.env.get('SPORTS_DAY_VIEW_ACCESS') || 'disabled',

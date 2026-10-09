@@ -1,6 +1,15 @@
 'use strict';
 
 window.ParticipantView = {
+  /** Label the current day and archives, escaping names and record identifiers. */
+  sportsDayOptions(sportsDays) {
+    return sportsDays
+      .map(
+        (day) =>
+          `<option value="${EventView.escapeHtml(day.identifier)}">${EventView.escapeHtml(day.name)} (${day.current ? 'current' : 'archived'})</option>`,
+      )
+      .join('');
+  },
   /** Reuse the existing escaped team badge and validated colour rendering. */
   team(team) {
     return EventView.renderTeamLabel({
@@ -50,6 +59,51 @@ window.ParticipantView = {
       }[event.status] || 'Not started'
     );
   },
+  /** Show a confirmed category placing with its optional participant name. */
+  categoryPlacing(result, category, showParticipantNames) {
+    const final = result.finals.find(
+      (placing) => placing.category === category,
+    );
+    if (!final) {
+      return '<span class="view-explanation">Not recorded</span>';
+    }
+    return `<span>${EventView.escapeHtml(final.position)}</span>${showParticipantNames && final.participantName ? `<span class="finalist-name">${EventView.escapeHtml(final.participantName)}</span>` : ''}`;
+  },
+  /** Render official awards with separate categories when confirmed details are available. */
+  eventResults(event, page) {
+    if (!event.results.length) {
+      return '<p>No confirmed results yet.</p>';
+    }
+    const categoryDetailsAvailable =
+      ['HEAT_FINAL', 'DISTANCE'].includes(event.format) &&
+      event.results.every(
+        (result) => result.finals?.length === result.positions.length,
+      );
+    const placingsHeader = categoryDetailsAvailable
+      ? `<th scope="col">Male${event.format === 'HEAT_FINAL' ? ' final' : ''}</th><th scope="col">Female${event.format === 'HEAT_FINAL' ? ' final' : ''}</th>`
+      : '<th scope="col">Placing(s)</th>';
+    const resultRows = event.results
+      .map((result) => {
+        const placings = categoryDetailsAvailable
+          ? ['Male', 'Female']
+              .map(
+                (category) =>
+                  `<td>${this.categoryPlacing(result, category, page.participantNamesVisible)}</td>`,
+              )
+              .join('')
+          : `<td>${EventView.escapeHtml(result.positions.join(', '))}</td>`;
+        return `<tr><th scope="row">${this.team(page.teams.find((team) => team.identifier === result.teamIdentifier))}</th>${placings}<td>${EventView.escapeHtml(result.points)}</td></tr>`;
+      })
+      .join('');
+    const explanation =
+      ['HEAT_FINAL', 'DISTANCE'].includes(event.format) &&
+      !categoryDetailsAvailable
+        ? '<p class="view-explanation">Category and participant details were not stored with these confirmed results. They will be recorded when the organiser confirms the event again.</p>'
+        : ['HEAT_FINAL', 'DISTANCE'].includes(event.format)
+          ? '<p class="view-explanation">Placings and points include both competition categories.</p>'
+          : '';
+    return `<h3>Confirmed team results</h3><div class="view-table"><table><thead><tr><th scope="col">Team</th>${placingsHeader}<th scope="col">Points</th></tr></thead><tbody>${resultRows}</tbody></table></div>${explanation}`;
+  },
   /** Render enabled events and aggregate official team placings without changing saved data. */
   events(page) {
     const enabledEvents = page.events.filter((event) => event.enabled);
@@ -71,13 +125,7 @@ window.ParticipantView = {
           ) => `<details data-participant-event="${EventView.escapeHtml(event.identifier)}"><summary><span>${EventView.escapeHtml(event.name)}</span><span class="view-status ${event.needsConfirmation ? 'view-status-pending' : ''}">${this.eventStatus(event)}</span></summary>
         <div class="participant-event-body"><p>${EventView.escapeHtml(formats[event.format] || event.format)}</p>
         ${event.needsConfirmation ? `<p class="pending-explanation">${event.confirmed ? 'Changes are awaiting confirmation. The results below are the last confirmed results.' : 'The organiser has not confirmed these results yet.'}</p>` : ''}
-        ${
-          event.results.length
-            ? `<h3>Confirmed team results</h3><div class="view-table"><table><thead><tr><th scope="col">Team</th><th scope="col">Placing(s)</th><th scope="col">Points</th></tr></thead><tbody>
-          ${event.results.map((result) => `<tr><th scope="row">${this.team(page.teams.find((team) => team.identifier === result.teamIdentifier))}</th><td>${EventView.escapeHtml(result.positions.join(', '))}</td><td>${EventView.escapeHtml(result.points)}</td></tr>`).join('')}
-          </tbody></table></div>${['HEAT_FINAL', 'DISTANCE'].includes(event.format) ? '<p class="view-explanation">Placings and points include both competition categories.</p>' : ''}`
-            : '<p>No confirmed results yet.</p>'
-        }
+        ${this.eventResults(event, page)}
         </div></details>`,
         )
         .join('')}</div>`;

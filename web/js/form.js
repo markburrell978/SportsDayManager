@@ -27,13 +27,6 @@ const FormBehaviour = {
     return teams[0]?.ID || '';
   },
 
-  /** Reuse a positive whole-number age and otherwise leave the field empty. */
-  getPreferredAge(previousAge) {
-    const age = Number(previousAge);
-
-    return Number.isInteger(age) && age > 0 ? age : '';
-  },
-
   /** Disable a team used elsewhere while keeping every empty option available. */
   shouldDisableTournamentOption(
     optionTeamIdentifier,

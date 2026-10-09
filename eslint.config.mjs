@@ -139,6 +139,7 @@ export default [
         ParticipantTransport: 'readonly',
         ParticipantView: 'readonly',
         ParticipantApp: 'readonly',
+        PageLocation: 'readonly',
         allowEventNavigation: 'readonly',
         makeSelectedSportsDayCurrent: 'readonly',
         FormBehaviour: 'readonly',

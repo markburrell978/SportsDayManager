@@ -1,3 +1,20 @@
+# v1.6.0 — Entry, archives and named category results — 2026-10-09
+
+- Hide competitor age from entry, editing and the table; allow unknown ages while retaining stored ages and backend validation
+- Add read-only current/archive selection to Tournament view without changing the current Sports Day
+- Preserve selected tabs and Sports Day through refresh/bookmarks, plus the organiser's selected event
+- Retain draft-navigation protection and recover deleted archive bookmarks safely
+- Show confirmed Male/Female race placings and representative names in separate Tournament columns
+- Snapshot finalists with official awards; preserve them through later edits, obey name visibility and backfill only reliable legacy finals
+- Optionally select distance competitors by team/category; leave names blank, preserve failed-save drafts and show names in saved standings/history
+- Reuse confirmed race/distance category displays and snapshots; preserve existing snapshots, score totals and privacy
+- Keep existing Sheet import transformation compatible with unknown ages
+- Replace the rejected permanent-participant proposal; owner-approved production release preserves all existing records and awards
+
+See [implementation, file guide and tests](V1_6_USABILITY_REPORT.md) and [release evidence](V1_6_RELEASE_REPORT.md).
+
+---
+
 # v1.5.1 — Disabled event visibility — 2026-10-06
 
 - Hide disabled events from the Tournament view's event list; re-enabled events appear on refresh

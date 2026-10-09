@@ -57,6 +57,25 @@ class MigrationTransformerTest(unittest.TestCase):
         self.assertEqual(str(attempts[0]["value"]), "3.75")
         self.assertEqual(dataset.report["table_counts"]["race_results"], 8)
 
+    def test_unknown_competitor_age_is_null_and_known_ages_are_preserved(self):
+        """Keep blank legacy ages unknown instead of inventing a numeric age."""
+        sheets = build_fictional_sheets()
+        competitors = sheets["Competitors"]
+        source_rows = [list(row) for row in competitors.rows]
+        age_index = competitors.headers.index("Age")
+        source_rows[0][age_index] = ""
+        known_age = source_rows[1][age_index]
+        sheets["Competitors"] = SheetData(
+            "Competitors", competitors.headers,
+            tuple(tuple(row) for row in source_rows),
+        )
+        temporary_directory, dataset = transform_sheets(sheets)
+        self.addCleanup(temporary_directory.cleanup)
+        self.assertIsNone(dataset.rows_by_table["competitors"][0]["age"])
+        self.assertEqual(
+            dataset.rows_by_table["competitors"][1]["age"], int(known_age)
+        )
+
     def test_report_contains_expected_leaderboard_and_history_counts(self):
         """Create independent outputs for post-import API reconciliation."""
         temporary_directory, dataset = transform_sheets(

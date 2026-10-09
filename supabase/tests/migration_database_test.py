@@ -112,11 +112,14 @@ class MigrationDatabaseTest(unittest.TestCase):
                             "(select count(*) from event_runs where is_current), "
                             "(select count(*) from event_runs where "
                             "confirmed_revision = results_revision), "
-                            "(select count(*) from results);"
+                            "(select count(*) from results), "
+                            "(select count(*) from results where "
+                            "competition_category is not null and "
+                            "finalist_name is not null);"
                         ),
                     ]
                 )
-                self.assertEqual(state.stdout.strip(), "5|5|5|28")
+                self.assertEqual(state.stdout.strip(), "5|5|5|28|8")
 
                 role_check = self.run_container_command(
                     [
