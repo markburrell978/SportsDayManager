@@ -62,6 +62,7 @@ class SqlImportBuilder:
                 sections.append(self._insert_sql(table_name, rows))
         sections.extend(self._identity_sequence_sql())
         sections.append(self._confirmation_revision_sql())
+        sections.append("select public.snapshot_event_participants();")
         sections.append(self._reconciliation_sql(dataset))
         sections.append("commit;")
         return "\n\n".join(sections) + "\n"

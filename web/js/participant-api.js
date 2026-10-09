@@ -41,21 +41,24 @@ window.ParticipantTransport = {
       throw new Error('The participant connection is invalid.');
     }
     return {
-      /** Request the current participant snapshot without organiser credentials or a selected year. */
-      async read() {
+      /** Request a public current or archived snapshot without organiser credentials. */
+      async read(sportsDayIdentifier = '') {
+        const endpoint = new URL(
+          `${address.origin}/functions/v1/sports-day-view`,
+        );
+        if (sportsDayIdentifier) {
+          endpoint.searchParams.set('sportsDayId', sportsDayIdentifier);
+        }
         let response;
         try {
-          response = await fetch(
-            `${address.origin}/functions/v1/sports-day-view`,
-            {
-              method: 'GET',
-              cache: 'no-store',
-              headers: {
-                apikey: runtime.publishableKey,
-              },
-              signal: AbortSignal.timeout(15000),
+          response = await fetch(endpoint.href, {
+            method: 'GET',
+            cache: 'no-store',
+            headers: {
+              apikey: runtime.publishableKey,
             },
-          );
+            signal: AbortSignal.timeout(15000),
+          });
         } catch {
           throw new Error(
             'Cannot reach results. Check your connection and try again.',

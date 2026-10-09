@@ -25,8 +25,6 @@ const ApplicationState = {
 
   lastCreatedCompetitorTeamIdentifier: null,
 
-  lastCreatedCompetitorAge: null,
-
   teams: [],
 
   leaderboard: [],
@@ -104,13 +102,20 @@ async function initialise() {
 
   registerEventDraftProtection();
 
+  const restoredLocation = window.PageLocation?.read([
+    'leaderboard',
+    'competitors',
+    'events',
+    'settings',
+  ]);
   await Session.start(async (sportsDays) => {
     setSportsDays(
       sportsDays || [{ ID: 'legacy', Name: 'SportsDay2026', Active: true }],
+      restoredLocation?.sportsDayIdentifier,
     );
     document.getElementById('btn-create-sports-day').hidden =
       !ApplicationInterface.requiresSignIn;
-    await showPage('leaderboard');
+    await showPage(restoredLocation?.page || 'leaderboard');
   }, allowEventNavigation);
 }
 
@@ -118,11 +123,9 @@ async function initialise() {
 function setSportsDays(sportsDays, selectedIdentifier = null) {
   ApplicationState.sportsDays = sportsDays;
   ApplicationState.currentSportsDay =
-    sportsDays.find(
-      (sportsDay) =>
-        sportsDay.ID === selectedIdentifier ||
-        (!selectedIdentifier && sportsDay.Active),
-    ) || null;
+    sportsDays.find((sportsDay) => sportsDay.ID === selectedIdentifier) ||
+    sportsDays.find((sportsDay) => sportsDay.Active) ||
+    null;
   ApplicationInterface.selectSportsDay(ApplicationState.currentSportsDay?.ID);
   const selector = document.getElementById('sports-day-selector');
   selector.innerHTML = EventView.renderSportsDayOptions(sportsDays);
@@ -277,7 +280,6 @@ function clearSportsDayState() {
   ApplicationState.competitors = [];
   ApplicationState.filteredCompetitors = [];
   ApplicationState.lastCreatedCompetitorTeamIdentifier = null;
-  ApplicationState.lastCreatedCompetitorAge = null;
   ApplicationState.teams = [];
   ApplicationState.leaderboard = [];
   ApplicationState.confirmationStatus = null;
@@ -466,6 +468,7 @@ async function showPage(page) {
   document.getElementById(`page-${page}`).classList.remove('hidden');
 
   updateNavigation(page);
+  rememberPageLocation();
 
   if (page === 'leaderboard') {
     await loadLeaderboard();
@@ -482,7 +485,26 @@ async function showPage(page) {
   if (page === 'settings') {
     await loadPointProfiles();
   }
+  rememberPageLocation();
   return true;
+}
+
+/** Save only the selected screen and record identifiers for refreshes and bookmarks. */
+function rememberPageLocation() {
+  const previousLocation = window.PageLocation?.read(['events']);
+  const previousEventIdentifier =
+    previousLocation?.sportsDayIdentifier ===
+    ApplicationState.currentSportsDay?.ID
+      ? previousLocation?.eventIdentifier || ''
+      : '';
+  window.PageLocation?.write({
+    page: ApplicationState.currentPage,
+    sportsDayIdentifier: ApplicationState.currentSportsDay?.ID || '',
+    eventIdentifier:
+      ApplicationState.currentPage === 'events'
+        ? ApplicationState.currentEvent?.ID || previousEventIdentifier
+        : '',
+  });
 }
 
 /**
@@ -683,8 +705,14 @@ function normaliseTeamColour(colour) {
  */
 async function loadEvents() {
   try {
+    const restoredLocation = window.PageLocation?.read(['events']);
+    const restoredEvent =
+      restoredLocation?.sportsDayIdentifier ===
+      ApplicationState.currentSportsDay?.ID
+        ? restoredLocation?.eventIdentifier || ''
+        : '';
     const pageData = await ApplicationInterface.getEventsPage(
-      ApplicationState.currentEvent?.ID,
+      ApplicationState.currentEvent?.ID || restoredEvent,
     );
     applyEventsPageData(pageData);
     clearEventMessage();
@@ -729,6 +757,9 @@ function applyEventsPageData(pageData) {
     ApplicationState.currentEventHistory = null;
   }
   renderConfirmationNotices();
+  if (ApplicationState.currentPage === 'events') {
+    rememberPageLocation();
+  }
 }
 
 /** Refresh the selected event and all supporting data with one API request. */
@@ -893,6 +924,7 @@ async function selectEvent(identifier) {
   }
 
   ApplicationState.currentEvent = event;
+  rememberPageLocation();
 
   ApplicationState.eventViewMode = 'current';
 
@@ -1003,6 +1035,12 @@ async function saveDistanceCategoryPositions() {
     position: Number(
       document.getElementById(`distance-position-${index}`).value,
     ),
+    ...(document.getElementById(`distance-participant-${index}`)
+      ? {
+          competitorId: document.getElementById(`distance-participant-${index}`)
+            .value,
+        }
+      : {}),
   }));
   try {
     validateDistancePositions(positions);
@@ -1487,11 +1525,20 @@ function bindEventDrafts() {
     groups.push({
       name: 'distance',
       category: ApplicationState.distanceCategory,
-      fields: ApplicationState.teams.map((team, index) => ({
-        identifier: `distance-position-${index}`,
-        property: 'value',
-        identity: team.ID,
-      })),
+      fields: ApplicationState.teams
+        .flatMap((team, index) => [
+          {
+            identifier: `distance-position-${index}`,
+            property: 'value',
+            identity: team.ID,
+          },
+          {
+            identifier: `distance-participant-${index}`,
+            property: 'value',
+            identity: team.ID,
+          },
+        ])
+        .filter((field) => document.getElementById(field.identifier)),
     });
   }
   if (ApplicationState.currentEvent.EventType === 'HEAT_FINAL') {
@@ -2001,7 +2048,6 @@ function renderCompetitors() {
 
 <th>Name</th>
 
-<th>Age</th>
 
 <th>Gender</th>
 
@@ -2054,7 +2100,6 @@ Restore
 
 <td>${EventView.escapeHtml(person.Name)}</td>
 
-<td>${EventView.escapeHtml(person.Age)}</td>
 
 <td>${EventView.escapeHtml(person.Gender)}</td>
 
@@ -2167,8 +2212,6 @@ function openCompetitorModal(person = null) {
 
     document.getElementById('competitor-name').value = person.Name;
 
-    document.getElementById('competitor-age').value = person.Age;
-
     document.getElementById('competitor-gender').value = person.Gender;
 
     document.getElementById('competition-gender').value =
@@ -2184,9 +2227,6 @@ function openCompetitorModal(person = null) {
     document.getElementById('competitor-id').value = '';
 
     document.getElementById('competitor-name').value = '';
-
-    document.getElementById('competitor-age').value =
-      FormBehaviour.getPreferredAge(ApplicationState.lastCreatedCompetitorAge);
 
     document.getElementById('competitor-gender').value = 'Male';
 
@@ -2277,8 +2317,6 @@ async function saveCompetitor() {
 
       ApplicationState.lastCreatedCompetitorTeamIdentifier = competitor.TeamID;
 
-      ApplicationState.lastCreatedCompetitorAge = competitor.Age;
-
       showCompetitorMessage('Competitor created.');
     }
 
@@ -2298,8 +2336,6 @@ function getCompetitorFormData() {
     ID: document.getElementById('competitor-id').value,
 
     Name: document.getElementById('competitor-name').value.trim(),
-
-    Age: Number(document.getElementById('competitor-age').value),
 
     Gender: document.getElementById('competitor-gender').value,
 
@@ -2323,10 +2359,6 @@ function validateCompetitor(competitor) {
 
   if (!competitor.CompetitionGender) {
     throw new Error('Please choose a competition gender.');
-  }
-
-  if (!Number.isInteger(competitor.Age) || competitor.Age <= 0) {
-    throw new Error('Please enter a positive whole number for age.');
   }
 
   if (typeof competitor.Active !== 'boolean') {

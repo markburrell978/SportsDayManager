@@ -550,6 +550,7 @@ Enabled
           markup += `
 <li value="${this.escapeHtml(entry.Position || '')}">
     ${this.renderHistoryTeam(entry.Team)}
+    ${entry.CompetitorName ? ` — ${this.escapeHtml(entry.CompetitorName)}` : ''}
     ${entry.Position === null ? '— position unavailable' : ''}
 </li>`;
         });
@@ -1682,7 +1683,7 @@ ${[1, 2, 3, 4]
     let markup = `
 <div class="distance-engine ${completed ? 'distance-complete' : ''}">
 <h4>Distance Competition</h4>
-<p>Record the observed team finishing order for each competition category.</p>
+<p>Record the observed team finishing order for each competition category. You can optionally name the competitor who represented each team. Choices come from Competitors in the matching team and competition category.</p>
 <div class="distance-categories" role="group" aria-label="Distance category">
 ${['Male', 'Female']
   .map(
@@ -1704,8 +1705,9 @@ ${['Male', 'Female']
       );
 
       markup += `
-<label for="distance-position-${index}">
+<div class="distance-team-result">
 <span>${this.renderTeamLabel(team)}</span>
+<label for="distance-position-${index}">Placing
 <select id="distance-position-${index}"
         ${requestPending || placingsReadOnly ? 'disabled' : ''}>
     <option value="">Choose position</option>
@@ -1719,7 +1721,9 @@ ${['Male', 'Female']
       )
       .join('')}
 </select>
-</label>`;
+</label>
+${distance.participantSelectionAvailable === false ? '' : this.renderDistanceParticipant(team, category, distance.competitors || [], savedResult?.CompetitorID || '', index, requestPending || placingsReadOnly)}
+</div>`;
     });
 
     markup += `
@@ -1743,7 +1747,7 @@ ${['Male', 'Female']
 ${orderedResults
   .map(
     (result) => `
-<li>${this.renderTeamLabelByIdentifier(teams, result.TeamID)}</li>`,
+<li>${this.renderTeamLabelByIdentifier(teams, result.TeamID)}${result.CompetitorID ? ` — ${this.escapeHtml(distance.competitors?.find((competitor) => competitor.ID === result.CompetitorID)?.Name || 'Name unavailable')}` : ''}</li>`,
   )
   .join('')}
 </ol>
@@ -1775,6 +1779,33 @@ ${orderedResults
     markup += `</div>`;
 
     return markup;
+  },
+
+  /** Offer matching active participants, preserving any saved selection for corrections. */
+  renderDistanceParticipant(
+    team,
+    category,
+    competitors,
+    selectedIdentifier,
+    index,
+    disabled,
+  ) {
+    const choices = competitors
+      .filter(
+        (competitor) =>
+          competitor.ID === selectedIdentifier ||
+          (competitor.Active &&
+            competitor.TeamID === team.ID &&
+            competitor.CompetitionGender === category),
+      )
+      .sort((first, second) =>
+        String(first.Name).localeCompare(String(second.Name)),
+      );
+    return `<label for="distance-participant-${index}">Participant (optional)
+<select id="distance-participant-${index}" ${disabled ? 'disabled' : ''}>
+<option value="">No participant recorded</option>
+${choices.map((competitor) => `<option value="${this.escapeHtml(competitor.ID)}" ${competitor.ID === selectedIdentifier ? 'selected' : ''}>${this.escapeHtml(competitor.Name)}</option>`).join('')}
+</select></label>`;
   },
 
   /** Require every team to have one distinct category placing. */

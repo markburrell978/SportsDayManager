@@ -1,5 +1,7 @@
+import { ParticipantDayNotFoundError } from './participant_data.js';
+
 /** Create a separate read-only boundary that cannot dispatch organiser actions.
- * @param {{readPage: () => Promise<unknown>, accessMode?: string, allowedOrigins?: string[]}} options
+ * @param {{readPage: (selection: {sportsDayIdentifier?: string}) => Promise<unknown>, accessMode?: string, allowedOrigins?: string[]}} options
  */
 export function createParticipantHandler({
   readPage,
@@ -42,19 +44,28 @@ export function createParticipantHandler({
         405,
       );
     }
-    if (new URL(request.url).search) {
-      return reply(
-        null,
-        'The tournament view follows the current Sports Day automatically.',
-        400,
-      );
+    const parameters = new URL(request.url).searchParams;
+    const selectedValues = parameters.getAll('sportsDayId');
+    const sportsDayIdentifier = selectedValues[0]?.trim() || '';
+    if (
+      [...parameters.keys()].some((name) => name !== 'sportsDayId') ||
+      selectedValues.length > 1 ||
+      (selectedValues.length === 1 &&
+        (!sportsDayIdentifier || sportsDayIdentifier.length > 200))
+    ) {
+      return reply(null, 'Please select a valid Sports Day.', 400);
     }
     if (accessMode !== 'public') {
       return reply(null, 'Tournament viewing has not been enabled.', 503);
     }
     try {
-      return reply(await readPage());
-    } catch {
+      return reply(
+        await readPage(sportsDayIdentifier ? { sportsDayIdentifier } : {}),
+      );
+    } catch (error) {
+      if (error instanceof ParticipantDayNotFoundError) {
+        return reply(null, error.message, 404);
+      }
       return reply(null, 'Results could not be loaded. Please try again.', 503);
     }
   };

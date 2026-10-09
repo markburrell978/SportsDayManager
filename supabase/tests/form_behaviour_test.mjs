@@ -35,15 +35,6 @@ test('new competitors reuse a valid previous team and otherwise use the first te
   assert.equal(formBehaviour.getPreferredTeamIdentifier([], 'BLUE'), '');
 });
 
-test('new competitors reuse the previous valid age', async () => {
-  const formBehaviour = await loadFormHelpers();
-
-  assert.equal(formBehaviour.getPreferredAge(11), 11);
-  assert.equal(formBehaviour.getPreferredAge('12'), 12);
-  assert.equal(formBehaviour.getPreferredAge(0), '');
-  assert.equal(formBehaviour.getPreferredAge('unknown'), '');
-});
-
 test('tournament placeholders stay available while selected teams stay unique', async () => {
   const formBehaviour = await loadFormHelpers();
   const selectedTeamIdentifiers = ['', 'RED', 'BLUE', ''];

@@ -131,7 +131,10 @@ const CompetitorService = {
     return {
       Name: String(competitor.Name).trim(),
 
-      Age: Number(competitor.Age),
+      Age:
+        String(competitor.Age ?? '').trim() === ''
+          ? ''
+          : Number(competitor.Age),
 
       Gender: competitor.Gender || '',
 
@@ -172,7 +175,10 @@ const CompetitorService = {
       throw new Error('Please choose a competition gender.');
     }
 
-    if (!this.isPositiveInteger(competitor.Age)) {
+    if (
+      String(competitor.Age ?? '').trim() !== '' &&
+      !this.isPositiveInteger(competitor.Age)
+    ) {
       throw new Error('Please enter a positive whole number for age.');
     }
 

@@ -2,11 +2,36 @@
 
 Project: Sports Day Manager
 
-Production release: v1.5.1, approved 2026-10-06; includes v1.4 stability and
-v1.5 Tournament view. The v1.5.1 patch hides disabled events from the public
-event list while preserving saved data and confirmed scores.
-Previous release: v1.5.0, merge commit `772ab51`.
-See `docs/V1_5_RELEASE_REPORT.md` for backup, deployment and recovery evidence.
+Production release: v1.6.0, approved 2026-10-09 from
+`v1.6-entry-and-archive-improvements`, based on v1.5.1 (`b8d15d1`). The owner tested
+and accepted the usability, finalist and optional distance participant changes.
+Three additive migrations and both Edge Functions were deployed before merging
+and frontend publication through the existing main-branch Pages workflow.
+Frontend assets use `1.6.0`. See `docs/V1_6_RELEASE_REPORT.md` for release evidence
+and `docs/V1_6_USABILITY_REPORT.md` for file responsibilities and manual checks.
+
+Age is hidden/optional with existing backend ages preserved. Tournament view can
+browse archives, defaulting to current. URL fragments remember tabs/year and the
+organiser event through refresh. Confirmed race/distance results show separate
+Male/Female placings with representative names where recorded. Distance naming
+is optional and uses same-team/category competitors from that Sports Day.
+Category/name snapshots stay fixed until reconfirmation and respect name visibility.
+
+The owner-approved production migrations are `202610070001`, `202610070002` and
+`202610080001`. The shared guarded routine safely backfills matching unchanged
+awards, skips pending/mismatched data and preserves existing snapshots. The private
+pre-release backup under ignored `backups/v1.6-predeploy-20261009/` was checksummed
+and application-restore-tested. Live comparison preserves all 13 business tables'
+existing data and all 44 award IDs, points, placings and confirmation revisions;
+only 16 safe category snapshots and their result update timestamps changed.
+Production participant/scoring data was not otherwise edited. Practice was not
+reset. Fresh fictional validation passes 98 Node tests, 30 default Python tests,
+both type checks and 19 API/database tests. The optional import test also passed.
+
+The rejected permanent-participant directory/list proposal remains reverted and
+privately archived. Do not reintroduce participant lists or cross-year tracking.
+The `v1.5.1` tag and fresh private backup preserve recovery. Future production or
+Git changes still require authorisation for their scope.
 
 Review status: v1.4 stability is implemented and automatically tested; the
 owner explicitly deferred completing its manual review and asked to proceed with
@@ -24,8 +49,8 @@ The owner selected public tournament links with no login/viewing code on
 participant names; unconfigured deployments still default to disabled/hidden. Organiser Settings can
 make a selected existing Sports Day current using an authenticated atomic POST;
 records are preserved, and the tournament view follows the active flag. See `docs/V1_5_PARTICIPANT_REPORT.md` and
-`docs/V1_5_PLAN.md`. Race/distance official awards are aggregated by team rather than
-inventing confirmed category/competitor metadata absent from stored awards.
+`docs/V1_5_PLAN.md`. Released v1.5 race/distance awards are aggregated by team; local v1.6 adds
+confirmed category/participant snapshots through the guarded migrations above.
 
 A fresh private production backup in `backups/v1.5-predeploy-20261006/` was
 checksum-verified and restored into a disposable local database. All 44 awards

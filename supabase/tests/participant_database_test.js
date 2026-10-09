@@ -4,6 +4,7 @@ import { executeInTransaction } from '../functions/sports-day-api/application.js
 import {
   readParticipantPage,
   executeParticipantRead,
+  ParticipantDayNotFoundError,
 } from '../functions/sports-day-api/participant_data.js';
 
 const databaseAddress = Deno.env.get('SPORTS_DAY_TEST_DATABASE_URL');
@@ -105,7 +106,9 @@ Deno.test(
           true,
         );
         await call('confirmEventResults', payload);
-        const confirmed = await readParticipantPage(transaction);
+        const confirmed = await readParticipantPage(transaction, {
+          showParticipantNames: true,
+        });
         assert.notDeepEqual(confirmed.leaderboard, first.leaderboard);
         assert.equal(
           confirmed.events.find((item) => item.identifier === event.ID)
@@ -128,6 +131,36 @@ Deno.test(
         assert.equal(
           next.leaderboard.every((team) => team.points === 0),
           true,
+        );
+        const activeRows =
+          await transaction`select id, is_active, updated_at from public.sports_days order by id`;
+        const archived = await readParticipantPage(transaction, {
+          sportsDayIdentifier: first.sportsDay.identifier,
+          showParticipantNames: true,
+        });
+        assert.equal(archived.sportsDay.current, false);
+        assert.equal(next.sportsDay.current, true);
+        assert.deepEqual(archived.leaderboard, confirmed.leaderboard);
+        assert.deepEqual(archived.participants, first.participants);
+        assert.deepEqual(archived.events, confirmed.events);
+        assert.deepEqual(
+          archived.sportsDays.map((day) => day.identifier).sort(),
+          [first.sportsDay.identifier, next.sportsDay.identifier].sort(),
+        );
+        assert.deepEqual(
+          await transaction`select id, is_active, updated_at from public.sports_days order by id`,
+          activeRows,
+        );
+        await assert.rejects(
+          () =>
+            readParticipantPage(transaction, {
+              sportsDayIdentifier: 'MISSING',
+            }),
+          ParticipantDayNotFoundError,
+        );
+        assert.equal(
+          (await readParticipantPage(transaction)).sportsDay.identifier,
+          next.sportsDay.identifier,
         );
         await transaction`update public.sports_days set is_active = false`;
         assert.equal((await readParticipantPage(transaction)).sportsDay, null);
@@ -162,7 +195,13 @@ Deno.test(
             return page;
           }),
       };
-      assert.ok((await executeParticipantRead(guarded)).sportsDay);
+      assert.ok(
+        (
+          await executeParticipantRead(guarded, {
+            sportsDayIdentifier: 'SPORTS_DAY_2026',
+          })
+        ).sportsDay,
+      );
     } finally {
       await connection.end();
     }
@@ -216,11 +255,16 @@ Deno.test(
           activated.SportsDays.filter((day) => day.Active).length,
           1,
         );
+        const restored = await readParticipantPage(transaction, {
+          showParticipantNames: true,
+        });
         assert.deepEqual(
-          await readParticipantPage(transaction, {
-            showParticipantNames: true,
-          }),
-          original,
+          { ...restored, sportsDays: [] },
+          { ...original, sportsDays: [] },
+        );
+        assert.equal(
+          restored.sportsDays.length,
+          original.sportsDays.length + 1,
         );
         for (const tableName of tableNames) {
           assert.deepEqual(
@@ -296,6 +340,373 @@ Deno.test(
           (await readParticipantPage(transaction)).sportsDay.identifier,
           created.ID,
         );
+        throw rollback;
+      });
+    } catch (error) {
+      if (error !== rollback) {
+        throw error;
+      }
+    } finally {
+      await connection.end();
+    }
+  },
+);
+
+Deno.test(
+  'optional age round trips as SQL null and hidden edits preserve known ages',
+  async () => {
+    const connection = postgres(databaseAddress, { prepare: false, max: 1 });
+    const rollback = new Error('Roll back optional age fixtures');
+    try {
+      await connection.begin(async (transaction) => {
+        const call = async (action, payload = {}) =>
+          (await executeInTransaction(transaction, { action, payload })).data;
+        const teams = await call('getTeams');
+        const fields = {
+          Name: 'Fictional unknown age',
+          TeamID: teams[0].ID,
+          Gender: 'Male',
+          CompetitionGender: 'Male',
+          Active: true,
+        };
+        const unknown = await call('createCompetitor', fields);
+        assert.equal(unknown.Age, '');
+        const [stored] =
+          await transaction`select age from public.competitors where id = ${unknown.ID}`;
+        assert.equal(stored.age, null);
+        assert.equal(
+          (
+            await call('updateCompetitor', {
+              ID: unknown.ID,
+              Name: 'Renamed without age',
+            })
+          ).Age,
+          '',
+        );
+        const known = await call('createCompetitor', { ...fields, Age: 37 });
+        assert.equal(
+          (
+            await call('updateCompetitor', {
+              ID: known.ID,
+              Name: 'Still aged 37',
+            })
+          ).Age,
+          37,
+        );
+        for (const age of [0, -1, 1.5, 'unknown']) {
+          await assert.rejects(
+            () => call('createCompetitor', { ...fields, Age: age }),
+            /age/i,
+          );
+        }
+        await assert.rejects(
+          transaction.savepoint(async (savepoint) => {
+            await savepoint`update public.competitors set age = 0 where id = ${unknown.ID}`;
+          }),
+          (error) => error.code === '23514',
+        );
+        throw rollback;
+      });
+    } catch (error) {
+      if (error !== rollback) {
+        throw error;
+      }
+    } finally {
+      await connection.end();
+    }
+  },
+);
+
+Deno.test(
+  'confirmed race category and finalist snapshots survive edits until reconfirmation and stay private when names are hidden',
+  async () => {
+    const connection = postgres(databaseAddress, { prepare: false, max: 1 });
+    const rollback = new Error('Rollback finalist snapshot fixtures');
+    try {
+      await connection.begin(async (transaction) => {
+        const call = async (action, payload = {}) =>
+          (await executeInTransaction(transaction, { action, payload })).data;
+        const payload = { eventId: 'EV_RACE', eventRunId: 'RUN_RACE_1' };
+        const before = await readParticipantPage(transaction, {
+          showParticipantNames: true,
+        });
+        const first = before.events.find(
+          (event) => event.identifier === 'EV_RACE',
+        );
+        assert.deepEqual(
+          first.results.find((result) => result.teamIdentifier === 'TEAM_ALPHA')
+            .finals,
+          [
+            { category: 'Male', position: 1, participantName: 'Alex Alder' },
+            { category: 'Female', position: 4, participantName: 'Ari Alder' },
+          ],
+        );
+        const stored =
+          await transaction`select id, competition_category, finalist_name from public.results where event_run_id = 'RUN_RACE_1' order by sequence_number`;
+        assert.equal(stored.length, 8);
+        await call('updateCompetitor', {
+          ID: 'COMP_ALPHA_M',
+          Name: 'Renamed after the final',
+          Active: false,
+        });
+        await call('updatePointProfile', {
+          ID: 'PP_STANDARD',
+          Name: 'Changed profile',
+          First: 20,
+          Second: 7,
+          Third: 5,
+          Fourth: 3,
+        });
+        const pending = await readParticipantPage(transaction, {
+          showParticipantNames: true,
+        });
+        assert.deepEqual(
+          pending.events.find((event) => event.identifier === 'EV_RACE')
+            .results,
+          first.results,
+        );
+        assert.deepEqual(pending.leaderboard, before.leaderboard);
+        assert.equal(
+          pending.events.find((event) => event.identifier === 'EV_RACE')
+            .needsConfirmation,
+          true,
+        );
+        const hidden = await readParticipantPage(transaction);
+        assert.doesNotMatch(
+          JSON.stringify(hidden),
+          /Alex Alder|Ari Alder|Renamed after the final/,
+        );
+        await call('confirmEventResults', payload);
+        const confirmed = await readParticipantPage(transaction, {
+          showParticipantNames: true,
+        });
+        const updated = confirmed.events.find(
+          (event) => event.identifier === 'EV_RACE',
+        );
+        assert.equal(
+          updated.results.find(
+            (result) => result.teamIdentifier === 'TEAM_ALPHA',
+          ).finals[0].participantName,
+          'Renamed after the final',
+        );
+        assert.equal(
+          updated.results.find(
+            (result) => result.teamIdentifier === 'TEAM_ALPHA',
+          ).points,
+          23,
+        );
+        assert.equal(updated.needsConfirmation, false);
+        await call('createSportsDay', {
+          name: 'Fictional finalist archive test',
+        });
+        const archived = await readParticipantPage(transaction, {
+          sportsDayIdentifier: 'SPORTS_DAY_2026',
+          showParticipantNames: true,
+        });
+        assert.deepEqual(
+          archived.events.find((event) => event.identifier === 'EV_RACE')
+            .results,
+          updated.results,
+        );
+        throw rollback;
+      });
+    } catch (error) {
+      if (error !== rollback) {
+        throw error;
+      }
+    } finally {
+      await connection.end();
+    }
+  },
+);
+
+Deno.test(
+  'legacy finalist backfill skips pending or mismatched finals and cannot be called by public roles',
+  async () => {
+    const connection = postgres(databaseAddress, { prepare: false, max: 1 });
+    const rollback = new Error('Rollback guarded backfill fixture');
+    try {
+      await connection.begin(async (transaction) => {
+        const [permissions] = await transaction`
+        select has_function_privilege('anon', 'public.snapshot_race_finalists(text)', 'EXECUTE') as anonymous,
+          has_function_privilege('authenticated', 'public.snapshot_race_finalists(text)', 'EXECUTE') as authenticated,
+          has_function_privilege('sports_day_api', 'public.snapshot_race_finalists(text)', 'EXECUTE') as organiser
+      `;
+        assert.deepEqual(permissions, {
+          anonymous: false,
+          authenticated: false,
+          organiser: true,
+        });
+        await transaction`update public.results set competition_category = null, finalist_name = null where event_run_id = 'RUN_RACE_1'`;
+        await transaction`update public.event_runs set results_revision = results_revision + 1 where id = 'RUN_RACE_1'`;
+        await transaction`select public.snapshot_race_finalists()`;
+        const [pending] =
+          await transaction`select count(*)::int as recorded from public.results where event_run_id = 'RUN_RACE_1' and competition_category is not null`;
+        assert.equal(pending.recorded, 0);
+        await executeInTransaction(transaction, {
+          action: 'confirmEventResults',
+          payload: { eventId: 'EV_RACE', eventRunId: 'RUN_RACE_1' },
+        });
+        const [confirmed] =
+          await transaction`select count(*)::int as recorded from public.results where event_run_id = 'RUN_RACE_1' and competition_category is not null`;
+        assert.equal(confirmed.recorded, 8);
+        await transaction`update public.results set competition_category = null, finalist_name = null where event_run_id = 'RUN_RACE_1'`;
+        await transaction`update public.results set position = 5 where event_run_id = 'RUN_RACE_1' and team_id = 'TEAM_ALPHA' and position = 1`;
+        await transaction`select public.snapshot_race_finalists()`;
+        const [mismatched] =
+          await transaction`select count(*)::int as recorded from public.results where event_run_id = 'RUN_RACE_1' and competition_category is not null`;
+        assert.equal(mismatched.recorded, 0);
+        throw rollback;
+      });
+    } catch (error) {
+      if (error !== rollback) {
+        throw error;
+      }
+    } finally {
+      await connection.end();
+    }
+  },
+);
+
+Deno.test(
+  'optional distance participants snapshot only on confirmation, respect privacy and clear without changing scores',
+  async () => {
+    const connection = postgres(databaseAddress, { prepare: false, max: 1 });
+    const rollback = new Error('Rollback optional distance participants');
+    try {
+      await connection.begin(async (transaction) => {
+        const call = async (action, payload = {}) =>
+          (await executeInTransaction(transaction, { action, payload })).data;
+        const payload = {
+          eventId: 'EV_DISTANCE',
+          eventRunId: 'RUN_DISTANCE_1',
+        };
+        await call('confirmEventResults', payload);
+        await transaction`update public.results set competition_category = null, finalist_name = null where event_run_id = 'RUN_DISTANCE_1'`;
+        await transaction`select public.snapshot_event_participants()`;
+        const before = await readParticipantPage(transaction, {
+          showParticipantNames: true,
+        });
+        const distanceBefore = before.events.find(
+          (event) => event.identifier === 'EV_DISTANCE',
+        );
+        assert.equal(
+          distanceBefore.results.flatMap((result) => result.finals).length,
+          8,
+        );
+        assert.equal(
+          distanceBefore.results
+            .flatMap((result) => result.finals)
+            .every((final) => final.participantName === ''),
+          true,
+        );
+        const saved = await call('getDistanceResultsForEventRun', payload);
+        const positions = saved.results
+          .filter((result) => result.CompetitionGender === 'Male')
+          .map((result) => ({
+            teamId: result.TeamID,
+            position: result.Position,
+            competitorId: result.TeamID === 'TEAM_ALPHA' ? 'COMP_ALPHA_M' : '',
+          }));
+        await call('saveDistanceCategoryPositions', {
+          ...payload,
+          competitionGender: 'Male',
+          positions,
+        });
+        let view = await readParticipantPage(transaction, {
+          showParticipantNames: true,
+        });
+        assert.deepEqual(
+          view.events.find((event) => event.identifier === 'EV_DISTANCE')
+            .results,
+          distanceBefore.results,
+        );
+        assert.equal(
+          view.events.find((event) => event.identifier === 'EV_DISTANCE')
+            .needsConfirmation,
+          true,
+        );
+        await call('confirmEventResults', payload);
+        view = await readParticipantPage(transaction, {
+          showParticipantNames: true,
+        });
+        const confirmed = view.events.find(
+          (event) => event.identifier === 'EV_DISTANCE',
+        );
+        const alpha = confirmed.results.find(
+          (result) => result.teamIdentifier === 'TEAM_ALPHA',
+        );
+        assert.equal(alpha.finals[0].participantName, 'Alex Alder');
+        const history = await call('getEventHistory', {
+          eventId: 'EV_DISTANCE',
+        });
+        assert.equal(
+          history.Runs[0].Outcomes.Categories[0].Entries.find(
+            (entry) => entry.Team.TeamID === 'TEAM_ALPHA',
+          ).CompetitorName,
+          'Alex Alder',
+        );
+        assert.equal(alpha.finals[1].participantName, '');
+        assert.deepEqual(view.leaderboard, before.leaderboard);
+        const hidden = await readParticipantPage(transaction);
+        assert.equal(
+          hidden.events
+            .find((event) => event.identifier === 'EV_DISTANCE')
+            .results.flatMap((result) => result.finals)
+            .some((final) => Object.hasOwn(final, 'participantName')),
+          false,
+        );
+        await call('updateCompetitor', {
+          ID: 'COMP_ALPHA_M',
+          Name: 'Changed distance name',
+          Active: false,
+        });
+        await transaction`select public.snapshot_event_participants()`;
+        view = await readParticipantPage(transaction, {
+          showParticipantNames: true,
+        });
+        assert.deepEqual(
+          view.events.find((event) => event.identifier === 'EV_DISTANCE')
+            .results,
+          confirmed.results,
+        );
+        await call('confirmEventResults', payload);
+        view = await readParticipantPage(transaction, {
+          showParticipantNames: true,
+        });
+        assert.equal(
+          view.events
+            .find((event) => event.identifier === 'EV_DISTANCE')
+            .results.find((result) => result.teamIdentifier === 'TEAM_ALPHA')
+            .finals[0].participantName,
+          'Changed distance name',
+        );
+        positions[0].competitorId = '';
+        await call('saveDistanceCategoryPositions', {
+          ...payload,
+          competitionGender: 'Male',
+          positions,
+        });
+        await call('confirmEventResults', payload);
+        view = await readParticipantPage(transaction, {
+          showParticipantNames: true,
+        });
+        assert.deepEqual(
+          view.events.find((event) => event.identifier === 'EV_DISTANCE')
+            .results,
+          distanceBefore.results,
+        );
+        assert.deepEqual(view.leaderboard, before.leaderboard);
+        const [permissions] = await transaction`
+        select has_function_privilege('anon', 'public.snapshot_event_participants(text)', 'EXECUTE') as anonymous,
+          has_function_privilege('authenticated', 'public.snapshot_event_participants(text)', 'EXECUTE') as authenticated,
+          has_function_privilege('sports_day_api', 'public.snapshot_event_participants(text)', 'EXECUTE') as organiser
+      `;
+        assert.deepEqual(permissions, {
+          anonymous: false,
+          authenticated: false,
+          organiser: true,
+        });
         throw rollback;
       });
     } catch (error) {

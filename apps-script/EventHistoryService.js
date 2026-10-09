@@ -26,10 +26,11 @@ const EventHistoryService = {
 
     const teams = Database.get(TABLES.TEAMS);
 
-    const competitors =
-      event.EventType === EVENT_TYPES.HEAT_FINAL
-        ? Database.get(TABLES.COMPETITORS)
-        : [];
+    const competitors = [EVENT_TYPES.HEAT_FINAL, EVENT_TYPES.DISTANCE].includes(
+      event.EventType,
+    )
+      ? Database.get(TABLES.COMPETITORS)
+      : [];
 
     const results = this.getEventRows(TABLES.RESULTS, eventIdentifier);
 
@@ -379,6 +380,7 @@ const EventHistoryService = {
         return this.buildDistanceOutcomes(
           engineRows,
           teamsByIdentifier,
+          competitorsByIdentifier,
           results,
           categories,
         );
@@ -513,7 +515,13 @@ const EventHistoryService = {
   },
 
   /** Describe saved distance placings by competition category. */
-  buildDistanceOutcomes(rows, teamsByIdentifier, results, categories) {
+  buildDistanceOutcomes(
+    rows,
+    teamsByIdentifier,
+    competitorsByIdentifier,
+    results,
+    categories,
+  ) {
     return {
       Type: EVENT_TYPES.DISTANCE,
       HasData: rows.length > 0,
@@ -525,6 +533,8 @@ const EventHistoryService = {
           .map((row) => ({
             Team: this.buildTeamReference(row.TeamID, teamsByIdentifier),
             Position: LeaderboardService.normalisePosition(row.Position),
+            CompetitorName:
+              competitorsByIdentifier[row.CompetitorID]?.Name || '',
           }))
           .sort(
             (firstRecord, secondRecord) =>

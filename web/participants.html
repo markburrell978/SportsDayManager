@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer" />
     <title>Sports Day — Tournament view</title>
-    <link rel="stylesheet" href="css/main.css?v=1.5.1" />
-    <link rel="stylesheet" href="css/participants.css?v=1.5.1" />
+    <link rel="stylesheet" href="css/main.css?v=1.6.0" />
+    <link rel="stylesheet" href="css/participants.css?v=1.6.0" />
   </head>
   <body class="participant-app">
     <header>
@@ -20,6 +20,20 @@
       Practice · Changes here do not affect the live Sports Day.
     </div>
     <main class="participant-main">
+      <div class="participant-day-picker">
+        <label for="participant-sports-day-selector">Sports Day</label>
+        <select
+          id="participant-sports-day-selector"
+          aria-describedby="participant-sports-day-description"
+          disabled
+        >
+          <option value="">Loading Sports Days…</option>
+        </select>
+        <p id="participant-sports-day-description">
+          The current Sports Day opens by default. Choose an archive to see
+          previous results.
+        </p>
+      </div>
       <div class="participant-refresh-bar">
         <p id="participant-refresh-status" role="status" aria-live="polite">
           Loading results…
@@ -68,10 +82,11 @@
         aria-busy="false"
       ></section>
     </main>
-    <script src="js/runtime-config.js?v=1.5.1"></script>
-    <script src="js/ui.js?v=1.5.1"></script>
-    <script src="js/participant-api.js?v=1.5.1"></script>
-    <script src="js/participant-view.js?v=1.5.1"></script>
-    <script src="js/participant-app.js?v=1.5.1"></script>
+    <script src="js/runtime-config.js?v=1.6.0"></script>
+    <script src="js/ui.js?v=1.6.0"></script>
+    <script src="js/participant-api.js?v=1.6.0"></script>
+    <script src="js/participant-view.js?v=1.6.0"></script>
+    <script src="js/page-location.js?v=1.6.0"></script>
+    <script src="js/participant-app.js?v=1.6.0"></script>
   </body>
 </html>

@@ -26,9 +26,10 @@ test('published assets use a release version so browsers do not mix frontend ver
     'js/ui.js',
     'js/form.js',
     'js/drafts.js',
+    'js/page-location.js',
     'js/app.js',
   ]) {
-    assert.match(documentMarkup, new RegExp(`${assetPath}\\?v=1\\.5\\.1`));
+    assert.match(documentMarkup, new RegExp(`${assetPath}\\?v=1\\.6\\.0`));
   }
 });
 
